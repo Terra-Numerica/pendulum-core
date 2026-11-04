@@ -1,0 +1,15 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120
+---
+Language: Cpp
+DerivePointerAlignment: false
+PointerAlignment: Left
+AlignAfterOpenBracket: BlockIndent
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveMacros: AcrossEmptyLinesAndComments
+IndentCaseLabels: true
+NamespaceIndentation: All
+BinPackArguments: false

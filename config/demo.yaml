@@ -1,0 +1,4 @@
+joystick:
+  btn_exit: 1
+  btn_switch: 0
+  btn_autopilot: 2
