@@ -1,12 +1,12 @@
 // clang-format off
 #include <iomanip>
 #include <iostream>
+#include <csignal>
 #include <yaml-cpp/yaml.h>
 #include "utils.hpp"
 #include <pendule_pi/colors.h>
 #include <pendule_pi/joystick.hpp>
 #include <pendule_pi/pendule_cpp_client.hpp>
-#include <pendule_pi/pigpio.hpp>
 // clang-format on
 
 static bool ok{true};
