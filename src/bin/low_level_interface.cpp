@@ -32,7 +32,9 @@ int main(const int argc, char **argv) {
         const auto pendule = config.getPendule();
         std::cout << std::endl << BRIGHT_WHITE << "--- Pendulum calibration ---" << RESET << std::endl;
         pendule->calibrate(config.getCalibrationPWM(), true);
-        std::cout << BRIGHT_GREEN << "--- Pendulum ready ---" << RESET << std::endl << std::endl;
+        std::cout
+                << BRIGHT_GREEN << "--- Pendulum ready ---" << RESET << std::endl << std::endl
+                << "Demo can be started now." << std::endl << std::endl;
 
         // Define soft limits for the pendulum.
         const double MAX_POSITION = pendule->softMinMaxPosition() - config.getSoftSafetyThreshold();
