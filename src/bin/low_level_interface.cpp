@@ -92,8 +92,8 @@ int main(const int argc, char **argv) {
 
             // Enforce soft safety limits, then send the command.
             if (
-                pendule->position() > MAX_POSITION && pwm > 0 ||
-                pendule->position() < -MAX_POSITION && pwm < 0
+                (pendule->position() > MAX_POSITION && pwm > 0) ||
+                (pendule->position() < -MAX_POSITION && pwm < 0)
             ) {
                 pwm = 0;
             }
