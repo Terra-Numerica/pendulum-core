@@ -15,8 +15,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(pigpio REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
-# Shared options : -Wall partout, -O2 en Release, -O0 en Debug.
-# digital_filters is header-only : its sources are in include/digital_filters/.
+# Warnings on all targets. Optimization level comes from CMAKE_BUILD_TYPE
+# (Release = -O3 -DNDEBUG).
+add_compile_options(-Wall)
+
+# code shared by demo and low_level_interface
+
 add_library(pendule_pi
         src/pendule_pi/config.cpp
         src/pendule_pi/joystick.cpp
@@ -27,15 +31,26 @@ add_library(pendule_pi
         src/pendule_pi/pendule.cpp
         src/pendule_pi/pendule_cpp_server.cpp
 )
-target_include_directories(pendule_pi PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(pendule_pi PUBLIC pigpio::pigpio pthread zmq zmqpp yaml-cpp)
-target_compile_options(pendule_pi PRIVATE -Wall
-        $<$<CONFIG:Debug>:-O0>
-        $<$<CONFIG:Release>:-O2>)
-target_compile_definitions(pendule_pi PUBLIC
-        $<$<CONFIG:Debug>:PENDULE_PI_DEBUG_ENABLED>)
+target_include_directories(pendule_pi PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(pendule_pi PUBLIC
+        pigpio::pigpio
+        pthread
+        zmq
+        zmqpp
+        yaml-cpp
+)
 
-# Binaries
+target_compile_definitions(pendule_pi PUBLIC
+        $<$<CONFIG:Debug>:PENDULE_PI_DEBUG_ENABLED>
+)
+
+###
+### Binaries
+###
+
+# ----------------------------------------
 add_executable(low_level_interface
         src/bin/low_level_interface.cpp
 )
@@ -44,6 +59,7 @@ target_link_libraries(
         pendule_pi
 )
 
+# ----------------------------------------
 add_executable(demo
         src/bin/demo.cpp
         src/pendule_pi/pendule_cpp_client.cpp
@@ -54,6 +70,7 @@ target_link_libraries(demo
         zmqpp
 )
 
+# ----------------------------------------
 add_executable(reset_gpio
         src/bin/reset_gpio.cpp
 )
