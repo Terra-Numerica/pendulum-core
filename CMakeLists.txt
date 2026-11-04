@@ -1,247 +1,62 @@
-### This file is an adaptation derived from
-###   github.com/francofusco/template-cmake-project/blob/main/CMakeLists.txt
-### Original Author: Franco FUSCO
-### Source: github.com/francofusco/template-cmake-project
 cmake_minimum_required(VERSION 3.19.4)
-project(pendule_pi VERSION 1.0.0)
+project(pendule_pi VERSION 1.0.0 LANGUAGES CXX)
 
-# Allow using colors in messages. Use with parsimony ;)
-include(cmake/colors.cmake)
-
-#######################
-# LOCATE DEPENDENCIES #
-#######################
-
-# locate dependencies with a custom function
-function(find_package_custom pkg)
-    find_package(${pkg} QUIET)
-    if (${${pkg}_FOUND})
-        message(STATUS "${pkg}: ${Green}found${ColourReset}")
-    else ()
-        set(ALL_DEPENDENCIES_FOUND FALSE PARENT_SCOPE)
-        message(STATUS "${pkg}: ${Yellow}not found${ColourReset}")
-    endif ()
-endfunction()
-
-# Scan all dependencies
-set(ALL_DEPENDENCIES_FOUND TRUE)
-message(STATUS "Looking for build dependencies")
-find_package_custom(pigpio)
-find_package_custom(digital_filters)
-find_package_custom(yaml-cpp)
-
-# warn the user if code will not be built
-if (NOT ${ALL_DEPENDENCIES_FOUND})
-    message(STATUS "${Yellow}Some dependencies were not found. Only pendule_cpp_client will be built!${ColourReset}")
+# Build Release by default : the control loop must run with same optimizations
+# as the demonstrator (see README)
+if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Type de build" FORCE)
 endif ()
 
-# 1. Define the path to your local copy of the Raspberry Pi headers and libs
-set(LOCAL_RPI_HEADERS "deps/yaml-cpp/include")
-set(LOCAL_RPI_LIB "digital_filters/include")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-## 2. Include them only if the directory exists locally (protects remote builds)
-#if(EXISTS "${LOCAL_RPI_HEADERS}")
-##  include_directories(${LOCAL_RPI_HEADERS})
-#  # Or for a specific target:
-#  # target_include_directories(your_project_name PRIVATE ${LOCAL_RPI_HEADERS})
-#  message(STATUS "${Yellow}Includes configured for local editing on the dev station!${ColourReset}")
-#endif()
-#
-#if(EXISTS "${LOCAL_RPI_LIB}")
-#  include_directories(${LOCAL_RPI_LIB})
-#  # Or for a specific target:
-#  # target_include_directories(your_project_name PRIVATE ${LOCAL_RPI_HEADERS})
-#  message(STATUS "${Yellow}Libs configured for local editing on the dev station!${ColourReset}")
-#endif()
+# Dependencies : fatal error if one is missing
+# (zmq et zmqpp are linked by name, without using find_package)
+find_package(pigpio REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
+# Shared options : -Wall partout, -O2 en Release, -O0 en Debug.
+# digital_filters is header-only : its sources are in include/digital_filters/.
+add_library(pendule_pi
+        src/pendule_pi/config.cpp
+        src/pendule_pi/joystick.cpp
+        src/pendule_pi/pigpio.cpp
+        src/pendule_pi/switch.cpp
+        src/pendule_pi/motor.cpp
+        src/pendule_pi/encoder.cpp
+        src/pendule_pi/pendule.cpp
+        src/pendule_pi/pendule_cpp_server.cpp
+)
+target_include_directories(pendule_pi PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(pendule_pi PUBLIC pigpio::pigpio pthread zmq zmqpp yaml-cpp)
+target_compile_options(pendule_pi PRIVATE -Wall
+        $<$<CONFIG:Debug>:-O0>
+        $<$<CONFIG:Release>:-O2>)
+target_compile_definitions(pendule_pi PUBLIC
+        $<$<CONFIG:Debug>:PENDULE_PI_DEBUG_ENABLED>)
 
-##############
-# pendule_pi #
-##############
-
-if (${ALL_DEPENDENCIES_FOUND})
-
-    add_library(${PROJECT_NAME}
-            src/pendule_pi/config.cpp
-            src/pendule_pi/joystick.cpp
-            src/pendule_pi/pigpio.cpp
-            src/pendule_pi/switch.cpp
-            src/pendule_pi/motor.cpp
-            src/pendule_pi/encoder.cpp
-            src/pendule_pi/pendule.cpp
-            src/pendule_pi/pendule_cpp_server.cpp
-    )
-
-    target_include_directories(${PROJECT_NAME}
-            PUBLIC
-            $<INSTALL_INTERFACE:include>
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    )
-
-    target_link_libraries(${PROJECT_NAME}
-            PUBLIC pigpio::pigpio
-            PUBLIC pthread
-            PUBLIC zmq
-            PUBLIC zmqpp
-            PUBLIC yaml-cpp
-            PUBLIC digital_filters::digital_filters
-    )
-
-    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        target_compile_options(${PROJECT_NAME} PRIVATE -O0)
-        target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
-        target_compile_definitions(${PROJECT_NAME} PUBLIC PENDULE_PI_DEBUG_ENABLED)
-    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-        target_compile_options(${PROJECT_NAME} PRIVATE -O2)
-        # If and when Eigen will be used :P
-        # target_compile_definitions(${PROJECT_NAME} PRIVATE -DEIGEN_NO_DEBUG)
-    endif ()
-
-    target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
-
-endif (${ALL_DEPENDENCIES_FOUND})
-
-
-##############
-# C++ bridge #
-##############
-
-add_library(pendule_cpp_client src/pendule_pi/pendule_cpp_client.cpp)
-
-target_include_directories(pendule_cpp_client
-        PUBLIC
-        $<INSTALL_INTERFACE:include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+# Binaries
+add_executable(low_level_interface
+        src/bin/low_level_interface.cpp
+)
+target_link_libraries(
+        low_level_interface
+        pendule_pi
 )
 
-target_link_libraries(pendule_cpp_client zmq zmqpp)
-
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-    target_compile_options(pendule_cpp_client PRIVATE -O0)
-    target_compile_options(pendule_cpp_client PRIVATE -Wall)
-elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-    target_compile_options(pendule_cpp_client PRIVATE -O2)
-endif ()
-
-target_compile_features(pendule_cpp_client PUBLIC cxx_std_17)
-
-
-############
-# BINARIES #
-############
-
-if (${ALL_DEPENDENCIES_FOUND})
-
-    # Reset all pins in high impedance mode
-    add_executable(reset_gpio src/bin/reset_gpio.cpp)
-    target_link_libraries(reset_gpio ${PROJECT_NAME})
-
-    # Executable that can help to setup the pendulum.
-    add_executable(pendule_pi_assistant src/bin/pendule_pi_assistant.cpp)
-    target_link_libraries(pendule_pi_assistant ${PROJECT_NAME})
-
-    # Swingup + linearized control
-    add_executable(demo src/bin/demo.cpp)
-    target_link_libraries(demo ${PROJECT_NAME} pendule_cpp_client)
-
-    add_executable(low_level_interface src/bin/low_level_interface.cpp)
-    target_link_libraries(low_level_interface ${PROJECT_NAME})
-
-endif (${ALL_DEPENDENCIES_FOUND})
-
-
-###########
-# INSTALL #
-###########
-
-include(GNUInstallDirs)
-
-# Install binaries
-if (${ALL_DEPENDENCIES_FOUND})
-    install(
-            TARGETS
-            reset_gpio
-            # log_motion
-            # log_rotation
-            # demo
-            # low_level_interface
-            pendule_pi_assistant
-            DESTINATION bin
-    )
-endif (${ALL_DEPENDENCIES_FOUND})
-
-# Install the libraries
-set(LIBS_TO_INSTALL pendule_cpp_client)
-if (${ALL_DEPENDENCIES_FOUND})
-    list(APPEND LIBS_TO_INSTALL ${PROJECT_NAME})
-endif (${ALL_DEPENDENCIES_FOUND})
-
-install(
-        TARGETS ${LIBS_TO_INSTALL}
-        DESTINATION lib
-        EXPORT ${PROJECT_NAME}Targets
+add_executable(demo
+        src/bin/demo.cpp
+        src/pendule_pi/pendule_cpp_client.cpp
+)
+target_link_libraries(demo
+        pendule_pi
+        zmq
+        zmqpp
 )
 
-# Copy all headers from the "include" folder
-install(
-        DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/${PROJECT_NAME}
-        DESTINATION include
+add_executable(reset_gpio
+        src/bin/reset_gpio.cpp
 )
-
-# Install the "Targets" file as well.
-install(
-        EXPORT ${PROJECT_NAME}Targets
-        NAMESPACE ${PROJECT_NAME}::
-        FILE ${PROJECT_NAME}Targets.cmake
-        DESTINATION lib/cmake/${PROJECT_NAME}
+target_link_libraries(reset_gpio
+        pendule_pi
 )
-
-# Helpers to create the "package config" files.
-include(CMakePackageConfigHelpers)
-
-# Create the "Config.cmake" file (to allow "find_package"-ing this project).
-configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
-        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-        INSTALL_DESTINATION "lib/cmake/example"
-        NO_SET_AND_CHECK_MACRO
-        NO_CHECK_REQUIRED_COMPONENTS_MACRO
-)
-
-# Generate the version file associated to the "Config.cmake" file.
-write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-        VERSION "${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}"
-        COMPATIBILITY AnyNewerVersion
-)
-
-# Install the configuration file.
-install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-        DESTINATION lib/cmake/${PROJECT_NAME}
-)
-
-# Make the project usable from the build directory as well.
-export(
-        EXPORT ${PROJECT_NAME}Targets
-        NAMESPACE ${PROJECT_NAME}::
-        FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake"
-)
-
-
-# add the possibility tu run 'make uninstall' to remove files added via 'make install'
-# NOTE: this will remove files only, and not their parent directories.
-# WARNING: this will work only if you do not play around the installed targets manually,
-# and if you do not change the install destination.
-configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/uninstall.cmake.in
-        ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake
-        IMMEDIATE @ONLY
-)
-add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake")
-
-
-#########################
-# DOXYGEN DOCUMENTATION #
-#########################
-
-#add_subdirectory(doc)
