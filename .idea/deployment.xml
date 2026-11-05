@@ -2,24 +2,6 @@
 <project version="4">
   <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
-      <paths name="pendulum-2">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
-          </mappings>
-          <excludedPaths>
-            <excludedPath path="/.git" />
-            <excludedPath path="/examples" />
-            <excludedPath path="/build" />
-            <excludedPath local="true" path="$PROJECT_DIR$/cmake" />
-            <excludedPath local="true" path="$PROJECT_DIR$/deps" />
-            <excludedPath path="/build-save-261025" />
-            <excludedPath path="/cmake-build-debug" />
-            <excludedPath path="/cmake-build-debug-pendulum-2" />
-            <excludedPath path="/cmake-build-release-pendulum-2" />
-          </excludedPaths>
-        </serverdata>
-      </paths>
       <paths name="pendulum-2 (f251eeb0-5a59-4e58-925c-95788f19ec16)">
         <serverdata>
           <mappings>
