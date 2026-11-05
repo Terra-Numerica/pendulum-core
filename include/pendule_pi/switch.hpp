@@ -107,7 +107,6 @@ namespace pendule_pi {
           *   Remember that, due to integer arithmetics, it is still safe to get
           *   elapsed times doing `tick_now-tick_previous` even if `tick_now`
           *   overflowed.
-          * @todo Perhaps remove the internal pin check that throws an exception?
           */
         void onChange(
             int gpio,

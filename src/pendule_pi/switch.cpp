@@ -76,14 +76,6 @@ namespace pendule_pi {
         const int level,
         const unsigned int tick
     ) {
-        // This is more for debug purposes. I guess this condition should never pass.
-        if (gpio != pin_) {
-            throw std::runtime_error(
-                "Expected Switch interrupt on pin " + std::to_string(pin_) + ", however"
-                "an interrupt was fired for pin " + std::to_string(gpio)
-            );
-        }
-
         // Check if at least debounce_us_ microseconds have elapsed since the last
         // time we. served an interrupt. If not, just exit!
         if (tick - last_tick_ < debounce_us_) {
