@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19.4)
-project(pendule_pi VERSION 1.0.0 LANGUAGES CXX)
+project(pendule_pi VERSION 0.2.1 LANGUAGES CXX)
 
 # Build Release by default : the control loop must run with same optimizations
 # as the demonstrator (see README)
