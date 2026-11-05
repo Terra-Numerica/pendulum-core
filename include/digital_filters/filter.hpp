@@ -11,8 +11,6 @@ namespace digital_filters {
     /**
       * @tparam DataType Type of the input/output signals
       * @tparam CoefficientType Type of the coefficients of the transfer function.
-      *
-      * @todo Add a method to find initial conditions.
       */
     template<class DataType, class CoefficientType>
     class Filter {
