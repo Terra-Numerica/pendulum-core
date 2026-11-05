@@ -10,11 +10,11 @@ namespace digital_filters {
     /// Simple class that represents a digital filter.
     /**
       * @tparam DataType Type of the input/output signals
-      * @tparam CoeffType Type of the coefficients of the transfer function.
+      * @tparam CoefficientType Type of the coefficients of the transfer function.
       *
       * @todo Add a method to find initial conditions.
       */
-    template<class DataType, class CoeffType>
+    template<class DataType, class CoefficientType>
     class Filter {
     public:
         /// Generates a filter from given coefficients.
@@ -40,8 +40,8 @@ namespace digital_filters {
           *   first element must not be zero.
           */
         Filter(
-            const std::vector<CoeffType> &b_num,
-            const std::vector<CoeffType> &a_den
+            const std::vector<CoefficientType> &b_num,
+            const std::vector<CoefficientType> &a_den
         );
 
         /// Filters concatenation.
@@ -54,8 +54,8 @@ namespace digital_filters {
           * @param other filter that should be concatenated to `this`.
           * @return a new filter which is the concatenation of `this` and `other`.
           */
-        Filter<DataType, CoeffType> operator*(
-            const Filter<DataType, CoeffType> &other
+        Filter<DataType, CoefficientType> operator*(
+            const Filter<DataType, CoefficientType> &other
         ) const;
 
         /// Change filter template types.
@@ -70,10 +70,10 @@ namespace digital_filters {
         Filter<OtherDataType, OtherCoeffType> as() const;
 
         /// Access the numerator.
-        inline const std::vector<CoeffType> &numerator() const { return b_; }
+        inline const std::vector<CoefficientType> &numerator() const { return b_; }
 
         /// Access the denominator.
-        inline const std::vector<CoeffType> &denominator() const { return a_; }
+        inline const std::vector<CoefficientType> &denominator() const { return a_; }
 
         /// Set initial conditions on the input.
         /** To evaluate the output of the filter at the discrete time-step \f$ k \f$,
@@ -170,8 +170,8 @@ namespace digital_filters {
         ) const;
 
     private:
-        std::vector<CoeffType> b_; ///< Numerator of the transfer function.
-        std::vector<CoeffType> a_; ///< Denominator of the transfer function.
+        std::vector<CoefficientType> b_; ///< Numerator of the transfer function.
+        std::vector<CoefficientType> a_; ///< Denominator of the transfer function.
         std::deque<DataType> in_; ///< Input samples.
         std::deque<DataType> out_; ///< Output samples.
     };
