@@ -76,7 +76,7 @@ namespace pendule_pi {
         std::string msg_str;
         msg >> msg_str;
         std::istringstream iss(msg_str);
-        iss >> time_ >> position_ >> angle_ >> linvel_ >> angvel_;
+        iss >> time_ >> position_ >> angle_ >> linear_velocity_ >> angular_velocity_;
         // State read successfully.
         return true;
     }

@@ -84,7 +84,7 @@ int main(const int argc, char **argv) {
             tcp->sendState(hw_time, filtered_position, filtered_angle, filtered_linear_vel, filtered_angular_vel);
 
             // read the current command
-            auto max_wait_time = std::max(rate->residual() / 1000, 2u) - 2;
+            const int max_wait_time = static_cast<int>(std::max(rate->residual() / 1000, 2u) - 2);
             if (tcp->readCommand(max_wait_time)) {
                 pwm = tcp->command();
             } else if (tcp->missedCommands() > MAX_MISSED_MESSAGES) {

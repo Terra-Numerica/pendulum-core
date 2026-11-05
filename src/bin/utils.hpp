@@ -3,7 +3,7 @@
 #include <vector>
 
 /// Simple function that returns 0 if `abs(val) < zero` and `val` otherwise.
-int robustZero(int val, int zero) {
+inline int robustZero(const int val, const int zero) {
     if (-zero < val && val < zero)
         return 0;
     else
@@ -21,7 +21,7 @@ int robustZero(int val, int zero) {
  *   \end{cases}
  * \f]
  */
-int clip(int val, int zero) {
+inline int clip(const int val, const int zero) {
     if (val > zero)
         return val - zero;
     else if (val < -zero)
@@ -39,14 +39,14 @@ int clip(int val, int zero) {
  *   \end{cases}
  * \f]
  */
-inline double sign(double x) { return x >= 0 ? 1.0 : -1.0; }
+inline double sign(const double x) { return x >= 0 ? 1.0 : -1.0; }
 
 /// Modular shift in the unit circle
 /** Values that lie outside the range \f$\mathbb{C}=\left[-\pi,\pi\right)\f$
  * will be shifted by \f$2 k \pi\f$ (\f$ k \in \mathbb{Z} \f$) so that they lie
  * within \f$\mathbb{C}\f$.
  */
-double shiftInCircle(double x) {
+inline double shiftInCircle(const double x) {
     double v = std::fmod(x, 2 * M_PI);
     if (v >= M_PI)
         v -= 2 * M_PI;
@@ -62,7 +62,7 @@ double shiftInCircle(double x) {
  * As an example, `range(1.2, 2.1, 0.2)` would return a vector that is
  * equivalent to `{1.2, 1.4, 1.6, 1.8, 2.0}`.
  */
-std::vector<int> range(int start, int stop, int step) {
+inline std::vector<int> range(const int start, const int stop, const int step) {
     std::vector<int> vec;
     for (int i = start; i <= stop; i += step)
         vec.push_back(i);

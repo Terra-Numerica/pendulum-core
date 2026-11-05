@@ -10,63 +10,58 @@
 
 
 namespace pendule_pi {
+    /// Class that stores configuration parameters read from a YAML file.
+    class Config {
+    public:
+        /// Class to signal that a configuration file is missing a requested parameter.
+        class MissingParameter : public std::runtime_error {
+        public:
+            /// Fill-in the exception message.
+            explicit MissingParameter(const std::string &param)
+                : std::runtime_error(
+                    "The configuration file does not contain the requested parameter '" + param + "'") {
+            }
+        };
 
-/// Class that stores configuration parameters read from a YAML file.
-class Config {
-public:
-  /// Class to signal that a configuration file is missing a requested parameter.
-  class MissingParameter : public std::runtime_error {
-  public:
-    /// Fill-in the exception message.
-    MissingParameter(const std::string& param)
-    : std::runtime_error("The configuration file does not contain the requiested parameter '" + param + "'")
-    {}
-  };
+        /// Reads the configuration from the given YAML file.
+        explicit Config(const std::string &file_name);
 
-  /// Returns a template configuration.
-  static std::string getTemplate();
-  /// Writes a template configuration into the given file.
-  static bool dumpTemplate(const std::string& path);
+        /// Returns a Switch instance given the configuration for the left switch.
+        inline std::unique_ptr<Switch> getLeftSwitch() { return getSwitch("left_switch"); }
 
-  /// Reads the configuration from the given YAML file.
-  Config(const std::string& file_name);
+        /// Returns a Switch instance given the configuration for the right switch.
+        inline std::unique_ptr<Switch> getRightSwitch() { return getSwitch("right_switch"); }
 
-  /// Returns a Switch instance given the configuration for the left switch.
-  inline std::unique_ptr<Switch> getLeftSwitch() { return getSwitch("left_switch"); }
+        /// Returns an Encoder instance given the configuration for the position encoder.
+        inline std::unique_ptr<Encoder> getPositionEncoder() { return getEncoder("position_encoder"); }
 
-  /// Returns a Switch instance given the configuration for the right switch.
-  inline std::unique_ptr<Switch> getRightSwitch() { return getSwitch("right_switch"); }
+        /// Returns an Encoder instance given the configuration for the angle encoder.
+        inline std::unique_ptr<Encoder> getAngleEncoder() { return getEncoder("angle_encoder"); }
 
-  /// Returns an Encoder instance given the configuration for the position encoder.
-  inline std::unique_ptr<Encoder> getPositionEncoder() { return getEncoder("position_encoder"); }
+        /// Returns a Motor instance that is setup according to the configuration file.
+        std::unique_ptr<Motor> getMotor();
 
-  /// Returns an Encoder instance given the configuration for the angle encoder.
-  inline std::unique_ptr<Encoder> getAngleEncoder() { return getEncoder("angle_encoder"); }
+        /// Returns a Pendule instance, setup according to the configuration file.
+        std::unique_ptr<Pendule> getPendule();
 
-  /// Returns a Motor instance that is setup according to the configuration file.
-  std::unique_ptr<Motor> getMotor();
+        /// Returns a PenduleCppServer instance, setup according to the configuration file.
+        std::unique_ptr<PenduleCppServer> getPenduleServer();
 
-  /// Returns a Pendule instance, setup according to the configuration file.
-  std::unique_ptr<Pendule> getPendule();
+        int getCalibrationPWM();
 
-  /// Returns a PenduleCppServer instance, setup according to the configuration file.
-  std::unique_ptr<PenduleCppServer> getPenduleServer();
+        double getSoftSafetyThreshold();
 
-  int getCalibrationPWM();
+        std::unique_ptr<pigpio::Rate> getControlRate();
 
-  double getSoftSafetyThreshold();
+        std::unique_ptr<digital_filters::Filter<double, double> > getFilter();
 
-  std::unique_ptr<pigpio::Rate> getControlRate();
+    private:
+        /// Helper function to return a Switch instance.
+        std::unique_ptr<Switch> getSwitch(const std::string &switch_name);
 
-  std::unique_ptr<digital_filters::Filter<double,double>> getFilter();
+        /// Helper function to return a Encoder instance.
+        std::unique_ptr<Encoder> getEncoder(const std::string &encoder_name);
 
-private:
-  /// Helper function to return a Switch instance.
-  std::unique_ptr<Switch> getSwitch(const std::string& switch_name);
-  /// Helper function to return a Encoder instance.
-  std::unique_ptr<Encoder> getEncoder(const std::string& encoder_name);
-
-  YAML::Node yaml_;
-};
-
+        YAML::Node yaml_;
+    };
 } // pendule_pi

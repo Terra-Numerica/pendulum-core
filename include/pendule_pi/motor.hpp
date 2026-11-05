@@ -4,40 +4,39 @@
 #pragma once
 
 namespace pendule_pi {
+    /// Class that handles a simple DC motor.
+    class Motor {
+    public:
+        /// Constructor.
+        /** @param pwm_pin Pin used to control the force of the motor via PWM.
+          * @param direction_pin Pin used to control the direction of the motor.
+          */
+        Motor(
+            int pwm_pin,
+            int direction_pin
+        );
 
-/// Class that handles a simple DC motor.
-class Motor {
-public:
-  /// Constructor.
-  /** @param pwm_pin Pin used to control the force of the motor via PWM.
-    * @param direction_pin Pin used to control the direction of the motor.
-    */
-  Motor(
-    int pwm_pin,
-    int direction_pin
-  );
+        // Prevent the user from making copies of a Motor.
+        Motor(const Motor &) = delete;
 
-  // Prevent the user from making copies of a Motor.
-  Motor(const Motor&) = delete;
-  Motor& operator=(const Motor&) = delete;
+        Motor &operator=(const Motor &) = delete;
 
-  /// Destructor.
-  virtual ~Motor();
+        /// Destructor.
+        virtual ~Motor();
 
-  /// Sets the pwm of the motor.
-  /** @param pwm the (signed) pwm, between -255 and 255 (bith included).
-    */
-  void setPWM(
-    int pwm
-  );
+        /// Sets the pwm of the motor.
+        /** @param pwm the (signed) pwm, between -255 and 255 (both included).
+          */
+        void setPWM(
+            int pwm
+        );
 
-  /// Get the current PWM value.
-  inline const int& getPWM() const { return pwm_; }
+        /// Get the current PWM value.
+        [[nodiscard]] inline const int &getPWM() const { return pwm_; }
 
-private:
-  int pwm_pin_; ///< Pin used to control the force of the motor via PWM.
-  int dir_pin_; ///< Pin used to control the direction of the motor.
-  int pwm_; ///< Current PWM applied to pwm_pin_.
-};
-
+    private:
+        int pwm_pin_; ///< Pin used to control the force of the motor via PWM.
+        int dir_pin_; ///< Pin used to control the direction of the motor.
+        int pwm_; ///< Current PWM applied to pwm_pin_.
+    };
 }

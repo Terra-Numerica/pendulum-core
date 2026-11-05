@@ -112,8 +112,8 @@ Rate::Rate(
   unsigned int period_us
 )
 : period_(period_us)
-, tnow_(0)
-, tpast_(0)
+, time_now_(0)
+, time_past_(0)
 {
   // nothing else to do here!
 }
@@ -121,15 +121,15 @@ Rate::Rate(
 
 unsigned int Rate::sleep() {
   do {
-    tnow_ = gpioTick();
+    time_now_ = gpioTick();
   }
-  while(tnow_-tpast_ < period_);
-  return tpast_ = tnow_;
+  while(time_now_-time_past_ < period_);
+  return time_past_ = time_now_;
 }
 
 
 unsigned int Rate::residual() {
-  auto from_last_tick = gpioTick() - tpast_;
+  auto from_last_tick = gpioTick() - time_past_;
   return from_last_tick >= period_ ? 0 : period_ - from_last_tick;
 }
 

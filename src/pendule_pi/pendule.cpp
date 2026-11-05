@@ -286,8 +286,8 @@ namespace pendule_pi {
         const double new_position = steps2meters(position_encoder_->steps());
         const double new_angle = steps2radians(angle_encoder_->steps());
         // State estimation: TODO!
-        linvel_ = (new_position - position_) / dt;
-        angvel_ = (new_angle - angle_) / dt;
+        linear_velocity_ = (new_position - position_) / dt;
+        angular_velocity_ = (new_angle - angle_) / dt;
         position_ = new_position;
         angle_ = new_angle;
     }

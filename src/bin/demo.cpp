@@ -179,26 +179,29 @@ int main(const int argc, char **argv) {
     }
 
     // Load the configuration which path is passed as a command argument
-    YAML::Node yaml;
-    yaml = YAML::LoadFile(argv[1]);
+    YAML::Node configuration;
+    configuration = YAML::LoadFile(argv[1]);
 
     // Connect to the low-level interface.
+    const auto socket_config = configuration["socket"];
     pp::PenduleCppClient pendulum(
-        yaml["socket"]["host"].as<std::string>("localhost"),
-        yaml["socket"]["state_port"].as<std::string>("10001"),
-        yaml["socket"]["command_port"].as<std::string>("10002"),
+        socket_config["host"].as<std::string>("localhost"),
+        socket_config["state_port"].as<std::string>("10001"),
+        socket_config["command_port"].as<std::string>("10002"),
         5
     );
 
     // Create the joystick device to be used for controlling the demo.
-    const auto js_device = yaml["joystick"]["device"].as<std::string>("/dev/input/js0");
+    const auto joystick_config = configuration["joystick"];
+
+    const auto js_device = joystick_config["device"].as<std::string>("/dev/input/js0");
     pp::Joystick joy(js_device);
 
     // Joystick buttons.
-    const int AXIS_PWM = yaml["joystick"]["axis_pwm"].as<int>(0);
-    const int BTN_EXIT = yaml["joystick"]["btn_exit"].as<int>(0);
-    const int BTN_SWITCH = yaml["joystick"]["btn_switch"].as<int>(1);
-    const int BTN_AUTOPILOT = yaml["joystick"]["btn_autopilot"].as<int>(4);
+    const int AXIS_PWM = joystick_config["axis_pwm"].as<int>(0);
+    const int BTN_EXIT = joystick_config["btn_exit"].as<int>(0);
+    const int BTN_SWITCH = joystick_config["btn_switch"].as<int>(1);
+    const int BTN_AUTOPILOT = joystick_config["btn_autopilot"].as<int>(4);
 
     // Counters used to update the joystick at a slightly lower rate.
     unsigned int joy_update_counter = 0;
@@ -225,8 +228,9 @@ int main(const int argc, char **argv) {
     std::cout << BRIGHT_CYAN << "--- Configuration ---" << RESET << std::endl << std::endl;
 
     // control gains for the swing-up phase
-    const auto kswing = yaml["swingup"]["k"].as<double>(70.0);
-    const auto ksx = yaml["swingup"]["kx"].as<double>(0.0);
+    const auto swingup_config = configuration["swingup"];
+    const auto kswing = swingup_config["k"].as<double>(70.0);
+    const auto ksx = swingup_config["kx"].as<double>(0.0);
 
     std::cout << BRIGHT_WHITE << "Swing-up gains:" << RESET << std::endl
             << BLUE << "  kswing : " << RESET
@@ -241,10 +245,11 @@ int main(const int argc, char **argv) {
     bool must_refresh_status = true;
 
     // control gains for the LQR phase
-    const auto kp = yaml["gains"]["position"].as<double>(-127.45880662905581);
-    const auto kpd = yaml["gains"]["linvel"].as<double>(-822.638944546691);
-    const auto kt = yaml["gains"]["angle"].as<double>(2234.654627319883);
-    const auto ktd = yaml["gains"]["angvel"].as<double>(437.1177135919267);
+    const auto gains_config = configuration["gains"];
+    const auto kp = gains_config["position"].as<double>(-127.45880662905581);
+    const auto kpd = gains_config["linvel"].as<double>(-822.638944546691);
+    const auto kt = gains_config["angle"].as<double>(2234.654627319883);
+    const auto ktd = gains_config["angvel"].as<double>(437.1177135919267);
 
     std::cout << BRIGHT_WHITE << "LQR gains:" << RESET << std::endl
             << BLUE << "  kp     : " << RESET << std::fixed << std::setw(12) << std::setprecision(6) << kp << std::endl
@@ -312,8 +317,8 @@ int main(const int argc, char **argv) {
             // Errors (into [-pi,+pi] for the angle)
             target_pos = clip(joy.axis(AXIS_PWM), 2500) * 0.2 / 32768.;
             double e_pos = pendulum.position() - target_pos;
-            double e_linear_velocity = pendulum.linvel();
-            double e_angular_velocity = pendulum.angvel();
+            double e_linear_velocity = pendulum.linear_velocity();
+            double e_angular_velocity = pendulum.angular_velocity();
 
             if (in_lqr_range) {
                 // in LQR range: do it!
@@ -332,7 +337,7 @@ int main(const int argc, char **argv) {
                     // TODO : make the formula less opaque by moving these magic numbers to explicitly named constants
                     auto ks = kswing * (0.1 + 0.9 * 0.5 * (1 - std::cos(e_theta)));
                     pwm = static_cast<int>(
-                        +ks * (1 - std::cos(e_theta)) * sign(pendulum.angvel() * std::cos(e_theta)) -
+                        +ks * (1 - std::cos(e_theta)) * sign(pendulum.angular_velocity() * std::cos(e_theta)) -
                         ksx * pendulum.position()
                     );
                 }
