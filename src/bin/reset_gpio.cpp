@@ -1,15 +1,16 @@
 #include <pigpio.h>
 #include <iostream>
 
-#define RUN_THEN_PRINT(func, ...) { auto retval = func(__VA_ARGS__); std::cout << #func << "(" << #__VA_ARGS__ << ")" << " returned " << retval << std::endl; }
-
 int main() {
-    std::cout << "GPIO init: " << gpioInitialise() << std::endl;
+    const auto rc = gpioInitialise();
+    if (rc < 0) {
+        std::cerr << "gpioInitialise failed with rc=" << rc << std::endl;
+        return 1;
+    }
 
     for (int i = 0; i <= 26; i++) {
-        std::cout << "GPIO " << i << std::endl;
-        RUN_THEN_PRINT(gpioSetMode, i, PI_PUD_OFF);
-        RUN_THEN_PRINT(gpioSetMode, i, PI_INPUT);
+        gpioSetMode(i, PI_INPUT);
+        gpioSetPullUpDown(i, PI_PUD_OFF);
     }
 
     gpioTerminate();
