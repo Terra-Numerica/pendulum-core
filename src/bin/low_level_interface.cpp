@@ -29,11 +29,23 @@ int main(const int argc, char **argv) {
         pigpio::ActivationToken token;
 
         signal(SIGINT, pigpio::ActivationToken::pleaseStop);
+        signal(SIGTERM, pigpio::ActivationToken::pleaseStop);
 
         // Create the pendulum instance and perform the calibration.
         const auto pendule = config.getPendule();
-        std::cout << std::endl << BRIGHT_WHITE << "--- Pendulum calibration ---" << RESET << std::endl;
+
+        std::cout << std::endl << BRIGHT_WHITE
+                << " ----------------------------------------------- " << std::endl
+                << "|                                               |" << std::endl
+                << "|   Pendulum low level controller starting...   |" << std::endl
+                << "|                                               |" << std::endl
+                << " ----------------------------------------------- " << std::endl
+                << RESET;
+
         pendule->calibrate(config.getCalibrationPWM(), true);
+
+        // if here, the calibration process went fine, anomalies being reported by raising exceptions.
+
         std::cout
                 << BRIGHT_GREEN << "--- Pendulum ready ---" << RESET << std::endl << std::endl
                 << "Demo can be started now." << std::endl << std::endl;
