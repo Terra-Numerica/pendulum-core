@@ -31,7 +31,7 @@
 #define PiGPIO_RUN(retval, func, ...) { retval = func(__VA_ARGS__); if(retval < 0) throw pigpio::Exception(#func, retval); }
 
 /// Wrapper macro that throws a PiGPIOError if the given pigpio function fails.
-/** Similar to PiGPIO_RUN(retval, func, ...), but it act as if the pigpio
+/** Similar to PiGPIO_RUN(retval, func, ...), but it acts as if the pigpio
   * function to be called was void. With this macro, you can write codes like:
   * ```
   * PiGPIO_RUN_VOID(gpioSetMode, 10, PI_OUTPUT); // amost equal to gpioSetMode(10, PI_INPUT);
@@ -92,7 +92,7 @@ namespace pigpio {
       *     pigpio::ActivationToken token;
       *     // execute your pigpio-based instructions here!
       *   }
-      *   catch(const pigpio::ActivationToken::Terminate&) {  }
+      *   catch(const pigpio::ActivationToken::PleaseStop&) {  }
       *   catch(...) { throw; }
       *   return 0;
       * }
@@ -116,12 +116,14 @@ namespace pigpio {
         class PleaseStop : public std::runtime_error {
         public:
             /// Fill-in the exception message.
-            PleaseStop() : std::runtime_error("SIGINT received, throwing this exception to stop excution") {
+            PleaseStop() : std::runtime_error(
+                "SIGINT received, throwing this exception to stop execution"
+            ) {
             }
         };
 
         /// Auxiliary exception class to be thrown when multiple tokens are generated.
-        class MultpleTokensCreated : public std::runtime_error {
+        class MultipleTokensCreated : public std::runtime_error {
         public:
             /// Fill-in the exception message.
             /** @param during_ctor If true, it means that this exception is being
@@ -129,12 +131,14 @@ namespace pigpio {
               *   being thrown from the destructor instead. It is merely used to
               *   properly fill the exception message.
               */
-            MultpleTokensCreated(
-                bool during_ctor
+            explicit MultipleTokensCreated(
+                const bool during_ctor
             )
-                : std::runtime_error(during_ctor
-                                         ? "Attempting to create multiple ActivationToken instances. This is forbidden, sorry."
-                                         : "While destroying an ActivationToken, another registered token was found. This is a bug, please contact the maintainer."
+                : std::runtime_error(
+                    during_ctor
+                        ? "Attempting to create multiple ActivationToken instances. This is forbidden, sorry."
+                        : "While destroying an ActivationToken, another registered token was found. "
+                        "This is a bug, please contact the maintainer."
                 ) {
             }
         };
@@ -186,7 +190,7 @@ namespace pigpio {
       * (100 milliseconds in the example). The interesting fact is that the sleep
       * time is "adaptive": if the instructions following the Rate::sleep() call
       * require, *e.g.*, 50ms to execute, the thread would be paused for 50ms
-      * when calling sleep(). If the instructions requires 80ms, the thread would
+      * when calling sleep(). If the instructions require 80ms, the thread would
       * sleep instead for just 20ms. In other words, the first instruction after
       * the sleep() call should be executed at a fixed rate. In the example above,
       * you should be able to see an output such as:
@@ -222,7 +226,7 @@ namespace pigpio {
           *   to `sleep()`. It is just an estimation, the actual time might be
           *   slightly different.
           */
-        unsigned int residual();
+        unsigned int residual() const;
 
         /// Get the last "wake up" time.
         /** @return The last value returned by a call to sleep().
@@ -274,6 +278,6 @@ namespace pigpio {
     private:
         const unsigned int period_; ///< Target period of this Rate.
         const bool auto_reset_; ///< If true, this timer automatically resets upon expiration.
-        unsigned int tpast_; ///< Clock time corresponding to the last time reset() was called.
+        unsigned int time_past_; ///< Clock time corresponding to the last time reset() was called.
     };
 } // end of namespace pigpio
