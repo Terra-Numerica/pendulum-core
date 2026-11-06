@@ -2,6 +2,7 @@
 #include <chrono>
 #include <cmath>
 #include <thread>
+#include <iomanip>
 
 #include "pendule_pi/pendule.hpp"
 
@@ -68,13 +69,17 @@ namespace pendule_pi {
         left_switch_->disableInterrupts();
         right_switch_->disableInterrupts();
 
-        // Calibrate the angle encoder. It simply means that we want to ensure that
-        // it is static and that its initial position is zero!
-        // Note: don't be to sensitive since the encoder is configured as 4096 steps
+        // Calibrate the angle encoder. It simply consists in checking that it is still.
+        // Note: don't be too sensitive since the encoder is configured as 4096 steps
         // per turn
         const int angle_steps = angle_encoder_->steps();
         constexpr int encoder_tolerance = 4;
         bool moving = false;
+
+        // Reset the encoder to start from a known state.
+        // There's no risk doing it just now because if it's not presently still, the motion detection will abort
+        // the process, and we can't thus go ahead with an invalid initial state.
+        angle_encoder_->reset();
 
         // clang-format on
         angle_encoder_->setSafetyCallbacks(
@@ -99,29 +104,15 @@ namespace pendule_pi {
             throw CalibrationFailed("the pendulum is moving");
         }
 
-
-        // [EP] is this test really useful ? It tends to throw false positives on a
-        // lot of occasions.
-
-        // Check the angle encoder position. It should be zero, otherwise we could have a problem.
-        if (angle_encoder_->steps() != 0) {
-            std::cout << YELLOW
-                    << "WARNING: the angle encoder is at a non-zero position (" << angle_encoder_->steps()
-                    << "). Resetting it to zero." << RESET << std::endl;
-            // don't throw the fata error anymore but inform and reset the encoder instead
-            // throw CalibrationFailed("the angle encoder is at a non-zero position");
-            angle_encoder_->reset();
-        }
-
         if (verbose) {
-            std::cout << BRIGHT_GREEN << "-> angle encoder calibrated." << RESET << std::endl << std::endl;
+            std::cout << BRIGHT_GREEN << "-> angle encoder initialized." << RESET << std::endl << std::endl;
 
             std::cout << BRIGHT_MAGENTA << "- calibrating position encoder now..." << RESET << std::endl;
         }
 
         // if we are already at the rightmost end of the track, back off a bit before
         // starting the calibration process (we don't care if we are at the leftmost
-        // end, since we're going to move rightwards first anymway)
+        // end, since we're going to move rightwards first anyway)
         if (!right_switch_->atRest()) {
             std::cout << YELLOW << "-> carriage already at the right end of the track => backing off..." <<
                     RESET << std::endl;
@@ -149,7 +140,7 @@ namespace pendule_pi {
 
         // Go towards the right switch
         if (verbose) {
-            std::cout << "... moving to the right end of the track..." << std::endl;
+            std::cout << "... seeking for the right end limit switch..." << std::endl;
         }
         right_switch_->enableInterrupts(switch_cb);
         left_switch_->enableInterrupts(wrong_switch_cb);
@@ -176,7 +167,7 @@ namespace pendule_pi {
 
         // Go towards the left switch
         if (verbose) {
-            std::cout << "... moving to the left end of the track..." << std::endl;
+            std::cout << "... seeking for the left end limit switch..." << std::endl;
         }
 
         right_switch_->enableInterrupts(wrong_switch_cb);
@@ -234,7 +225,7 @@ namespace pendule_pi {
 
         // Go to the central position
         if (verbose) {
-            std::cout << "... moving to the central position..." << std::endl;
+            std::cout << "... homing to center..." << std::endl;
         }
         right_switch_->disableInterrupts();
         left_switch_->disableInterrupts();
@@ -251,9 +242,10 @@ namespace pendule_pi {
         // Ok, we are in the central position!
         left_switch_->enableInterrupts([&]() { eStop("left switch hit"); });
         right_switch_->enableInterrupts([&]() { eStop("right switch hit"); });
-        int safety_margin_steps = static_cast<int>(std::ceil(std::fabs(safety_margin_meters_ / meters_per_step_)));
-        int soft_min = min_position_steps_ + safety_margin_steps;
-        int soft_max = max_position_steps_ - safety_margin_steps;
+        const int safety_margin_steps = static_cast<int>(
+            std::ceil(std::fabs(safety_margin_meters_ / meters_per_step_)));
+        const int soft_min = min_position_steps_ + safety_margin_steps;
+        const int soft_max = max_position_steps_ - safety_margin_steps;
         position_encoder_->setSafetyCallbacks(
             soft_min,
             soft_max,
@@ -264,20 +256,24 @@ namespace pendule_pi {
         calibrated_ = true;
 
         if (verbose) {
+#define STEPS(v) std::setw(6) << std::right << (v)
+#define DIST(v) " (" << std::setw(5) << std::fixed << std::setprecision(2) << std::right << steps2meters(v) << " m)"
+#define DIST_NO_CONV(v) " (" << std::setw(5) << std::fixed << std::setprecision(2) << std::right << v << " m)"
+
             // clang-format off
             std::cout << BRIGHT_WHITE << "Calibration complete." << RESET << std::endl
-                    << "- min steps          : " << min_position_steps_ << " (in meters: " << steps2meters(min_position_steps_) << ")" << std::endl
-                    << "- max steps          : " << max_position_steps_ << " (in meters: " << steps2meters(max_position_steps_) << ")" << std::endl
-                    << "- middle steps       : " << mid_position_steps_ << " (in meters: " << steps2meters(mid_position_steps_) << ")" << std::endl
-                    << "- safety_margin_steps: " << safety_margin_steps << " (in meters: " << safety_margin_meters_ << ")" << std::endl
-                    << "- soft_min           : " << soft_min << " (in meters: " << steps2meters(soft_min) << ")" << std::endl
-                    << "- soft_max           : " << soft_max << " (in meters: " << steps2meters(soft_max) << ")" << std::endl
+                    << "- min steps          : " << STEPS(min_position_steps_) << DIST(min_position_steps_) << std::endl
+                    << "- max steps          : " << STEPS(max_position_steps_) << DIST(max_position_steps_) << std::endl
+                    << "- center pos steps   : " << STEPS(mid_position_steps_) << DIST(mid_position_steps_) << std::endl
+                    << "- safety_margin_steps: " << STEPS(safety_margin_steps) << DIST_NO_CONV(safety_margin_meters_) << std::endl
+                    << "- soft_min           : " << STEPS(soft_min) << DIST(soft_min) << std::endl
+                    << "- soft_max           : " << STEPS(soft_max) << DIST(soft_max) << std::endl
                     << std::endl;
             // clang-format on
         }
     }
 
-    void Pendule::update(double dt) {
+    void Pendule::update(const double dt) {
         if (emergency_stopped_)
             throw std::runtime_error("Pendule::update(): eStop() has been called");
         if (!calibrated_)
