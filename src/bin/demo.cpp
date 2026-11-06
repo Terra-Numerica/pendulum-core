@@ -9,10 +9,6 @@
 #include <pendule_pi/pendule_cpp_client.hpp>
 // clang-format on
 
-static bool ok{true};
-
-static void sigintHandler(int signum) { ok = false; }
-
 enum class ControlMode { Manual, LQR, Swingup };
 
 static std::string to_string(const ControlMode &mode) {
@@ -116,7 +112,8 @@ static void display_status_line(
     const ControlMode control_mode,
     const bool autopilot_engaged,
     const bool in_lqr_range,
-    const double e_theta
+    const double e_theta,
+    const double e_position
 ) {
     std::cout << "\r[ Mode: " << CYAN << std::setw(7) << std::left << to_string(control_mode) << RESET
             << " ] [ LQR range: ";
@@ -135,9 +132,17 @@ static void display_status_line(
     }
     std::cout << color
             << std::setw(3) << std::left << msg << RESET
-            << " | err=" << CYAN
-            << std::setw(6) << std::right << std::setprecision(1) << e_theta_deg
-            << RESET;
+            << " ] [ Errors: angle=" << CYAN
+            << std::setw(6) << std::right << std::setprecision(1) << e_theta_deg << RESET
+            << " | pos=" << CYAN;
+
+    if (control_mode == ControlMode::Manual) {
+        std::cout << " --- ";
+    } else {
+        std::cout << std::setw(5) << std::right << std::setprecision(2) << e_position;
+    }
+
+    std::cout << RESET;
 
     std::cout << " ] [ AP: " << std::setw(3) << std::left;
 
@@ -155,6 +160,11 @@ static void display_status_line(
     }
     std::cout << color << std::setw(3) << msg << RESET << " ] " << std::flush;
 }
+
+// main forever loop termination flag
+static bool keep_running{true};
+
+static void requestTermination(int signum) { keep_running = false; }
 
 int main(const int argc, char **argv) {
     namespace pp = pendule_pi;
@@ -276,8 +286,9 @@ int main(const int argc, char **argv) {
     }
     std::cout << "to exit)" << std::endl << std::endl;
 
-    // Custom signal handler.
-    std::signal(SIGINT, sigintHandler);
+    // Connect signals for graceful termination.
+    std::signal(SIGINT, requestTermination);
+    std::signal(SIGTERM, requestTermination);
 
     // Periodic status refresh when no event triggers it
     const auto status_update_period = std::chrono::milliseconds(500);
@@ -286,7 +297,7 @@ int main(const int argc, char **argv) {
     double last_e_theta = 2 * M_PI; // out of range value to force the first update
 
     // Main loop!
-    while (ok) {
+    while (keep_running) {
         unsigned int JOY_UPDATE_MAX = 5;
         constexpr double target_angle = M_PI;
         constexpr double ANGLE_ERROR_THRESHOLD = 0.25;
@@ -296,8 +307,9 @@ int main(const int argc, char **argv) {
         // Retrieve the current state of the pendulum.
         pendulum.readState(pendule_pi::PenduleCppClient::BLOCKING);
 
-        // compute angle error whatever is the current mode so that the status line can be used for visual control
+        // compute errors whatever is the current mode so that the status line can be used for visual control
         double e_theta = shiftInCircle(pendulum.angle() - target_angle);
+        double e_pos = 0;
 
         in_lqr_range = std::fabs(e_theta) <= ANGLE_ERROR_THRESHOLD;
 
@@ -316,7 +328,7 @@ int main(const int argc, char **argv) {
         } else if (control_mode == ControlMode::LQR || control_mode == ControlMode::Swingup) {
             // Errors (into [-pi,+pi] for the angle)
             target_pos = clip(joy.axis(AXIS_PWM), 2500) * 0.2 / 32768.;
-            double e_pos = pendulum.position() - target_pos;
+            e_pos = pendulum.position() - target_pos;
             double e_linear_velocity = pendulum.linear_velocity();
             double e_angular_velocity = pendulum.angular_velocity();
 
@@ -367,7 +379,9 @@ int main(const int argc, char **argv) {
 
             // should we exit?
             if (BTN_EXIT != -1 && joy.button(BTN_EXIT)) {
-                std::cout << std::endl << "Quitting!";
+                std::cout
+                        << std::endl << std::endl
+                        << YELLOW << "Gamepad Exit button pressed. Quitting now !" << RESET;
                 break;
             }
 
@@ -389,13 +403,13 @@ int main(const int argc, char **argv) {
         }
 
         if (must_refresh_status) {
-            display_status_line(control_mode, autopilot_engaged, in_lqr_range, e_theta);
+            display_status_line(control_mode, autopilot_engaged, in_lqr_range, e_theta, e_pos);
             must_refresh_status = false;
         }
     } // end of the main loop
 
     pendulum.sendCommand(0);
-    std::cout << std::endl;
+    std::cout << RESET << std::endl;
 
     return EXIT_SUCCESS;
 }
