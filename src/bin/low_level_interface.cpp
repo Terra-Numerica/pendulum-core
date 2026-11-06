@@ -28,6 +28,8 @@ int main(const int argc, char **argv) {
         // Let the token manage the pigpio library!
         pigpio::ActivationToken token;
 
+        signal(SIGINT, pigpio::ActivationToken::pleaseStop);
+
         // Create the pendulum instance and perform the calibration.
         const auto pendule = config.getPendule();
         std::cout << std::endl << BRIGHT_WHITE << "--- Pendulum calibration ---" << RESET << std::endl;
