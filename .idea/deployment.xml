@@ -9,7 +9,14 @@
           </mappings>
           <excludedPaths>
             <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-release-pendulum-2" />
+            <excludedPath local="true" path="$PROJECT_DIR$/src/bin/identification" />
+            <excludedPath local="true" path="$PROJECT_DIR$/doc" />
+            <excludedPath local="true" path="$PROJECT_DIR$/deps" />
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug-pendulum-2" />
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug" />
             <excludedPath local="true" path="$PROJECT_DIR$/build" />
+            <excludedPath local="true" path="$PROJECT_DIR$/src/.clang-format" />
+            <excludedPath local="true" path="$PROJECT_DIR$/examples" />
           </excludedPaths>
         </serverdata>
       </paths>
