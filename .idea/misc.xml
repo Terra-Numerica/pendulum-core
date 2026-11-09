@@ -4,4 +4,16 @@
     <option name="pythonIntegrationState" value="YES" />
   </component>
   <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$" />
+  <component name="CidrRootsConfiguration">
+    <excludeRoots>
+      <file path="$PROJECT_DIR$/cmake-build-debug" />
+      <file path="$PROJECT_DIR$/cmake-build-debug-pendulum-2" />
+      <file path="$PROJECT_DIR$/cmake-build-release-pendulum-2" />
+      <file path="$PROJECT_DIR$/deps" />
+      <file path="$PROJECT_DIR$/doc" />
+      <file path="$PROJECT_DIR$/examples" />
+      <file path="$PROJECT_DIR$/src/.clang-format" />
+      <file path="$PROJECT_DIR$/src/bin/identification" />
+    </excludeRoots>
+  </component>
 </project>
