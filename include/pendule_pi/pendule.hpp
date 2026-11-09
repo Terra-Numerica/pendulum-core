@@ -114,7 +114,7 @@ namespace pendule_pi {
         void calibrate(int calibration_pwm, bool verbose = false);
 
         /// Tells if the pendulum has been calibrated successfully.
-        [[nodiscard]] const inline bool &isCalibrated() const { return calibrated_; }
+        [[nodiscard]] const bool &isCalibrated() const { return calibrated_; }
 
         /// Perform state estimation.
         /** @param dt time (in seconds) that elapsed since the last call to update().
@@ -131,13 +131,13 @@ namespace pendule_pi {
         bool setCommand(int pwm) const; // NOLINT(*-use-nodiscard)
 
         /// Get the current filtered position (in meters) of the base.
-        [[nodiscard]] inline const double &position() const { return position_; }
+        [[nodiscard]] const double &position() const { return position_; }
         /// Get the current filtered angle (in radians) of the pendulum.
-        [[nodiscard]] inline const double &angle() const { return angle_; }
+        [[nodiscard]] const double &angle() const { return angle_; }
         /// Get the current filtered velocity (in meters per second) of the base.
-        [[nodiscard]] inline const double &linearVelocity() const { return linear_velocity_; }
+        [[nodiscard]] const double &linearVelocity() const { return linear_velocity_; }
         /// Get the current filtered velocity (in radians per second) of the pendulum.
-        [[nodiscard]] inline const double &angularVelocity() const { return angular_velocity_; }
+        [[nodiscard]] const double &angularVelocity() const { return angular_velocity_; }
 
         /// Allow to access min_position_steps_.
         /** If the pendulum has not been calibrated, this method will throw an
@@ -215,12 +215,12 @@ namespace pendule_pi {
         std::unique_ptr<Encoder> angle_encoder_; ///< Encoder to read the current angle of the pendulum.
 
         /// Auxiliary method that converts steps into meters.
-        [[nodiscard]] inline double steps2meters(const int &steps) const {
+        [[nodiscard]] double steps2meters(const int &steps) const {
             return meters_per_step_ * (steps - mid_position_steps_);
         }
 
         /// Auxiliary method that converts steps into radians.
-        [[nodiscard]] inline double steps2radians(const int &steps) const {
+        [[nodiscard]] double steps2radians(const int &steps) const {
             return radians_per_step_ * steps - rest_angle_;
         }
     };

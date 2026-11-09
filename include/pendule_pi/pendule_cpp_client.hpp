@@ -45,15 +45,15 @@ namespace pendule_pi {
         ~PenduleCppClient();
 
         /// Allows to access the current time of the pendulum.
-        [[nodiscard]] inline const double &time() const { return time_; }
+        [[nodiscard]] const double &time() const { return time_; }
         /// Allows to access the current position of the pendulum.
-        [[nodiscard]] inline const double &position() const { return position_; }
+        [[nodiscard]] const double &position() const { return position_; }
         /// Allows to access the current angle of the pendulum.
-        [[nodiscard]] inline const double &angle() const { return angle_; }
+        [[nodiscard]] const double &angle() const { return angle_; }
         /// Allows to access the current linear velocity of the pendulum.
-        [[nodiscard]] inline const double &linear_velocity() const { return linear_velocity_; }
+        [[nodiscard]] const double &linear_velocity() const { return linear_velocity_; }
         /// Allows to access the current angular velocity of the pendulum.
-        [[nodiscard]] inline const double &angular_velocity() const { return angular_velocity_; }
+        [[nodiscard]] const double &angular_velocity() const { return angular_velocity_; }
 
         /// Tries to read the state of the pendulum from the interface.
         /** @param blocking if `true`, do not exit until a message has been received

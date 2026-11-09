@@ -31,10 +31,10 @@ namespace pendule_pi {
         ~PenduleCppServer();
 
         /// Allows to access the last received command.
-        [[nodiscard]] inline const int &command() const { return pwm_; }
+        [[nodiscard]] const int &command() const { return pwm_; }
 
         /// Tells how many times we failed to read commands.
-        [[nodiscard]] inline const unsigned int &missedCommands() const { return missed_messages_; }
+        [[nodiscard]] const unsigned int &missedCommands() const { return missed_messages_; }
 
         /// Send the current state of the pendulum to clients.
         /**

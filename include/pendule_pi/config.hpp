@@ -27,16 +27,16 @@ namespace pendule_pi {
         explicit Config(const std::string &file_name);
 
         /// Returns a Switch instance given the configuration for the left switch.
-        inline std::unique_ptr<Switch> getLeftSwitch() { return getSwitch("left_switch"); }
+        std::unique_ptr<Switch> getLeftSwitch() { return getSwitch("left_switch"); }
 
         /// Returns a Switch instance given the configuration for the right switch.
-        inline std::unique_ptr<Switch> getRightSwitch() { return getSwitch("right_switch"); }
+        std::unique_ptr<Switch> getRightSwitch() { return getSwitch("right_switch"); }
 
         /// Returns an Encoder instance given the configuration for the position encoder.
-        inline std::unique_ptr<Encoder> getPositionEncoder() { return getEncoder("position_encoder"); }
+        std::unique_ptr<Encoder> getPositionEncoder() { return getEncoder("position_encoder"); }
 
         /// Returns an Encoder instance given the configuration for the angle encoder.
-        inline std::unique_ptr<Encoder> getAngleEncoder() { return getEncoder("angle_encoder"); }
+        std::unique_ptr<Encoder> getAngleEncoder() { return getEncoder("angle_encoder"); }
 
         /// Returns a Motor instance that is setup according to the configuration file.
         std::unique_ptr<Motor> getMotor();

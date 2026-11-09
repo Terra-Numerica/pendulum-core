@@ -10,12 +10,12 @@ namespace pendule_pi {
 
 
     int Encoder::encode(
-        bool past_a,
-        bool past_b,
-        bool a,
-        bool b
+        const bool past_a,
+        const bool past_b,
+        const bool a,
+        const bool b
     ) {
-        return (past_a << 3) | (past_b << 2) | (a << 1) | (b);
+        return (past_a << 3) | (past_b << 2) | (a << 1) | b;
     }
 
 
@@ -44,8 +44,8 @@ namespace pendule_pi {
         PiGPIO_RUN_VOID(gpioSetPullUpDown, pin_b_, PI_PUD_UP);
 
         // Setup interrupts so that we handle the rotation without polling.
-        PiGPIO_RUN_VOID(gpioSetAlertFuncEx, pin_a_, Encoder::pulseStatic, this);
-        PiGPIO_RUN_VOID(gpioSetAlertFuncEx, pin_b_, Encoder::pulseStatic, this);
+        PiGPIO_RUN_VOID(gpioSetAlertFuncEx, pin_a_, pulseStatic, this);
+        PiGPIO_RUN_VOID(gpioSetAlertFuncEx, pin_b_, pulseStatic, this);
 
         // initialize properly the pin reading
         int level; // NOTE: use an int otherwise the comparison 'if(retval<0)' inside PiGPIO_RUN does not make sense!

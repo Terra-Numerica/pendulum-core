@@ -32,12 +32,12 @@ namespace pendule_pi {
          * per revolution will correspond to **four times** those reported on the
          * datasheet.
          */
-        [[nodiscard]] inline const int &steps() const { return steps_; }
+        [[nodiscard]] const int &steps() const { return steps_; }
         /// Reset the step counter to zero.
-        inline void reset() { steps_ = 0; }
+        void reset() { steps_ = 0; }
 
         /// Access the current motor direction.
-        [[nodiscard]] inline const int &direction() const { return direction_; }
+        [[nodiscard]] const int &direction() const { return direction_; }
 
         /// Add callbacks to be executed when reaching safety thresholds.
         /** @param lower_threshold lower safety threshold below which lower_cb should
@@ -72,9 +72,9 @@ namespace pendule_pi {
          *   (or equal) to lower_threshold or  greater (or equal) to upper_threshold.
          *   It can be nullptr, in which case no callback is executed.
          */
-        inline void setSafetyCallbacks(const int lower_threshold,
-                                       const int upper_threshold,
-                                       const std::function<void()> &cb) {
+        void setSafetyCallbacks(const int lower_threshold,
+                                const int upper_threshold,
+                                const std::function<void()> &cb) {
             setSafetyCallbacks(lower_threshold, upper_threshold, cb, cb);
         }
 

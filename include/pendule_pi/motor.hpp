@@ -32,7 +32,7 @@ namespace pendule_pi {
         );
 
         /// Get the current PWM value.
-        [[nodiscard]] inline const int &getPWM() const { return pwm_; }
+        [[nodiscard]] const int &getPWM() const { return pwm_; }
 
     private:
         int pwm_pin_; ///< Pin used to control the force of the motor via PWM.

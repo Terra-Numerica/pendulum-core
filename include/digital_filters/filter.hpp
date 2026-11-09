@@ -52,8 +52,8 @@ namespace digital_filters {
           * @param other filter that should be concatenated to `this`.
           * @return a new filter which is the concatenation of `this` and `other`.
           */
-        Filter<DataType, CoefficientType> operator*(
-            const Filter<DataType, CoefficientType> &other
+        Filter operator*(
+            const Filter &other
         ) const;
 
         /// Change filter template types.
@@ -68,10 +68,10 @@ namespace digital_filters {
         Filter<OtherDataType, OtherCoeffType> as() const;
 
         /// Access the numerator.
-        inline const std::vector<CoefficientType> &numerator() const { return b_; }
+        [[nodiscard]] const std::vector<CoefficientType> &numerator() const { return b_; }
 
         /// Access the denominator.
-        inline const std::vector<CoefficientType> &denominator() const { return a_; }
+        [[nodiscard]] const std::vector<CoefficientType> &denominator() const { return a_; }
 
         /// Set initial conditions on the input.
         /** To evaluate the output of the filter at the discrete time-step \f$ k \f$,
@@ -147,7 +147,7 @@ namespace digital_filters {
           *   \f$ \cdots, y_{-3}, y_{-2}, y_{-1} \f$
           * @return sequence of filtered outputs \f$ y_0, y_1, y_2, \cdots \f$
           */
-        std::vector<DataType> filter(
+        [[nodiscard]] std::vector<DataType> filter(
             const std::vector<DataType> &x0,
             const std::vector<DataType> &y0,
             const std::vector<DataType> &x
@@ -163,7 +163,7 @@ namespace digital_filters {
           * @note for the moment, the initial conditions are obtained by holding
           *   the signal on the left and on the right.
           */
-        std::vector<DataType> filter2(
+        [[nodiscard]] std::vector<DataType> filter2(
             const std::vector<DataType> &x
         ) const;
 

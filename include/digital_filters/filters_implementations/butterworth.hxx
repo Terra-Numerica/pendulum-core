@@ -38,7 +38,7 @@ namespace digital_filters {
             numerator = polyProd(numerator, ni);
 
         // evaluate complex conjugate poles
-        for (unsigned int i = 0; i < (order / 2); i++) {
+        for (unsigned int i = 0; i < order / 2; i++) {
             CoeffType ci = 2 * gc * std::cos((order + 1 + 2 * i) * M_PI / (2 * order));
             di[1] = 2 * (gc2 - 1) / (1 + gc2 - ci);
             di[2] = (1 + gc2 + ci) / (1 + gc2 - ci);

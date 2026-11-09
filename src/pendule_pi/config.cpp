@@ -3,8 +3,8 @@
 #include <fstream>
 
 #define THROW_IF_MISSING_1(x) { if(!yaml_[x]) throw MissingParameter(x); }
-#define THROW_IF_MISSING_2(x,y) { if(!yaml_[x][y]) throw MissingParameter(x + std::string("/") + y); }
-#define THROW_IF_MISSING_3(x,y,z) { if(!yaml_[x][y][z]) throw MissingParameter(x + std::string("/") + y + std::string("/") + z); }
+#define THROW_IF_MISSING_2(x,y) { if(!yaml_[x][y]) throw MissingParameter((x) + std::string("/") + (y)); }
+#define THROW_IF_MISSING_3(x,y,z) { if(!yaml_[x][y][z]) throw MissingParameter((x) + std::string("/") + (y) + std::string("/") + (z)); }
 
 #define GET_MACRO(_1,_2,_3,NAME,...) NAME
 #define THROW_IF_MISSING(...) GET_MACRO(__VA_ARGS__, THROW_IF_MISSING_3, THROW_IF_MISSING_2, THROW_IF_MISSING_1)(__VA_ARGS__)

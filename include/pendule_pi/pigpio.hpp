@@ -226,17 +226,17 @@ namespace pigpio {
           *   to `sleep()`. It is just an estimation, the actual time might be
           *   slightly different.
           */
-        unsigned int residual() const;
+        [[nodiscard]] unsigned int residual() const;
 
         /// Get the last "wake up" time.
         /** @return The last value returned by a call to sleep().
           */
-        [[nodiscard]] inline const unsigned int &lastTick() const { return time_past_; }
+        [[nodiscard]] const unsigned int &lastTick() const { return time_past_; }
 
         /// Get the period of this Rate object.
         /** @return Period in microseconds as passed to the constructor.
           */
-        [[nodiscard]] inline const unsigned int &period() const { return period_; }
+        [[nodiscard]] const unsigned int &period() const { return period_; }
 
     private:
         const unsigned int period_; ///< Target period of this Rate.
@@ -247,7 +247,7 @@ namespace pigpio {
 
     /// Simple timer that can be used to execute instructions at a given rate.
     /** This class is similar to Rate, the main difference being that it does not
-      * blocks the main thread by sleeping. It is meant for executing instructions
+      * block the main thread by sleeping. It is meant for executing instructions
       * at a rate that is lower than that of the control loop.
       */
     class Timer {

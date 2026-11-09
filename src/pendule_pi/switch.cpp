@@ -44,7 +44,7 @@ namespace pendule_pi {
         const std::function<void()> &user_callback
     ) {
         // set the callback to change the state of the Switch.
-        gpioSetAlertFuncEx(pin_, Switch::onChangeStatic, this);
+        gpioSetAlertFuncEx(pin_, onChangeStatic, this);
         callback_ = user_callback;
         with_interrupts_ = true;
     }
@@ -72,7 +72,7 @@ namespace pendule_pi {
 
 
     void Switch::onChange(
-        const int gpio,
+        [[maybe_unused]] const int gpio,
         const int level,
         const unsigned int tick
     ) {
@@ -85,7 +85,7 @@ namespace pendule_pi {
         // Ok, let's serve the interrupt :)
         last_tick_ = tick;
 
-        at_rest_now_ = (level == at_rest_);
+        at_rest_now_ = level == at_rest_;
 
         if (!at_rest_now_) {
             has_triggered_ = true;

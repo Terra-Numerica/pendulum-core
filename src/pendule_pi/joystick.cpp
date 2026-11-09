@@ -66,14 +66,16 @@ namespace pendule_pi {
                 // is returned when performing non-blocking reads
                 if (errno == EWOULDBLOCK) {
                     break;
-                } else {
-                    throw std::runtime_error(
-                        "Failed to read joystick state (read returned " + std::to_string(retval)
-                        + "). Error: " + std::string(std::strerror(errno)) + " (" +
-                        std::to_string(errno) + ")"
-                    );
                 }
-            } else if (retval == 0) {
+
+                throw std::runtime_error(
+                    "Failed to read joystick state (read returned " + std::to_string(retval)
+                    + "). Error: " + std::string(std::strerror(errno)) + " (" +
+                    std::to_string(errno) + ")"
+                );
+            }
+
+            if (retval == 0) {
                 // Nothing read, we can exit.
                 break;
             }

@@ -31,9 +31,9 @@ namespace digital_filters {
 
     template<class DataType, class CoeffType>
     Filter<DataType, CoeffType> Filter<DataType, CoeffType>::operator*(
-        const Filter<DataType, CoeffType> &other
+        const Filter &other
     ) const {
-        return Filter<DataType, CoeffType>(polyProd(b_, other.b_), polyProd(a_, other.a_));
+        return Filter(polyProd(b_, other.b_), polyProd(a_, other.a_));
     }
 
 
@@ -131,6 +131,7 @@ namespace digital_filters {
 
 
     template<class DataType, class CoeffType>
+    // TODO: is it normal that the parameter names are different from the declaration in filter.hpp ?
     std::vector<DataType> Filter<DataType, CoeffType>::filter(
         const std::vector<DataType> &x,
         const std::vector<DataType> &x0,

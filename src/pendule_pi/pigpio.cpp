@@ -23,13 +23,13 @@ namespace pigpio {
 
 
     std::string Exception::error2msg(
-        int error_code
+        const int error_code
     ) {
-        auto code_it = ERROR_CODES.find(error_code);
+        const auto code_it = ERROR_CODES.find(error_code);
         if (code_it == ERROR_CODES.end())
             return "UNKNOWN ERROR CODE " + std::to_string(error_code);
-        else
-            return code_it->second;
+
+        return code_it->second;
     }
 
 
@@ -50,8 +50,8 @@ namespace pigpio {
         // NOTE: it is VERY important that the signal handlers are assigned after
         // attempting to call gpioInitialise()!
         if (register_sigint)
-            std::signal(SIGINT, ActivationToken::pleaseStop);
-        std::signal(SIGABRT, ActivationToken::abort);
+            std::signal(SIGINT, pleaseStop);
+        std::signal(SIGABRT, abort);
     }
 
 
@@ -89,14 +89,14 @@ namespace pigpio {
     }
 
 
-    void ActivationToken::pleaseStop(int s) {
+    void ActivationToken::pleaseStop([[maybe_unused]] int s) {
         PENDULE_PI_DBG(
             "ActivationToken: executing 'pleaseStop(" << (s==SIGINT?std::string("SIGINT"):std::to_string(s)) << ")'");
         throw PleaseStop();
     }
 
 
-    void ActivationToken::abort(int s) {
+    void ActivationToken::abort([[maybe_unused]] int s) {
         PENDULE_PI_DBG(
             "ActivationToken: executing 'abort(" << (s==SIGABRT?std::string("SIGABRT"):std::to_string(s)) << ")'");
         resetPins();
@@ -149,10 +149,9 @@ namespace pigpio {
             if (auto_reset_)
                 time_past_ = time_now;
             return true;
-        } else {
-            // the timer did not expire yet
-            return false;
         }
+        // the timer did not expire yet
+        return false;
     }
 
 

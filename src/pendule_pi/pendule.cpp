@@ -42,7 +42,7 @@ namespace pendule_pi {
         // Check that pointers are not nullptr
 #define THROW_IF_NULL(component)                                                                                       \
     {                                                                                                                  \
-        if (component == nullptr)                                                                                      \
+        if ((component) == nullptr)                                                                                      \
             throw std::runtime_error("While creating Pendule instance: " #component " cannot be nullptr!");            \
     }
         THROW_IF_NULL(motor_);
@@ -85,7 +85,7 @@ namespace pendule_pi {
         angle_encoder_->setSafetyCallbacks(
             angle_steps - encoder_tolerance,
             angle_steps + encoder_tolerance,
-            [&]() {
+            [&] {
                 moving = true;
             }
         );
@@ -132,8 +132,8 @@ namespace pendule_pi {
 
         // prepare some auxiliary callbacks used to reach the switches
         bool wrong_switch = false;
-        auto switch_cb = [&]() { motor_->setPWM(0); };
-        auto wrong_switch_cb = [&]() {
+        auto switch_cb = [&] { motor_->setPWM(0); };
+        auto wrong_switch_cb = [&] {
             motor_->setPWM(0);
             wrong_switch = true;
         };
@@ -240,8 +240,8 @@ namespace pendule_pi {
         }
 
         // Ok, we are in the central position!
-        left_switch_->enableInterrupts([&]() { eStop("left switch hit"); });
-        right_switch_->enableInterrupts([&]() { eStop("right switch hit"); });
+        left_switch_->enableInterrupts([&] { eStop("left switch hit"); });
+        right_switch_->enableInterrupts([&] { eStop("right switch hit"); });
         const int safety_margin_steps = static_cast<int>(
             std::ceil(std::fabs(safety_margin_meters_ / meters_per_step_)));
         const int soft_min = min_position_steps_ + safety_margin_steps;
@@ -249,8 +249,8 @@ namespace pendule_pi {
         position_encoder_->setSafetyCallbacks(
             soft_min,
             soft_max,
-            [&]() { eStop("Software-imposed minimum position limit reached"); },
-            [&]() { eStop("Software-imposed maximum position limit reached"); }
+            [&] { eStop("Software-imposed minimum position limit reached"); },
+            [&] { eStop("Software-imposed maximum position limit reached"); }
         );
         soft_minmax_position_meters_ = std::fabs(steps2meters(soft_max));
         calibrated_ = true;
@@ -258,7 +258,7 @@ namespace pendule_pi {
         if (verbose) {
 #define STEPS(v) std::setw(6) << std::right << (v)
 #define DIST(v) " (" << std::setw(5) << std::fixed << std::setprecision(2) << std::right << steps2meters(v) << " m)"
-#define DIST_NO_CONV(v) " (" << std::setw(5) << std::fixed << std::setprecision(2) << std::right << v << " m)"
+#define DIST_NO_CONV(v) " (" << std::setw(5) << std::fixed << std::setprecision(2) << std::right << (v) << " m)"
 
             // clang-format off
             std::cout << BRIGHT_WHITE << "Calibration complete." << RESET << std::endl

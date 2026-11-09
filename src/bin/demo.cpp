@@ -12,14 +12,16 @@
 enum class ControlMode { Manual, LQR, Swingup };
 
 static std::string to_string(const ControlMode &mode) {
-    if (mode == ControlMode::Manual) {
-        return " manual";
-    } else if (mode == ControlMode::LQR) {
-        return "  lqr  ";
-    } else if (mode == ControlMode::Swingup) {
-        return "swingup";
+    switch (mode) {
+        case ControlMode::Manual:
+            return "manual ";
+        case ControlMode::LQR:
+            return "  lqr  ";
+        case ControlMode::Swingup:
+            return "swingup";
+        default:
+            return " ERROR ";
     }
-    return "ERROR";
 }
 
 static ControlMode next(const ControlMode &mode) {
@@ -164,7 +166,7 @@ static void display_status_line(
 // main forever loop termination flag
 static bool keep_running{true};
 
-static void requestTermination(int signum) { keep_running = false; }
+static void requestTermination([[maybe_unused]] int signum) { keep_running = false; }
 
 int main(const int argc, char **argv) {
     namespace pp = pendule_pi;
@@ -275,7 +277,7 @@ int main(const int argc, char **argv) {
             << BLUE << "  Buttons : " << RESET << std::endl
             << BLUE << "   - switch control mode     : " << RESET << BTN_SWITCH << std::endl
             << BLUE << "   - toggle autopilot        : " << RESET << BTN_AUTOPILOT << std::endl
-            << BLUE << "   - exit                    : " << RESET << ((BTN_EXIT != -1)
+            << BLUE << "   - exit                    : " << RESET << (BTN_EXIT != -1
                                                                           ? std::to_string(BTN_EXIT)
                                                                           : "-- disabled --")
             << std::endl << std::endl;

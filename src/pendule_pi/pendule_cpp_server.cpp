@@ -1,6 +1,5 @@
 #include <pendule_pi/pendule_cpp_server.hpp>
 #include <sstream>
-#include <thread>
 
 namespace pendule_pi {
     PenduleCppServer::PenduleCppServer()

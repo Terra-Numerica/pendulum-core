@@ -4,10 +4,7 @@
 
 /// Simple function that returns 0 if `abs(val) < zero` and `val` otherwise.
 inline int robustZero(const int val, const int zero) {
-    if (-zero < val && val < zero)
-        return 0;
-    else
-        return val;
+    return -zero < val && val < zero ? 0 : val;
 }
 
 /// Piecewise linear function that is 0 in a neighborhood of 0.
@@ -24,10 +21,9 @@ inline int robustZero(const int val, const int zero) {
 inline int clip(const int val, const int zero) {
     if (val > zero)
         return val - zero;
-    else if (val < -zero)
+    if (val < -zero)
         return val + zero;
-    else
-        return 0;
+    return 0;
 }
 
 /// Simple sign function.
