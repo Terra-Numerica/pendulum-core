@@ -149,7 +149,7 @@ namespace digital_filters {
             for (unsigned int i = 1; i < b_.size(); i++) {
                 if (i > k) {
                     // use values from the initial conditions
-                    yk = yk + b_[i] * x0[i - k - 1];
+                    yk = yk + b_[i] * x0[x0.size() - (i - k)];
                 } else {
                     // use values from the input vector
                     yk = yk + b_[i] * x[k - i];
@@ -160,7 +160,7 @@ namespace digital_filters {
             for (unsigned int i = 1; i < a_.size(); i++) {
                 if (i > k) {
                     // use values from the initial conditions
-                    yk = yk - a_[i] * y0[i - k - 1];
+                    yk = yk - a_[i] * y0[y0.size() - (i - k)];
                 } else {
                     // use values from the input vector
                     yk = yk - a_[i] * y[k - i];
