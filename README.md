@@ -20,7 +20,7 @@ Il se décompose en deux parties :
 
 Les communications entre les deux couches sont assurées par [**ZeroMQ**](https://zeromq.org/).
 
-## Credits
+## Crédits
 
 Ce projet est basé sur les travaux menés par Franco FUSCO dans le cadre de
 la préparation de sa thèse. Le repository original est disponible
