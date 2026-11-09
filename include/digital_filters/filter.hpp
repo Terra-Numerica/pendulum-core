@@ -84,7 +84,7 @@ namespace digital_filters {
           *   sorted in time-ascending order. In other words, the sequence starts
           *   with the oldest value and ends with the most recent sample. Note
           *   that the number of required values equals the dimension of the
-          *   denominator minus one.
+          *   numerator minus one.
           */
         void initInput(
             const std::vector<DataType> &input
