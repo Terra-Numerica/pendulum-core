@@ -53,7 +53,7 @@ namespace digital_filters {
         // check sizes
         if (input.size() != in_.size() - 1) {
             throw std::runtime_error(
-                "Filter::initInput: 'input' has " + std::to_string(input.size()) +
+                "Filter::initInput: 'input' has " + std::to_string(input.size() - 1) +
                 " elements, but only " + std::to_string(in_.size() - 1) +
                 " elements are allowed"
             );
@@ -80,7 +80,7 @@ namespace digital_filters {
         // check sizes
         if (output.size() != out_.size() - 1) {
             throw std::runtime_error(
-                "Filter::initInput: 'output' has " + std::to_string(output.size()) +
+                "Filter::initOutput: 'output' has " + std::to_string(output.size() - 1) +
                 " elements, but only " + std::to_string(out_.size() - 1) +
                 " elements are allowed"
             );
