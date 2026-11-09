@@ -60,7 +60,9 @@ namespace pigpio {
         resetPins();
         // If there is no registered token, or another one is registered, bad things might happen!
         if (active_token != this) {
-            PENDULE_PI_WRN("ActivationToken: during destruction another active token was found");
+            WARNING_BEGIN
+            std::cout << "ActivationToken: during destruction another active token was found";
+            WARNING_END
         } else {
             // "unregister" this token.
             active_token = nullptr;
@@ -73,13 +75,19 @@ namespace pigpio {
         for (int pin = 0; pin <= 26; pin++) {
             auto retval = gpioSetPullUpDown(pin, PI_PUD_OFF);
             if (retval < 0) {
-                PENDULE_PI_WRN("ActivationToken: while disabling resistors on pin " <<
-                    pin << ", gpioSetPullUpDown() returned " << Exception::error2msg(retval));
+                WARNING_BEGIN
+                std::cout
+                        << "ActivationToken: while disabling resistors on pin " << pin
+                        << ", gpioSetPullUpDown() returned " << Exception::error2msg(retval);
+                WARNING_END
             }
             retval = gpioSetMode(pin, PI_INPUT);
             if (retval < 0) {
-                PENDULE_PI_WRN("ActivationToken: while setting pin " << pin << " as "
-                    "input, gpioSetMode() returned " << Exception::error2msg(retval));
+                WARNING_BEGIN
+                std::cout
+                        << "ActivationToken: while setting pin " << pin
+                        << " as " << "input, gpioSetMode() returned " << Exception::error2msg(retval);
+                WARNING_END
             }
         }
         // #warning "Calling gpioTerminate() while handling a signal seems to kill the process, which is NOT a good thing. Check if there is a fix for this."
