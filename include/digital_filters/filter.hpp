@@ -56,17 +56,6 @@ namespace digital_filters {
             const Filter &other
         ) const;
 
-        /// Change filter template types.
-        /** @tparam OtherDataType new type of the input/output signals.
-          * @tparam OtherCoeffType new type of the coefficients.
-          * @return A new filter which is a copy of the current one, but with
-          *   different template types.
-          * @note To perform the conversion, `static_cast` is used. Make sure that
-          *   this is not an issue for your datatypes.
-          */
-        template<class OtherDataType, class OtherCoeffType>
-        Filter<OtherDataType, OtherCoeffType> as() const;
-
         /// Access the numerator.
         [[nodiscard]] const std::vector<CoefficientType> &numerator() const { return b_; }
 

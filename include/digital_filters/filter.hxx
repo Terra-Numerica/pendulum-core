@@ -38,22 +38,6 @@ namespace digital_filters {
 
 
     template<class DataType, class CoeffType>
-    template<class OtherDataType, class OtherCoeffType>
-    Filter<OtherDataType, OtherCoeffType> Filter<DataType, CoeffType>::as() const {
-        // copy-convert numerator and denominator
-        std::vector<OtherCoeffType> a(a_.begin(), a_.end());
-        std::vector<OtherCoeffType> b(b_.begin(), b_.end());
-        // create new filter
-        auto filter = Filter<OtherDataType, OtherCoeffType>(b, a);
-        // make sure to initialize the inputs and outputs
-        filter.initInput(std::vector<OtherCoeffType>(in_.begin(), in_.end() - 1));
-        filter.initOutput(std::vector<OtherCoeffType>(out_.begin(), out_.end() - 1));
-        // return the result
-        return filter;
-    }
-
-
-    template<class DataType, class CoeffType>
     void Filter<DataType, CoeffType>::initInput(
         const DataType &input
     ) {
@@ -131,7 +115,6 @@ namespace digital_filters {
 
 
     template<class DataType, class CoeffType>
-    // TODO: is it normal that the parameter names are different from the declaration in filter.hpp ?
     std::vector<DataType> Filter<DataType, CoeffType>::filter(
         const std::vector<DataType> &x,
         const std::vector<DataType> &x0,
