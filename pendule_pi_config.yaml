@@ -37,11 +37,9 @@ motor:
   # Pin used to invert the rotation direction of the motor.
   direction_pin: 16
 
-# Conversion coefficents for the encoders.
+# Conversion coefficients for the encoders.
 meters_per_step: 1.6656494260794234e-05  # 0.846/50791
-#meters_per_step: 9.992676761711276e-06  # 0.846/84653
 radians_per_step: 0.002617993877991494  # 2*M_PI/2400
-#radians_per_step: 0.0015707963267948967  # 2*M_PI/4000
 
 # By default, the pendulum should read zero when in the downward position and PI
 # when pointing upward. However, you might prefer a different convention, or
