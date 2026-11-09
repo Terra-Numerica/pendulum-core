@@ -228,11 +228,12 @@ int main(const int argc, char **argv) {
     double target_pos = 0;
 
     std::cout << BRIGHT_WHITE
-            << " ----------------------------------------------- " << std::endl
-            << "|                                               |" << std::endl
-            << "|         Pendulum demo starting...             |" << std::endl
-            << "|                                               |" << std::endl
-            << " ----------------------------------------------- " << std::endl
+            << " ------------------------------------------------ " << std::endl
+            << "|                                                |" << std::endl
+            << "|          Pendulum demo starting...             |" << std::endl
+            << "|                                                |" << std::endl
+            << " ------------------------------------------------ " << std::endl
+            << std::endl << BLUE << "Version " << PENDULE_PI_VERSION << std::endl
             << std::endl << RESET;
 
     std::cout << BRIGHT_CYAN << "--- Configuration ---" << RESET << std::endl << std::endl;

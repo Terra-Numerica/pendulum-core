@@ -35,11 +35,12 @@ int main(const int argc, char **argv) {
         const auto pendule = config.getPendule();
 
         std::cout << std::endl << BRIGHT_WHITE
-                << " ----------------------------------------------- " << std::endl
-                << "|                                               |" << std::endl
-                << "|   Pendulum low level controller starting...   |" << std::endl
-                << "|                                               |" << std::endl
-                << " ----------------------------------------------- " << std::endl
+                << " ------------------------------------------------ " << std::endl
+                << "|                                                |" << std::endl
+                << "|    Pendulum low level controller starting...   |" << std::endl
+                << "|                                                |" << std::endl
+                << " ------------------------------------------------ " << std::endl
+                << std::endl << BLUE << "Version " << PENDULE_PI_VERSION << std::endl
                 << RESET;
 
         pendule->calibrate(config.getCalibrationPWM(), true);

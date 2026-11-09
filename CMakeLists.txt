@@ -31,6 +31,10 @@ add_library(pendule_pi
         src/pendule_pi/pendule.cpp
         src/pendule_pi/pendule_cpp_server.cpp
 )
+
+# inject the version string as defined in the project() clause
+target_compile_definitions(pendule_pi PUBLIC PENDULE_PI_VERSION="${PROJECT_VERSION}")
+
 target_include_directories(pendule_pi PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
