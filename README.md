@@ -1,9 +1,21 @@
 # pendulum-core
 
-![pendulum](doc/imgs/pendulum-v2.jpg)
+![pendulum](pendulum-v2.jpg)
 
-Low level controler of the inverted pendulum and demonstration application for the ieducational animations.
+Support logiciel du démonstrateur "Pendule Inversé".
 
-C++ utilities to control a pendulum from a Raspberry Pi4
+Il se décompose en deux parties :
 
----
+- la couche bas niveau, assurant deux rôles principaux :
+    - interfaçage avec le hardware à l'aide de la librairie `pigpio`
+    - conditionnement par filtrage des signaux des encodeurs de position et
+      d'angle
+- l'application de démonstration, permettant d'interagir avec le pendule :
+    - en contrôle 100% manuel
+    - en activant l'asservissement LQR maintenant l'équilibre instable lorsque
+      le pendule est au voisinage de la position
+    - en activant le contrôle 100% automatique, qui amène dans un premier temps
+      le pendule au voisinage de l'équilibre, puis passe en mode stabilisation
+      automatique LQR lorsque les conditions nécessaires sont remplies.
+
+Les communications entre les deux couches sont assurées par [**ZeroMQ**](https://zeromq.org/). 
