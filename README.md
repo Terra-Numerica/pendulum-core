@@ -18,4 +18,10 @@ Il se décompose en deux parties :
       le pendule au voisinage de l'équilibre, puis passe en mode stabilisation
       automatique LQR lorsque les conditions nécessaires sont remplies.
 
-Les communications entre les deux couches sont assurées par [**ZeroMQ**](https://zeromq.org/). 
+Les communications entre les deux couches sont assurées par [**ZeroMQ**](https://zeromq.org/).
+
+## Credits
+
+Ce projet est basé sur les travaux menés par Franco FUSCO dans le cadre de
+la préparation de sa thèse. Le repository original est disponible
+[ici](https://github.com/francofusco/pendule_pi).
