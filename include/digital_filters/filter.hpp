@@ -148,9 +148,9 @@ namespace digital_filters {
           * @return sequence of filtered outputs \f$ y_0, y_1, y_2, \cdots \f$
           */
         [[nodiscard]] std::vector<DataType> filter(
+            const std::vector<DataType> &x,
             const std::vector<DataType> &x0,
-            const std::vector<DataType> &y0,
-            const std::vector<DataType> &x
+            const std::vector<DataType> &y0
         ) const;
 
         /// Bi-directional filtering of a whole sequence.
