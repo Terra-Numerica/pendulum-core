@@ -25,6 +25,8 @@ namespace pendule_pi {
           * @param use_internal_pull_resistor if true, the GPIO pin will be
           *   configured so that it uses the pull-up or a pull-down resistor. If
           *   false, no additional resistor is used.
+          * @param debounce_us debouncing delay (in microseconds) used to set the
+          *   signal glitch filtering at pigpio level
           * @warning If you pass `use_internal_pull_resistor=true`, then the type
           *   of resistor (pull-up vs pull-down) is decided via the `normally_up`
           *   parameter. In particular:
@@ -36,7 +38,8 @@ namespace pendule_pi {
         Switch(
             int pin,
             bool normally_up,
-            bool use_internal_pull_resistor = true
+            bool use_internal_pull_resistor = true,
+            unsigned int debounce_us = 5000
         );
 
         // Prevent the user from making copies of a Switch.
@@ -93,7 +96,6 @@ namespace pendule_pi {
         const int pin_; ///< Pin the switch is connected to.
         const int at_rest_; ///< Value that should be read on the pin when the switch is at rest.
         const unsigned int debounce_us_; ///< Microseconds to wait for debounce purposes.
-        unsigned int last_tick_; ///< Last time an interrupt was served (used for debouncing).
         bool at_rest_now_; ///< Tells if the switch is now at rest.
         bool has_triggered_; ///< Tells if the switch has been activated.
         bool with_interrupts_; ///< If true, interrupts are being used.

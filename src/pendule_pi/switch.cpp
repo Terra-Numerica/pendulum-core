@@ -3,17 +3,16 @@
 #include "pendule_pi/debug.hpp"
 #include <pigpio.h>
 
-
 namespace pendule_pi {
     Switch::Switch(
         const int pin,
         const bool normally_up,
-        const bool use_internal_pull_resistor
+        const bool use_internal_pull_resistor,
+        const unsigned int debounce_us
     )
         : pin_(pin)
           , at_rest_(normally_up ? PI_HIGH : PI_LOW)
-          , debounce_us_(5000)
-          , last_tick_(0)
+          , debounce_us_(debounce_us)
           , at_rest_now_(true)
           , has_triggered_(false)
           , with_interrupts_(false)
@@ -21,11 +20,14 @@ namespace pendule_pi {
         PENDULE_PI_DBG(
             "Creating Switch on pin " << pin_ << ". Normal state: " << (normally_up?"UP":"DOWN") <<
             ". Internal resistor: " << (use_internal_pull_resistor?"YES":"NO"));
+
         // put the pin in input mode
         PiGPIO_RUN_VOID(gpioSetMode, pin, PI_INPUT);
-        // (de)activate the pull-up/pull-down resistor as needed
-        auto pull_mode = use_internal_pull_resistor ? (normally_up ? PI_PUD_UP : PI_PUD_DOWN) : PI_PUD_OFF;
+        // (de)activate the pull-up/pull-down resistor as requested
+        const auto pull_mode = use_internal_pull_resistor ? (normally_up ? PI_PUD_UP : PI_PUD_DOWN) : PI_PUD_OFF;
         PiGPIO_RUN_VOID(gpioSetPullUpDown, pin, pull_mode);
+        PiGPIO_RUN_VOID(gpioGlitchFilter, pin, debounce_us);
+
         PENDULE_PI_DBG("Switch created");
     }
 
@@ -76,15 +78,6 @@ namespace pendule_pi {
         const int level,
         const unsigned int tick
     ) {
-        // Check if at least debounce_us_ microseconds have elapsed since the last
-        // time we. served an interrupt. If not, just exit!
-        if (tick - last_tick_ < debounce_us_) {
-            return;
-        }
-
-        // Ok, let's serve the interrupt :)
-        last_tick_ = tick;
-
         at_rest_now_ = level == at_rest_;
 
         if (!at_rest_now_) {

@@ -6,6 +6,8 @@ left_switch:
   normally_up: true
   # If true, then the internal pull-up or pull-down resistor is activated.
   use_internal_pull_resistor: true
+  # micro-second window for pigpio glitch filter (default: 5000 if not provided)
+  debounce_us: 5000
 
 # Configuration of the right switch (motor side).
 right_switch:
@@ -15,6 +17,8 @@ right_switch:
   normally_up: true
   # If true, then the internal pull-up or pull-down resistor is activated.
   use_internal_pull_resistor: true
+  # micro-second window for pigpio glitch filter (default: 5000 if not provided)
+  debounce_us: 5000
 
 # Configuration of the position encoder (the one connected to
 # the transmission belt).

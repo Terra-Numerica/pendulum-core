@@ -11,6 +11,8 @@
 // NOTE: add new "overloads" by adding _4 to the list in GET_MACRO and
 // THROW_IF_MISSING_4 just before the __VA_ARGS__ in GET_MACRO
 
+constexpr unsigned int DEFAULT_SWITCH_DEBOUNCE_US = 5000;
+
 namespace pendule_pi {
     Config::Config(
         const std::string &file_name
@@ -30,7 +32,8 @@ namespace pendule_pi {
         return std::make_unique<Switch>(
             config["pin"].as<int>(),
             config["normally_up"].as<bool>(),
-            config["use_internal_pull_resistor"].as<bool>()
+            config["use_internal_pull_resistor"].as<bool>(),
+            config["debounce_us"].as<int>(DEFAULT_SWITCH_DEBOUNCE_US)
         );
     }
 
