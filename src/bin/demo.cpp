@@ -134,7 +134,7 @@ static void display_status_line(
     }
     std::cout << color
             << std::setw(3) << std::left << msg << RESET
-            << " ] [ Errors: angle=" << CYAN
+            << " ] [ Err: angle=" << CYAN
             << std::setw(6) << std::right << std::setprecision(1) << e_theta_deg << RESET
             << " | pos=" << CYAN;
 
@@ -215,8 +215,9 @@ int main(const int argc, char **argv) {
     const int BTN_SWITCH = joystick_config["btn_switch"].as<int>(1);
     const int BTN_AUTOPILOT = joystick_config["btn_autopilot"].as<int>(4);
 
-    // Counters used to update the joystick at a slightly lower rate.
-    unsigned int joy_update_counter = 0;
+    // The joystick is not polled on every iteration of the control loop.
+    unsigned int JOY_UPDATE_PACE = 5;
+    unsigned int iterations_to_joystick_update = JOY_UPDATE_PACE;
 
     // Mode switching button.
     CachedButton btn_mode_switch;
@@ -255,7 +256,7 @@ int main(const int argc, char **argv) {
     bool autopilot_engaged = false;
     bool in_lqr_range = false;
     bool was_in_lqr_range = false;
-    bool must_refresh_status = true;
+    bool refresh_status_requested = true;
 
     // control gains for the LQR phase
     const auto gains_config = configuration["gains"];
@@ -301,7 +302,6 @@ int main(const int argc, char **argv) {
 
     // Main loop!
     while (keep_running) {
-        unsigned int JOY_UPDATE_MAX = 5;
         constexpr double target_angle = M_PI;
         constexpr double ANGLE_ERROR_THRESHOLD = 0.25;
 
@@ -318,66 +318,89 @@ int main(const int argc, char **argv) {
 
         // detect changes to refresh the status line only when needed
         if (in_lqr_range != was_in_lqr_range) {
-            must_refresh_status = true;
+            refresh_status_requested = true;
             was_in_lqr_range = in_lqr_range;
         }
 
-        // Do control!
-        if (control_mode == ControlMode::Manual) {
-            // Get the command from the joystick.
-            int ref = joy.axis(AXIS_PWM);
-            ref = robustZero(ref, 2500);
-            pwm = static_cast<int>(ref * 250. / 32768.);
-        } else if (control_mode == ControlMode::LQR || control_mode == ControlMode::Swingup) {
-            // Errors (into [-pi,+pi] for the angle)
-            target_pos = clip(joy.axis(AXIS_PWM), 2500) * 0.2 / 32768.;
-            e_pos = pendulum.position() - target_pos;
-            double e_linear_velocity = pendulum.linear_velocity();
-            double e_angular_velocity = pendulum.angular_velocity();
+        constexpr unsigned int JOYSTICK_DEAD_ZONE = 2500;
 
-            if (in_lqr_range) {
-                // in LQR range: do it!
-                pwm = static_cast<int>(
-                    -kp * e_pos
-                    - kpd * e_linear_velocity
-                    - kt * e_theta
-                    - ktd * e_angular_velocity
-                );
-            } else {
-                // Not in LQR range: the command depends on the current mode.
-                if (control_mode == ControlMode::LQR) {
-                    pwm = 0;
-                } else {
-                    // Swing-up
-                    // TODO : make the formula less opaque by moving these magic numbers to explicitly named constants
-                    auto ks = kswing * (0.1 + 0.9 * 0.5 * (1 - std::cos(e_theta)));
-                    pwm = static_cast<int>(
-                        +ks * (1 - std::cos(e_theta)) * sign(pendulum.angular_velocity() * std::cos(e_theta)) -
-                        ksx * pendulum.position()
-                    );
+        // Compute the PWM to be applied to the motor, depending on the current mode
+        switch (control_mode) {
+            case ControlMode::Manual: {
+                // ensure autopilot is disengaged so that we'll start with a know state
+                // when switching mode eventually
+                autopilot_engaged = false;
+
+                // in manual mode, the PWM is directly derived from the gamepad joystick position
+                constexpr double PWM_LIMIT = 250.;
+
+                int ref = joy.axis(AXIS_PWM);
+                ref = robustZero(ref, JOYSTICK_DEAD_ZONE);
+                pwm = static_cast<int>(ref * PWM_LIMIT / 32768.);
+                break;
+            }
+
+            case ControlMode::LQR:
+            case ControlMode::Swingup: {
+                // check first if the autopilot button is pressed so that we don't make unneeded hard work
+                btn_autopilot.update(joy.button(BTN_AUTOPILOT));
+                if (btn_autopilot.switched()) {
+                    autopilot_engaged = btn_autopilot.down();
+                    refresh_status_requested = true;
                 }
-            }
 
-            // discard the computed command if the autopilot is not engaged
-            btn_autopilot.update(joy.button(BTN_AUTOPILOT));
-            if (btn_autopilot.switched()) {
-                autopilot_engaged = btn_autopilot.down();
-                must_refresh_status = true;
-            }
+                if (autopilot_engaged) {
+                    // the user asks us to take control => let's do the heavy lifting
 
-            if (!autopilot_engaged) {
-                pwm = 0;
+                    // in LQR or SWINGUP modes, let the system compute the PWM by applying the control law
+                    // related to the mode and present situation of the pendulum( in LQR zone or not)
+
+                    double e_linear_velocity = pendulum.linear_velocity();
+                    double e_angular_velocity = pendulum.angular_velocity();
+
+                    // let the user shift the cart target position by using the gamepad
+                    constexpr double POSITION_SHIFT_LIMIT = 0.2;
+                    target_pos = deadZoneFilter(joy.axis(AXIS_PWM), JOYSTICK_DEAD_ZONE) * POSITION_SHIFT_LIMIT / 32768.;
+                    e_pos = pendulum.position() - target_pos;
+
+                    if (in_lqr_range) {
+                        // apply the LQR control law when inside the proper range
+
+                        pwm = static_cast<int>(
+                            -kp * e_pos
+                            - kpd * e_linear_velocity
+                            - kt * e_theta
+                            - ktd * e_angular_velocity
+                        );
+                    } else {
+                        // Not in LQR range: the command depends on the current mode.
+                        if (control_mode == ControlMode::LQR) {
+                            // LQR mode => just do nothing
+                            pwm = 0;
+                        } else {
+                            // Swingup mode => move the cart so that the pendulum gradually comes close to the LQR range
+
+                            // TODO : make the formula less opaque by moving these magic numbers to explicitly named constants
+                            auto ks = kswing * (0.1 + 0.9 * 0.5 * (1 - std::cos(e_theta)));
+                            pwm = static_cast<int>(
+                                +ks * (1 - std::cos(e_theta)) * sign(pendulum.angular_velocity() * std::cos(e_theta)) -
+                                ksx * pendulum.position()
+                            );
+                        }
+                    }
+                } else {
+                    // autopilot is off => don't move
+                    pwm = 0;
+                }
+                break;
             }
-        } else {
-            std::cerr << std::endl << "ERROR: " << to_string(control_mode) << " mode not implemented yet";
-            break;
+                // no need for default case, since we have covered all the enumeration values
         }
 
         pendulum.sendCommand(pwm);
 
-        // update the joystick when needed
-        joy_update_counter = (joy_update_counter + 1) % JOY_UPDATE_MAX;
-        if (joy_update_counter == 0) {
+        // take joystick into account only if it's time for it
+        if (--iterations_to_joystick_update == 0) {
             joy.update();
 
             // should we exit?
@@ -392,22 +415,26 @@ int main(const int argc, char **argv) {
             btn_mode_switch.update(joy.button(BTN_SWITCH));
             if (btn_mode_switch.pressed()) {
                 control_mode = next(control_mode);
-                must_refresh_status = true;
+                refresh_status_requested = true;
             }
+
+            // reset the pace counter
+            iterations_to_joystick_update = JOY_UPDATE_PACE;
         }
 
         // ensure the angle error display is updated periodically if no specific event triggered it
-        if (!must_refresh_status && now >= next_status_update) {
+        if (!refresh_status_requested && now >= next_status_update) {
             next_status_update += status_update_period;
             if (e_theta != last_e_theta) {
-                must_refresh_status = true;
+                refresh_status_requested = true;
                 last_e_theta = e_theta;
             }
         }
 
-        if (must_refresh_status) {
+        if (refresh_status_requested) {
             display_status_line(control_mode, autopilot_engaged, in_lqr_range, e_theta, e_pos);
-            must_refresh_status = false;
+            // reset status line refresh request
+            refresh_status_requested = false;
         }
     } // end of the main loop
 

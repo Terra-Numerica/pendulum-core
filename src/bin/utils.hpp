@@ -2,27 +2,25 @@
 #include <cmath>
 #include <vector>
 
-/// Simple function that returns 0 if `abs(val) < zero` and `val` otherwise.
-inline int robustZero(const int val, const int zero) {
-    return -zero < val && val < zero ? 0 : val;
+/** Simple function that returns 0 if the value is inside [-threshold, +threshold],
+ * or the value itself otherwise.
+ */
+inline int robustZero(const int val, const int threshold) {
+    return abs(val) <= abs(threshold) ? 0 : val;
 }
 
-/// Piecewise linear function that is 0 in a neighborhood of 0.
-/** This function is defined as:
- * \f[
- *   c(x) =
- *   \begin{cases}
- *     x + z & (x \leq -z) \\
- *     0     & (-z < x < z) \\
- *     x - z & (z \leq x)
- *   \end{cases}
- * \f]
+/** Dead zone filter.
+ *
+ * Returns 0 of the input value is inside [-threshold, +threshold],
+ * otherwise shift it towards zero by the threshold value.
  */
-inline int clip(const int val, const int zero) {
-    if (val > zero)
-        return val - zero;
-    if (val < -zero)
-        return val + zero;
+inline int deadZoneFilter(const int val, const int threshold) {
+    // ensure threshold is positive for the applied logic to be correct
+    const int abs_threshold = abs(threshold);
+    if (val > abs_threshold)
+        return val - abs_threshold;
+    if (val < -abs_threshold)
+        return val + abs_threshold;
     return 0;
 }
 
