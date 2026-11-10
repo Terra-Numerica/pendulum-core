@@ -26,10 +26,11 @@ namespace pendule_pi {
         THROW_IF_MISSING(switch_name, "pin");
         THROW_IF_MISSING(switch_name, "normally_up");
         THROW_IF_MISSING(switch_name, "use_internal_pull_resistor");
+        const auto config = yaml_[switch_name];
         return std::make_unique<Switch>(
-            yaml_[switch_name]["pin"].as<int>(),
-            yaml_[switch_name]["normally_up"].as<bool>(),
-            yaml_[switch_name]["use_internal_pull_resistor"].as<bool>()
+            config["pin"].as<int>(),
+            config["normally_up"].as<bool>(),
+            config["use_internal_pull_resistor"].as<bool>()
         );
     }
 
@@ -40,9 +41,10 @@ namespace pendule_pi {
         THROW_IF_MISSING(encoder_name);
         THROW_IF_MISSING(encoder_name, "pin_a");
         THROW_IF_MISSING(encoder_name, "pin_b");
+        const auto config = yaml_[encoder_name];
         return std::make_unique<Encoder>(
-            yaml_[encoder_name]["pin_a"].as<int>(),
-            yaml_[encoder_name]["pin_b"].as<int>()
+            config["pin_a"].as<int>(),
+            config["pin_b"].as<int>()
         );
     }
 
@@ -52,9 +54,10 @@ namespace pendule_pi {
         THROW_IF_MISSING(motor_name);
         THROW_IF_MISSING(motor_name, "pwm_pin");
         THROW_IF_MISSING(motor_name, "direction_pin");
+        const auto config = yaml_[motor_name];
         return std::make_unique<Motor>(
-            yaml_[motor_name]["pwm_pin"].as<int>(),
-            yaml_[motor_name]["direction_pin"].as<int>()
+            config["pwm_pin"].as<int>(),
+            config["direction_pin"].as<int>()
         );
     }
 
@@ -79,10 +82,10 @@ namespace pendule_pi {
             getPositionEncoder(),
             getAngleEncoder()
         );
-        const auto pwm_offsets_config = yaml_["pwm_offsets"];
+        const auto config = yaml_["pwm_offsets"];
         pendule->setPwmOffsets(
-            pwm_offsets_config["low"].as<int>(),
-            pwm_offsets_config["high"].as<int>()
+            config["low"].as<int>(),
+            config["high"].as<int>()
         );
         return pendule;
     }
@@ -93,11 +96,11 @@ namespace pendule_pi {
         THROW_IF_MISSING("sockets", "host");
         THROW_IF_MISSING("sockets", "state_port");
         THROW_IF_MISSING("sockets", "command_port");
-        const auto sockets_config = yaml_["sockets"];
+        const auto config = yaml_["sockets"];
         return std::make_unique<PenduleCppServer>(
-            sockets_config["host"].as<std::string>(),
-            sockets_config["state_port"].as<std::string>(),
-            sockets_config["command_port"].as<std::string>()
+            config["host"].as<std::string>(),
+            config["state_port"].as<std::string>(),
+            config["command_port"].as<std::string>()
         );
     }
 
