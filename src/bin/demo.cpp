@@ -411,7 +411,7 @@ int main(const int argc, char **argv) {
             if (BTN_EXIT != -1 && joy.button(BTN_EXIT)) {
                 std::cout
                         << std::endl << std::endl
-                        << YELLOW << "Gamepad Exit button pressed. Quitting now !" << RESET;
+                        << BRIGHT_YELLOW << "--- Gamepad Exit button pressed. Quitting now ---" << RESET;
                 break;
             }
 
