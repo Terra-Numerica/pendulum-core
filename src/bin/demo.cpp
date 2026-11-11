@@ -110,6 +110,8 @@ static void display_configuration_example(const std::string &program_name) {
     std::cout << out.c_str() << std::endl;
 }
 
+#define LABEL BRIGHT_BLUE
+
 static void display_status_line(
     const ControlMode control_mode,
     const bool autopilot_engaged,
@@ -236,7 +238,7 @@ int main(const int argc, char **argv) {
             << "|          Pendulum demo starting...             |" << std::endl
             << "|                                                |" << std::endl
             << " ------------------------------------------------ " << std::endl
-            << std::endl << BLUE << "Version " << PENDULE_PI_VERSION << std::endl
+            << std::endl << LABEL << "Version " << PENDULE_PI_VERSION << std::endl
             << std::endl << RESET;
 
     std::cout << BRIGHT_CYAN << "--- Configuration ---" << RESET << std::endl << std::endl;
@@ -247,9 +249,9 @@ int main(const int argc, char **argv) {
     const auto ksx = swingup_config["kx"].as<double>(0.0);
 
     std::cout << BRIGHT_WHITE << "Swing-up gains:" << RESET << std::endl
-            << BLUE << "  kswing : " << RESET
+            << LABEL << "  kswing : " << RESET
             << std::fixed << std::setw(12) << std::setprecision(6) << kswing << std::endl
-            << BLUE << "  ksx    : " << RESET
+            << LABEL << "  ksx    : " << RESET
             << std::fixed << std::setw(12) << std::setprecision(6) << ksx << std::endl
             << std::endl;
 
@@ -266,21 +268,23 @@ int main(const int argc, char **argv) {
     const auto ktd = gains_config["angvel"].as<double>(437.1177135919267);
 
     std::cout << BRIGHT_WHITE << "LQR gains:" << RESET << std::endl
-            << BLUE << "  kp     : " << RESET << std::fixed << std::setw(12) << std::setprecision(6) << kp << std::endl
-            << BLUE << "  kpd    : " << RESET << std::fixed << std::setw(12) << std::setprecision(6) << kpd << std::endl
-            << BLUE << "  kt     : " << RESET << std::fixed << std::setw(12) << std::setprecision(6) << kt << std::endl
-            << BLUE << "  ktd    : " << RESET << std::fixed << std::setw(12) << std::setprecision(6) << ktd << std::endl
+            << LABEL << "  kp     : " << RESET << std::fixed << std::setw(12) << std::setprecision(6) << kp << std::endl
+            << LABEL << "  kpd    : " << RESET << std::fixed << std::setw(12) << std::setprecision(6) << kpd <<
+            std::endl
+            << LABEL << "  kt     : " << RESET << std::fixed << std::setw(12) << std::setprecision(6) << kt << std::endl
+            << LABEL << "  ktd    : " << RESET << std::fixed << std::setw(12) << std::setprecision(6) << ktd <<
+            std::endl
             << std::endl;
 
     std::cout << BRIGHT_WHITE << "Control:" << RESET << std::endl
-            << BLUE << "  Joystick device            : " << RESET << js_device << std::endl
-            << BLUE << "  Axis for carriage control  : " << RESET << AXIS_PWM << std::endl
-            << BLUE << "  Buttons : " << RESET << std::endl
-            << BLUE << "   - switch control mode     : " << RESET << BTN_SWITCH << std::endl
-            << BLUE << "   - toggle autopilot        : " << RESET << BTN_AUTOPILOT << std::endl
-            << BLUE << "   - exit                    : " << RESET << (BTN_EXIT != -1
-                                                                          ? std::to_string(BTN_EXIT)
-                                                                          : "-- disabled --")
+            << LABEL << "  Joystick device            : " << RESET << js_device << std::endl
+            << LABEL << "  Axis for carriage control  : " << RESET << AXIS_PWM << std::endl
+            << LABEL << "  Buttons : " << RESET << std::endl
+            << LABEL << "   - switch control mode     : " << RESET << BTN_SWITCH << std::endl
+            << LABEL << "   - toggle autopilot        : " << RESET << BTN_AUTOPILOT << std::endl
+            << LABEL << "   - exit                    : " << RESET << (BTN_EXIT != -1
+                                                                           ? std::to_string(BTN_EXIT)
+                                                                           : "-- disabled --")
             << std::endl << std::endl;
 
     std::cout << BRIGHT_GREEN << "Demo started " << RESET << "(use Ctrl-C ";

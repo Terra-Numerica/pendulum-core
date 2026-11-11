@@ -11,6 +11,8 @@
 #include "utils.hpp"
 // clang-format on
 
+#define LABEL BRIGHT_BLUE
+
 int main(const int argc, char **argv) {
     namespace pp = pendule_pi;
 
@@ -40,7 +42,7 @@ int main(const int argc, char **argv) {
                 << "|    Pendulum low level controller starting...   |" << std::endl
                 << "|                                                |" << std::endl
                 << " ------------------------------------------------ " << std::endl
-                << std::endl << BLUE << "Version " << PENDULE_PI_VERSION << std::endl
+                << std::endl << LABEL << "Version " << PENDULE_PI_VERSION << std::endl
                 << RESET;
 
         pendule->calibrate(config.getCalibrationPWM(), true);
