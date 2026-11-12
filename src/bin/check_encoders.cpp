@@ -5,7 +5,7 @@
 #include <chrono>
 #include <thread>
 
-#include <pendule_pi/pendule_cpp_client.hpp>
+#include <pendule_pi/pendule.hpp>
 #include <pendule_pi/config.hpp>
 #include <pendule_pi/colors.h>
 // clang-format on
