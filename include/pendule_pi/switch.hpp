@@ -83,6 +83,9 @@ namespace pendule_pi {
           */
         [[nodiscard]] bool atRestCached() const;
 
+        /// read access to pin
+        [[nodiscard]] int getPin() const { return pin_; };
+
         /// Auxiliary exception class to be thrown when reading the cached state with disabled interrupts.
         class InterruptsAreDisabled : public std::runtime_error {
         public:

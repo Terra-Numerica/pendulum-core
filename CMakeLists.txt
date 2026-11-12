@@ -90,3 +90,11 @@ add_executable(check_encoders
 target_link_libraries(check_encoders
         pendule_pi
 )
+
+# ----------------------------------------
+add_executable(check_limit_switches
+        src/bin/check_limit_switches.cpp
+)
+target_link_libraries(check_limit_switches
+        pendule_pi
+)
