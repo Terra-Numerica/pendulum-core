@@ -146,9 +146,9 @@ namespace pendule_pi {
         int lower_threshold_; ///< Lower threshold below which lower_cb_ should be executed.
         int upper_threshold_; ///< Upper threshold beyond which upper_cb_ should be executed.
         std::function<void()>
-        lower_cb_; ///< Callback to be executed whenver the position becomes less than lower_threshold_.
+        lower_cb_; ///< Callback to be executed whenever the position becomes less than lower_threshold_.
         std::function<void()>
-        upper_cb_; ///< Callback to be executed whenver the position becomes more than upper_threshold_.
+        upper_cb_; ///< Callback to be executed whenever the position becomes more than upper_threshold_.
 
         /// Function called whenever one of the pins changes level.
         /** @param gpio the pin that just changed its level.
@@ -156,7 +156,7 @@ namespace pendule_pi {
          * @param tick time elapsed since boot (in microseconds). Note that it
          *   overflows every ~72 minutes (technically, every 2^32 microseconds).
          *   Remember that, due to integer arithmetics, it is still safe to get
-         *   elasped times doing `tick_now-tick_previous` even if `tick_now`
+         *   elapsed times doing `tick_now-tick_previous` even if `tick_now`
          *   overflowed.
          * @todo Perhaps remove the internal pin check that throws an exception?
          * @todo Perhaps change ENCODER_TABLE.at(i) for ENCODER_TABLE[i]?
@@ -172,7 +172,7 @@ namespace pendule_pi {
          * @param tick time elapsed since boot (in microseconds). Note that it
          *   overflows every ~72 minutes (technically, every 2^32 microseconds).
          *   Remember that, due to integer arithmetics, it is still safe to get
-         *   elasped times doing `tick_now-tick_previous` even if `tick_now`
+         *   elapsed times doing `tick_now-tick_previous` even if `tick_now`
          *   overflowed.
          * @param THIS a pointer to an Encoder. Named `THIS` simply because it
          *   tries to mimic the `this` pointer.
