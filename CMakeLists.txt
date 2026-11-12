@@ -77,10 +77,7 @@ add_executable(reset_gpio
         src/bin/reset_gpio.cpp
 )
 target_link_libraries(reset_gpio
-        pigpio::pigpio
-        # Threads::Threads: libpigpio.so uses POSIX threads but does not link them itself
-        # (glibc < 2.34), so every target using pigpio must link them explicitly.
-        Threads::Threads
+        pendule_pi
 )
 
 # ----------------------------------------

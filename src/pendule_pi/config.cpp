@@ -146,4 +146,17 @@ namespace pendule_pi {
             digital_filters::butterworth<double, double>(4, cutoff_frequency, 1000. / period_ms)
         );
     }
+
+    GPIOMapping Config::getGPIOMapping() {
+        return {
+            .left_switch_pin = yaml_["left_switch"]["pin"].as<uint8_t>(),
+            .right_switch_pin = yaml_["right_switch"]["pin"].as<uint8_t>(),
+            .position_encoder_A_pin = yaml_["position_encoder"]["pin_a"].as<uint8_t>(),
+            .position_encoder_B_pin = yaml_["position_encoder"]["pin_b"].as<uint8_t>(),
+            .angle_encoder_A_pin = yaml_["angle_encoder"]["pin_a"].as<uint8_t>(),
+            .angle_encoder_B_pin = yaml_["angle_encoder"]["pin_b"].as<uint8_t>(),
+            .motor_direction_pin = yaml_["motor"]["direction_pin"].as<uint8_t>(),
+            .motor_pwm_pin = yaml_["motor"]["pwm_pin"].as<uint8_t>(),
+        };
+    }
 } // pendule_pi
