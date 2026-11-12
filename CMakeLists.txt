@@ -82,3 +82,11 @@ target_link_libraries(reset_gpio
         # (glibc < 2.34), so every target using pigpio must link them explicitly.
         Threads::Threads
 )
+
+# ----------------------------------------
+add_executable(check_encoders
+        src/bin/check_encoders.cpp
+)
+target_link_libraries(check_encoders
+        pendule_pi
+)

@@ -81,6 +81,10 @@ namespace pendule_pi {
         /// Remove previously assigned callbacks.
         void removeSafetyCallbacks();
 
+        /// read access to pins
+        [[nodiscard]] int getPinA() const { return pin_a_; };
+        [[nodiscard]] int getPinB() const { return pin_b_; };
+
     private:
         /// "Table" that allows to tell the direction of rotation.
         /** The encoder can be seen as a simple state machine in which the state
