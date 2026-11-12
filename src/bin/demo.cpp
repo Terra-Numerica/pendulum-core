@@ -170,6 +170,7 @@ static bool keep_running{true};
 
 static void requestTermination([[maybe_unused]] int signum) { keep_running = false; }
 
+
 int main(const int argc, char **argv) {
     namespace pp = pendule_pi;
     const std::string program_name = argv[0];
@@ -194,7 +195,16 @@ int main(const int argc, char **argv) {
 
     // Load the configuration which path is passed as a command argument
     YAML::Node configuration;
-    configuration = YAML::LoadFile(argv[1]);
+
+    try {
+        configuration = YAML::LoadFile(argv[1]);
+    } catch (const YAML::Exception &e) {
+        std::cerr << "ERROR: YAML configuration loading error: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    } catch (const std::exception &e) {
+        std::cerr << "ERROR: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
 
     // Connect to the low-level interface.
     const auto socket_config = configuration["socket"];
