@@ -95,3 +95,11 @@ add_executable(check_limit_switches
 target_link_libraries(check_limit_switches
         pendule_pi
 )
+
+# ----------------------------------------
+add_executable(check_motor
+        src/bin/check_motor.cpp
+)
+target_link_libraries(check_motor
+        pendule_pi
+)
