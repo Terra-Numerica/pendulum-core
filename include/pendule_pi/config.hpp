@@ -47,43 +47,46 @@ namespace pendule_pi {
         /// Reads the configuration from the given YAML file.
         explicit Config(const std::string &file_name);
 
+        /// Factory function
+        static std::optional<Config> loadFromFile(const std::string &path);
+
         /// Returns a Switch instance given the configuration for the left switch.
-        std::unique_ptr<Switch> getLeftSwitch() { return getSwitch("left_switch"); }
+        std::unique_ptr<Switch> getLeftSwitch() const { return getSwitch("left_switch"); }
 
         /// Returns a Switch instance given the configuration for the right switch.
-        std::unique_ptr<Switch> getRightSwitch() { return getSwitch("right_switch"); }
+        std::unique_ptr<Switch> getRightSwitch() const { return getSwitch("right_switch"); }
 
         /// Returns an Encoder instance given the configuration for the position encoder.
-        std::unique_ptr<Encoder> getPositionEncoder() { return getEncoder("position_encoder"); }
+        std::unique_ptr<Encoder> getPositionEncoder() const { return getEncoder("position_encoder"); }
 
         /// Returns an Encoder instance given the configuration for the angle encoder.
-        std::unique_ptr<Encoder> getAngleEncoder() { return getEncoder("angle_encoder"); }
+        std::unique_ptr<Encoder> getAngleEncoder() const { return getEncoder("angle_encoder"); }
 
         /// Returns a Motor instance that is set up according to the configuration file.
-        std::unique_ptr<Motor> getMotor();
+        std::unique_ptr<Motor> getMotor() const;
 
         /// Returns a Pendule instance, setup according to the configuration file.
-        std::unique_ptr<Pendule> getPendule();
+        std::unique_ptr<Pendule> getPendule() const;
 
         /// Returns a PenduleCppServer instance, setup according to the configuration file.
-        std::unique_ptr<PenduleCppServer> getPenduleServer();
+        std::unique_ptr<PenduleCppServer> getPenduleServer() const;
 
-        int getCalibrationPWM();
+        int getCalibrationPWM() const;
 
-        double getSoftSafetyThreshold();
+        double getSoftSafetyThreshold() const;
 
-        std::unique_ptr<pigpio::Rate> getControlRate();
+        std::unique_ptr<pigpio::Rate> getControlRate() const;
 
-        std::unique_ptr<digital_filters::Filter<double, double> > getFilter();
+        std::unique_ptr<digital_filters::Filter<double, double> > getFilter() const;
 
-        GPIOMapping getGPIOMapping();
+        GPIOMapping getGPIOMapping() const;
 
     private:
         /// Helper function to return a Switch instance.
-        std::unique_ptr<Switch> getSwitch(const std::string &switch_name);
+        std::unique_ptr<Switch> getSwitch(const std::string &switch_name) const;
 
-        /// Helper function to return a Encoder instance.
-        std::unique_ptr<Encoder> getEncoder(const std::string &encoder_name);
+        /// Helper function to return an Encoder instance.
+        std::unique_ptr<Encoder> getEncoder(const std::string &encoder_name) const;
 
         YAML::Node yaml_;
     };

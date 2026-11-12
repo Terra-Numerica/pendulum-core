@@ -31,77 +31,72 @@ int main(const int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    try {
-        pp::Config config(argv[1]);
-
-        // Let the token manage the pigpio library!
-        pigpio::ActivationToken token;
-
-        std::cout
-                << HI
-                << " ----------------------------------------- " << std::endl
-                << "|                                         |" << std::endl
-                << "|       Motor control checking tool       |" << std::endl
-                << "|                                         |" << std::endl
-                << " ----------------------------------------- " << std::endl
-                << RESET << std::endl
-                << "This tool checks that the motor is working and wired the right way." << std::endl
-                << std::endl;
-
-        const auto motor = config.getMotor();
-
-        std::cout << HI << "Configuration :" << RESET << std::endl;
-        std::cout << LABEL_COLOR << "- direction GPIO : " << RESET << motor->getDirectionPin() << std::endl;
-        std::cout << LABEL_COLOR << "- PWM GPIO       : " << RESET << motor->getPWMPin() << std::endl;
-
-        std::cout << std::endl
-                << "The motor will be moved in both directions to check its configuration." << std::endl << std::endl
-                << HI << "Move the cart to a central position, then hit Enter." << RESET <<
-                std::endl;
-
-        std::string line;
-        std::getline(std::cin, line);
-
-        constexpr auto TEST_PWM = 50;
-        constexpr auto MOTION_DURATION_SECS = 1;
-
-        std::cout << LABEL_COLOR << "-> cart moving rightwards for " << MOTION_DURATION_SECS << " seconds..."
-                << RESET << std::endl;
-        motor->setPWM(TEST_PWM);
-        std::this_thread::sleep_for(std::chrono::milliseconds(MOTION_DURATION_SECS * 1000));
-        motor->setPWM(0);
-
-        std::cout << LABEL_COLOR << "-> cart moving leftwards for " << 2 * MOTION_DURATION_SECS << " seconds..."
-                << RESET << std::endl;
-        motor->setPWM(-TEST_PWM);
-        std::this_thread::sleep_for(std::chrono::milliseconds(2 * MOTION_DURATION_SECS * 1000));
-        motor->setPWM(0);
-
-
-        std::cout << LABEL_COLOR << "-> cart going back to start position..." << RESET << std::endl;
-        motor->setPWM(TEST_PWM);
-        std::this_thread::sleep_for(std::chrono::milliseconds(MOTION_DURATION_SECS * 1000));
-        motor->setPWM(0);
-
-        std::cout << std::endl
-                << "The sequence should have been : right, left, back to center." << std::endl << std::endl
-                << HI << "Troubleshooting suggestions if it didn't go well :" << RESET << std::endl
-                << ANOM_COLOR << "- the motor moved, but in the wrong directions " << RESET << std::endl
-                << SUGG_COLOR << "  => swap the wires on the driver output" << RESET << std::endl
-                << ANOM_COLOR << "- the motor didn't move at all" << RESET << std::endl
-                << SUGG_COLOR << "  => check that the driver is powered" << RESET << std::endl
-                << ANOM_COLOR << "- the driver is powered but the motor didn't move" << RESET << std::endl
-                << SUGG_COLOR << "  => check that the DIR/PWM signals are connected according to the configuration" <<
-                RESET
-                << std::endl;
-
-        std::cout << RESET;
-        return EXIT_SUCCESS;
-    } catch (const YAML::Exception &e) {
-        std::cerr << "ERROR: YAML configuration loading error: " << e.what() << std::endl;
-        return EXIT_FAILURE;
-    } catch (const std::exception &e) {
-        std::cerr << "ERROR: " << e.what() << std::endl;
+    const auto config = pp::Config::loadFromFile(argv[1]);
+    if (!config) {
         return EXIT_FAILURE;
     }
+
+    // Let the token manage the pigpio library!
+    pigpio::ActivationToken token;
+
+    std::cout
+            << HI
+            << " ----------------------------------------- " << std::endl
+            << "|                                         |" << std::endl
+            << "|       Motor control checking tool       |" << std::endl
+            << "|                                         |" << std::endl
+            << " ----------------------------------------- " << std::endl
+            << RESET << std::endl
+            << "This tool checks that the motor is working and wired the right way." << std::endl
+            << std::endl;
+
+    const auto motor = config->getMotor();
+
+    std::cout << HI << "Configuration :" << RESET << std::endl;
+    std::cout << LABEL_COLOR << "- direction GPIO : " << RESET << motor->getDirectionPin() << std::endl;
+    std::cout << LABEL_COLOR << "- PWM GPIO       : " << RESET << motor->getPWMPin() << std::endl;
+
+    std::cout << std::endl
+            << "The motor will be moved in both directions to check its configuration." << std::endl << std::endl
+            << HI << "Move the cart to a central position, then hit Enter." << RESET <<
+            std::endl;
+
+    std::string line;
+    std::getline(std::cin, line);
+
+    constexpr auto TEST_PWM = 50;
+    constexpr auto MOTION_DURATION_SECS = 1;
+
+    std::cout << LABEL_COLOR << "-> cart moving rightwards for " << MOTION_DURATION_SECS << " seconds..."
+            << RESET << std::endl;
+    motor->setPWM(TEST_PWM);
+    std::this_thread::sleep_for(std::chrono::milliseconds(MOTION_DURATION_SECS * 1000));
+    motor->setPWM(0);
+
+    std::cout << LABEL_COLOR << "-> cart moving leftwards for " << 2 * MOTION_DURATION_SECS << " seconds..."
+            << RESET << std::endl;
+    motor->setPWM(-TEST_PWM);
+    std::this_thread::sleep_for(std::chrono::milliseconds(2 * MOTION_DURATION_SECS * 1000));
+    motor->setPWM(0);
+
+
+    std::cout << LABEL_COLOR << "-> cart going back to start position..." << RESET << std::endl;
+    motor->setPWM(TEST_PWM);
+    std::this_thread::sleep_for(std::chrono::milliseconds(MOTION_DURATION_SECS * 1000));
+    motor->setPWM(0);
+
+    std::cout << std::endl
+            << "The sequence should have been : right, left, back to center." << std::endl << std::endl
+            << HI << "Troubleshooting suggestions if it didn't go well :" << RESET << std::endl
+            << ANOM_COLOR << "- the motor moved, but in the wrong directions " << RESET << std::endl
+            << SUGG_COLOR << "  => swap the wires on the driver output" << RESET << std::endl
+            << ANOM_COLOR << "- the motor didn't move at all" << RESET << std::endl
+            << SUGG_COLOR << "  => check that the driver is powered" << RESET << std::endl
+            << ANOM_COLOR << "- the driver is powered but the motor didn't move" << RESET << std::endl
+            << SUGG_COLOR << "  => check that the DIR/PWM signals are connected according to the configuration" <<
+            RESET
+            << std::endl;
+
+    std::cout << RESET;
+    return EXIT_SUCCESS;
 }

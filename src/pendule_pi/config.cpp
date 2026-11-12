@@ -1,6 +1,9 @@
-#include <pendule_pi/config.hpp>
-#include <digital_filters/filters.hpp>
 #include <fstream>
+
+#include <pendule_pi/config.hpp>
+#include <pendule_pi/colors.h>
+
+#include <digital_filters/filters.hpp>
 
 #define THROW_IF_MISSING_1(x) { if(!yaml_[x]) throw MissingParameter(x); }
 #define THROW_IF_MISSING_2(x,y) { if(!yaml_[x][y]) throw MissingParameter((x) + std::string("/") + (y)); }
@@ -20,10 +23,22 @@ namespace pendule_pi {
         : yaml_(YAML::LoadFile(file_name)) {
     }
 
+    std::optional<Config> Config::loadFromFile(const std::string &path) {
+        constexpr auto ERROR = BRIGHT_RED;
+
+        try {
+            return Config(path);
+        } catch (const YAML::Exception &e) {
+            std::cerr << ERROR << "ERROR: YAML configuration loading error: " << e.what() << RESET << std::endl;
+        } catch (const std::exception &e) {
+            std::cerr << ERROR << "ERROR: " << e.what() << RESET << std::endl;
+        }
+        return std::nullopt;
+    }
 
     std::unique_ptr<Switch> Config::getSwitch(
         const std::string &switch_name
-    ) {
+    ) const {
         THROW_IF_MISSING(switch_name);
         THROW_IF_MISSING(switch_name, "pin");
         THROW_IF_MISSING(switch_name, "normally_up");
@@ -40,7 +55,7 @@ namespace pendule_pi {
 
     std::unique_ptr<Encoder> Config::getEncoder(
         const std::string &encoder_name
-    ) {
+    ) const {
         THROW_IF_MISSING(encoder_name);
         THROW_IF_MISSING(encoder_name, "pin_a");
         THROW_IF_MISSING(encoder_name, "pin_b");
@@ -52,7 +67,7 @@ namespace pendule_pi {
     }
 
 
-    std::unique_ptr<Motor> Config::getMotor() {
+    std::unique_ptr<Motor> Config::getMotor() const {
         constexpr auto motor_name = "motor";
         THROW_IF_MISSING(motor_name);
         THROW_IF_MISSING(motor_name, "pwm_pin");
@@ -65,7 +80,7 @@ namespace pendule_pi {
     }
 
 
-    std::unique_ptr<Pendule> Config::getPendule() {
+    std::unique_ptr<Pendule> Config::getPendule() const {
         THROW_IF_MISSING("meters_per_step");
         THROW_IF_MISSING("radians_per_step");
         THROW_IF_MISSING("angle_offset");
@@ -94,7 +109,7 @@ namespace pendule_pi {
     }
 
 
-    std::unique_ptr<PenduleCppServer> Config::getPenduleServer() {
+    std::unique_ptr<PenduleCppServer> Config::getPenduleServer() const {
         THROW_IF_MISSING("sockets");
         THROW_IF_MISSING("sockets", "host");
         THROW_IF_MISSING("sockets", "state_port");
@@ -108,7 +123,7 @@ namespace pendule_pi {
     }
 
 
-    int Config::getCalibrationPWM() {
+    int Config::getCalibrationPWM() const {
         THROW_IF_MISSING("calibration_pwm");
         const auto pwm = yaml_["calibration_pwm"].as<int>();
         if (pwm <= 0)
@@ -117,14 +132,14 @@ namespace pendule_pi {
     }
 
 
-    double Config::getSoftSafetyThreshold() {
+    double Config::getSoftSafetyThreshold() const {
         THROW_IF_MISSING("safety_thresholds");
         THROW_IF_MISSING("safety_thresholds", "soft");
         return yaml_["safety_thresholds"]["soft"].as<double>();
     }
 
 
-    std::unique_ptr<pigpio::Rate> Config::getControlRate() {
+    std::unique_ptr<pigpio::Rate> Config::getControlRate() const {
         THROW_IF_MISSING("period_ms");
         const auto period_ms = yaml_["period_ms"].as<int>();
         if (period_ms <= 0)
@@ -133,7 +148,7 @@ namespace pendule_pi {
     }
 
 
-    std::unique_ptr<digital_filters::Filter<double, double> > Config::getFilter() {
+    std::unique_ptr<digital_filters::Filter<double, double> > Config::getFilter() const {
         THROW_IF_MISSING("period_ms");
         THROW_IF_MISSING("cutoff_frequency");
         const auto period_ms = yaml_["period_ms"].as<int>();
@@ -147,7 +162,7 @@ namespace pendule_pi {
         );
     }
 
-    GPIOMapping Config::getGPIOMapping() {
+    GPIOMapping Config::getGPIOMapping() const {
         return {
             .left_switch_pin = yaml_["left_switch"]["pin"].as<uint8_t>(),
             .right_switch_pin = yaml_["right_switch"]["pin"].as<uint8_t>(),

@@ -42,83 +42,79 @@ int main(const int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    try {
-        pp::Config config(argv[1]);
-
-        try {
-            // Let the token manage the pigpio library!
-            pigpio::ActivationToken token;
-
-            signal(SIGINT, pigpio::ActivationToken::pleaseStop);
-            signal(SIGTERM, pigpio::ActivationToken::pleaseStop);
-
-            std::cout
-                    << HI
-                    << " ------------------------------------------ " << std::endl
-                    << "|                                          |" << std::endl
-                    << "|   Encoders configuration checking tool   |" << std::endl
-                    << "|                                          |" << std::endl
-                    << " ------------------------------------------ " << std::endl
-                    << RESET << std::endl
-                    << "This tool checks that the encoders are configured so that the returned values" << std::endl
-                    << "progress according to the conventions used in the control laws." << std::endl << std::endl;
-
-            const auto position_encoder = config.getPositionEncoder();
-            const auto angle_encoder = config.getAngleEncoder();
-            constexpr auto POLLING_PERIOD_MS = 100;
-
-            std::cout << HI << "Configuration :" << RESET << std::endl;
-            std::cout << LABEL_COLOR << "- position : " << RESET
-                    << "A->GPIO " << position_encoder->getPinA() << " - B->GPIO " << position_encoder->getPinB()
-                    << std::endl;
-            std::cout << LABEL_COLOR << "- angle    : " << RESET
-                    << "A->GPIO " << angle_encoder->getPinA() << " - B->GPIO " << angle_encoder->getPinB()
-                    << std::endl;
-
-            std::cout << std::endl
-                    << "If the wiring and configuration are OK, the following behaviours are expected :" << std::endl
-                    << "- position values " << HI << "increase" << RESET << " when the cart moves " << HI <<
-                    "rightwards" <<
-                    LABEL_COLOR << " (positive X)" << RESET << std::endl
-                    << "- angle values " << HI << "increase" << RESET << " when the arm is rotated " << HI << "CCW" <<
-                    LABEL_COLOR << " (trigonometric convention)" << RESET << std::endl
-                    << std::endl
-                    << "Reading encoders every " << POLLING_PERIOD_MS << " ms... "
-                    << LABEL_COLOR << "(Ctrl-C to end)" << RESET << std::endl
-                    << std::endl;
-
-            auto last_position = position_encoder->steps();
-            auto last_angle = angle_encoder->steps();
-
-            while (true) {
-                const auto position = position_encoder->steps();
-                const auto angle = angle_encoder->steps();
-
-                std::cout << '\r';
-                display_value("position", position, last_position);
-                display_value("angle", angle, last_angle);
-                std::cout
-                        << LABEL_COLOR << "(legend: "
-                        << POS_COLOR << "INC" << RESET
-                        << " "
-                        << NEG_COLOR << "DEC" << LABEL_COLOR << ")  " << RESET;
-                std::cout.flush();
-
-                last_position = position;
-                last_angle = angle;
-
-                std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_PERIOD_MS));
-            }
-        } catch (const pigpio::ActivationToken::PleaseStop &) {
-            std::cout << std::endl << YELLOW << "Termination signal received, terminating..." << std::endl;
-        }
-        std::cout << RESET;
-        return EXIT_SUCCESS;
-    } catch (const YAML::Exception &e) {
-        std::cerr << "ERROR: YAML configuration loading error: " << e.what() << std::endl;
-        return EXIT_FAILURE;
-    } catch (const std::exception &e) {
-        std::cerr << "ERROR: " << e.what() << std::endl;
+    const auto config = pp::Config::loadFromFile(argv[1]);
+    if (!config) {
         return EXIT_FAILURE;
     }
+
+
+    try {
+        // Let the token manage the pigpio library!
+        pigpio::ActivationToken token;
+
+        signal(SIGINT, pigpio::ActivationToken::pleaseStop);
+        signal(SIGTERM, pigpio::ActivationToken::pleaseStop);
+
+        std::cout
+                << HI
+                << " ------------------------------------------ " << std::endl
+                << "|                                          |" << std::endl
+                << "|   Encoders configuration checking tool   |" << std::endl
+                << "|                                          |" << std::endl
+                << " ------------------------------------------ " << std::endl
+                << RESET << std::endl
+                << "This tool checks that the encoders are configured so that the returned values" << std::endl
+                << "progress according to the conventions used in the control laws." << std::endl << std::endl;
+
+        const auto position_encoder = config->getPositionEncoder();
+        const auto angle_encoder = config->getAngleEncoder();
+        constexpr auto POLLING_PERIOD_MS = 100;
+
+        std::cout << HI << "Configuration :" << RESET << std::endl;
+        std::cout << LABEL_COLOR << "- position : " << RESET
+                << "A->GPIO " << position_encoder->getPinA() << " - B->GPIO " << position_encoder->getPinB()
+                << std::endl;
+        std::cout << LABEL_COLOR << "- angle    : " << RESET
+                << "A->GPIO " << angle_encoder->getPinA() << " - B->GPIO " << angle_encoder->getPinB()
+                << std::endl;
+
+        std::cout << std::endl
+                << "If the wiring and configuration are OK, the following behaviours are expected :" << std::endl
+                << "- position values " << HI << "increase" << RESET << " when the cart moves " << HI <<
+                "rightwards" <<
+                LABEL_COLOR << " (positive X)" << RESET << std::endl
+                << "- angle values " << HI << "increase" << RESET << " when the arm is rotated " << HI << "CCW" <<
+                LABEL_COLOR << " (trigonometric convention)" << RESET << std::endl
+                << std::endl
+                << "Reading encoders every " << POLLING_PERIOD_MS << " ms... "
+                << LABEL_COLOR << "(Ctrl-C to end)" << RESET << std::endl
+                << std::endl;
+
+        auto last_position = position_encoder->steps();
+        auto last_angle = angle_encoder->steps();
+
+        while (true) {
+            const auto position = position_encoder->steps();
+            const auto angle = angle_encoder->steps();
+
+            std::cout << '\r';
+            display_value("position", position, last_position);
+            display_value("angle", angle, last_angle);
+            std::cout
+                    << LABEL_COLOR << "(legend: "
+                    << POS_COLOR << "INC" << RESET
+                    << " "
+                    << NEG_COLOR << "DEC" << LABEL_COLOR << ")  " << RESET;
+            std::cout.flush();
+
+            last_position = position;
+            last_angle = angle;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_PERIOD_MS));
+        }
+    } catch (const pigpio::ActivationToken::PleaseStop &) {
+        std::cout << std::endl << YELLOW << "Termination signal received, terminating..." << std::endl;
+    }
+    std::cout << RESET;
+    return EXIT_SUCCESS;
 }

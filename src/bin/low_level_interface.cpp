@@ -2,6 +2,7 @@
 #include <chrono>
 #include <csignal>
 #include <thread>
+#include <unistd.h>
 
 #include <pendule_pi/colors.h>
 #include <pendule_pi/config.hpp>
@@ -11,20 +12,36 @@
 #include "utils.hpp"
 // clang-format on
 
-#define LABEL BRIGHT_BLUE
+namespace pp = pendule_pi;
+
+
+constexpr auto ERROR = BRIGHT_RED;
+constexpr auto LABEL = BRIGHT_BLUE;
+
 
 int main(const int argc, char **argv) {
-    namespace pp = pendule_pi;
+    const std::string program_name = argv[0];
 
-    // Load all parameters from a configuration file.
-    if (argc < 2) {
-        std::cout << RED << "Usage: sudo " << argv[0] << " config_file.yaml" << RESET << std::endl;
-        std::cout << "- 'sudo' is needed for pigpio to work" << std::endl;
-        std::cout << "- the configuration file is needed to setup the interface" << std::endl;
+    // check if we are root
+    if (getuid() != 0) {
+        std::cout << ERROR
+                << "ERROR: this program must be executed as root." << std::endl
+                << "Usage: sudo " << program_name << " config_file.yaml" << RESET << std::endl;
         return EXIT_FAILURE;
     }
 
-    pp::Config config(argv[1]);
+    // check if the configuration file is passed as argument
+    if (argc < 2) {
+        std::cout << ERROR
+                << "ERROR: missing configuration file argument." << std::endl
+                << "Usage: sudo " << program_name << " config_file.yaml" << RESET << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    const auto config = pp::Config::loadFromFile(argv[1]);
+    if (!config) {
+        return EXIT_FAILURE;
+    }
 
     try {
         // Let the token manage the pigpio library!
@@ -34,7 +51,7 @@ int main(const int argc, char **argv) {
         signal(SIGTERM, pigpio::ActivationToken::pleaseStop);
 
         // Create the pendulum instance and perform the calibration.
-        const auto pendule = config.getPendule();
+        const auto pendule = config->getPendule();
 
         std::cout << std::endl << BRIGHT_WHITE
                 << " ------------------------------------------------ " << std::endl
@@ -45,7 +62,7 @@ int main(const int argc, char **argv) {
                 << std::endl << LABEL << "Version " << PENDULE_PI_VERSION << std::endl
                 << RESET;
 
-        pendule->calibrate(config.getCalibrationPWM(), true);
+        pendule->calibrate(config->getCalibrationPWM(), true);
 
         // if here, the calibration process went fine, anomalies being reported by raising exceptions.
 
@@ -54,17 +71,17 @@ int main(const int argc, char **argv) {
                 << "Demo can be started now." << std::endl << std::endl;
 
         // Define soft limits for the pendulum.
-        const double MAX_POSITION = pendule->softMinMaxPosition() - config.getSoftSafetyThreshold();
+        const double MAX_POSITION = pendule->softMinMaxPosition() - config->getSoftSafetyThreshold();
 
         // Create the timer used for enforcing a stable control rate.
-        const auto rate = config.getControlRate();
+        const auto rate = config->getControlRate();
         const double PERIOD_SEC = rate->period() / 1000000.0;
 
         // Setup filters.
-        const auto filter_position = config.getFilter();
-        const auto filter_angle = config.getFilter();
-        const auto filter_linear_vel = config.getFilter();
-        const auto filter_angular_vel = config.getFilter();
+        const auto filter_position = config->getFilter();
+        const auto filter_angle = config->getFilter();
+        const auto filter_linear_vel = config->getFilter();
+        const auto filter_angular_vel = config->getFilter();
 
         filter_position->initInput(pendule->position());
         filter_position->initOutput(pendule->position());
@@ -79,7 +96,7 @@ int main(const int argc, char **argv) {
         int pwm = 0;
 
         // Socket connections.
-        const auto tcp = config.getPenduleServer();
+        const auto tcp = config->getPenduleServer();
         const unsigned int MAX_MISSED_MESSAGES = 1 + static_cast<int>(1. / PERIOD_SEC);
 
         // sleep a little bit before starting with the main loop
@@ -122,8 +139,6 @@ int main(const int argc, char **argv) {
         }
     } catch (const pigpio::ActivationToken::PleaseStop &) {
         std::cout << std::endl << "PleaseStop token received, terminating..." << std::endl;
-    } catch (...) {
-        throw;
     }
 
     return EXIT_SUCCESS;

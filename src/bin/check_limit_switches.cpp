@@ -41,60 +41,55 @@ int main(const int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    try {
-        pp::Config config(argv[1]);
-
-        try {
-            // Let the token manage the pigpio library!
-            pigpio::ActivationToken token;
-
-            signal(SIGINT, pigpio::ActivationToken::pleaseStop);
-            signal(SIGTERM, pigpio::ActivationToken::pleaseStop);
-
-            std::cout
-                    << HI
-                    << " ------------------------------------------------ " << std::endl
-                    << "|                                                |" << std::endl
-                    << "|   Limit switches configuration checking tool   |" << std::endl
-                    << "|                                                |" << std::endl
-                    << " ------------------------------------------------ " << std::endl
-                    << RESET << std::endl
-                    << "This tool checks that the track limit switches are properly configured and working." <<
-                    std::endl
-                    << std::endl;
-
-            const auto left_switch = config.getLeftSwitch();
-            const auto right_switch = config.getRightSwitch();
-
-            std::cout << HI << "Configuration :" << RESET << std::endl;
-            std::cout << LABEL_COLOR << "- left switch  : " << RESET << "GPIO " << left_switch->getPin() << std::endl;
-            std::cout << LABEL_COLOR << "- right switch : " << RESET << "GPIO " << right_switch->getPin() << std::endl;
-
-            std::cout << std::endl
-                    << "If the wiring and configuration are OK, the switches must be shown as active" << std::endl
-                    << "when a magnet is moved close to them." << std::endl
-                    << std::endl;
-
-            while (true) {
-                constexpr auto POLLING_PERIOD_MS = 100;
-                std::cout << '\r';
-                display_state("left", !left_switch->atRest());
-                display_state("right", !right_switch->atRest());
-                std::cout.flush();
-
-                std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_PERIOD_MS));
-            }
-        } catch (const pigpio::ActivationToken::PleaseStop &) {
-            std::cout << std::endl << YELLOW << "Termination signal received, terminating..." << std::endl;
-        }
-
-        std::cout << RESET;
-        return EXIT_SUCCESS;
-    } catch (const YAML::Exception &e) {
-        std::cerr << "ERROR: YAML configuration loading error: " << e.what() << std::endl;
-        return EXIT_FAILURE;
-    } catch (const std::exception &e) {
-        std::cerr << "ERROR: " << e.what() << std::endl;
+    const auto config = pp::Config::loadFromFile(argv[1]);
+    if (!config) {
         return EXIT_FAILURE;
     }
+
+    try {
+        // Let the token manage the pigpio library!
+        pigpio::ActivationToken token;
+
+        signal(SIGINT, pigpio::ActivationToken::pleaseStop);
+        signal(SIGTERM, pigpio::ActivationToken::pleaseStop);
+
+        std::cout
+                << HI
+                << " ------------------------------------------------ " << std::endl
+                << "|                                                |" << std::endl
+                << "|   Limit switches configuration checking tool   |" << std::endl
+                << "|                                                |" << std::endl
+                << " ------------------------------------------------ " << std::endl
+                << RESET << std::endl
+                << "This tool checks that the track limit switches are properly configured and working." <<
+                std::endl
+                << std::endl;
+
+        const auto left_switch = config->getLeftSwitch();
+        const auto right_switch = config->getRightSwitch();
+
+        std::cout << HI << "Configuration :" << RESET << std::endl;
+        std::cout << LABEL_COLOR << "- left switch  : " << RESET << "GPIO " << left_switch->getPin() << std::endl;
+        std::cout << LABEL_COLOR << "- right switch : " << RESET << "GPIO " << right_switch->getPin() << std::endl;
+
+        std::cout << std::endl
+                << "If the wiring and configuration are OK, the switches must be shown as active" << std::endl
+                << "when a magnet is moved close to them." << std::endl
+                << std::endl;
+
+        while (true) {
+            constexpr auto POLLING_PERIOD_MS = 100;
+            std::cout << '\r';
+            display_state("left", !left_switch->atRest());
+            display_state("right", !right_switch->atRest());
+            std::cout.flush();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_PERIOD_MS));
+        }
+    } catch (const pigpio::ActivationToken::PleaseStop &) {
+        std::cout << std::endl << YELLOW << "Termination signal received, terminating..." << std::endl;
+    }
+
+    std::cout << RESET;
+    return EXIT_SUCCESS;
 }
