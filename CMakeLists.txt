@@ -14,6 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # (zmq et zmqpp are linked by name, without using find_package)
 find_package(pigpio REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(Threads REQUIRED)
 
 # Warnings on all targets. Optimization level comes from CMAKE_BUILD_TYPE
 # (Release = -O3 -DNDEBUG).
@@ -30,23 +31,24 @@ add_library(pendule_pi
         src/pendule_pi/encoder.cpp
         src/pendule_pi/pendule.cpp
         src/pendule_pi/pendule_cpp_server.cpp
+        src/pendule_pi/pendule_cpp_client.cpp
 )
-
-# inject the version string as defined in the project() clause
-target_compile_definitions(pendule_pi PUBLIC PENDULE_PI_VERSION="${PROJECT_VERSION}")
 
 target_include_directories(pendule_pi PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+# PUBLIC : every binary linked to pendule_pi inherits these dependencies
 target_link_libraries(pendule_pi PUBLIC
         pigpio::pigpio
-        pthread
+        Threads::Threads
         zmq
         zmqpp
         yaml-cpp
 )
 
 target_compile_definitions(pendule_pi PUBLIC
+        PENDULE_PI_VERSION="${PROJECT_VERSION}"
         $<$<CONFIG:Debug>:PENDULE_PI_DEBUG_ENABLED>
 )
 
@@ -58,20 +60,16 @@ target_compile_definitions(pendule_pi PUBLIC
 add_executable(low_level_interface
         src/bin/low_level_interface.cpp
 )
-target_link_libraries(
-        low_level_interface
+target_link_libraries(low_level_interface
         pendule_pi
 )
 
 # ----------------------------------------
 add_executable(demo
         src/bin/demo.cpp
-        src/pendule_pi/pendule_cpp_client.cpp
 )
 target_link_libraries(demo
         pendule_pi
-        zmq
-        zmqpp
 )
 
 # ----------------------------------------
@@ -79,5 +77,8 @@ add_executable(reset_gpio
         src/bin/reset_gpio.cpp
 )
 target_link_libraries(reset_gpio
-        pendule_pi
+        pigpio::pigpio
+        # Threads::Threads: libpigpio.so uses POSIX threads but does not link them itself
+        # (glibc < 2.34), so every target using pigpio must link them explicitly.
+        Threads::Threads
 )
