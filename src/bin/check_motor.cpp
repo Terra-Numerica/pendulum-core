@@ -13,8 +13,8 @@
 // clang-format on
 
 
-constexpr auto ANOM_COLOR = BRIGHT_RED;
-constexpr auto SUGG_COLOR = BRIGHT_GREEN;
+constexpr auto ANOM_COLOR = BRIGHT_CYAN;
+constexpr auto ACTION_COLOR = BRIGHT_GREEN;
 constexpr auto LABEL_COLOR = BRIGHT_BLUE;
 constexpr auto HI = BRIGHT_WHITE;
 
@@ -46,6 +46,7 @@ int main(const int argc, char **argv) {
             << "|       Motor control checking tool       |" << std::endl
             << "|                                         |" << std::endl
             << " ----------------------------------------- " << std::endl
+            << std::endl << LABEL_COLOR << "Version " << PENDULE_PI_VERSION << std::endl
             << RESET << std::endl
             << "This tool checks that the motor is working and wired the right way." << std::endl
             << std::endl;
@@ -87,15 +88,15 @@ int main(const int argc, char **argv) {
 
     std::cout << std::endl
             << "The sequence should have been : right, left, back to center." << std::endl << std::endl
-            << HI << "Troubleshooting suggestions if it didn't go well :" << RESET << std::endl
+            << HI << "Troubleshooting guide if it didn't go well :" << RESET << std::endl
             << ANOM_COLOR << "- the motor moved, but in the wrong directions " << RESET << std::endl
-            << SUGG_COLOR << "  => swap the wires on the driver output" << RESET << std::endl
+            << ACTION_COLOR << "  => swap the wires on the driver output" << RESET << std::endl
             << ANOM_COLOR << "- the motor didn't move at all" << RESET << std::endl
-            << SUGG_COLOR << "  => check that the driver is powered" << RESET << std::endl
+            << ACTION_COLOR << "  => check that the driver is powered" << RESET << std::endl
             << ANOM_COLOR << "- the driver is powered but the motor didn't move" << RESET << std::endl
-            << SUGG_COLOR << "  => check that the DIR/PWM signals are connected according to the configuration" <<
+            << ACTION_COLOR << "  => check that the DIR/PWM signals are connected according to the configuration" <<
             RESET
-            << std::endl;
+            << std::endl << std::endl;
 
     std::cout << RESET;
     return EXIT_SUCCESS;

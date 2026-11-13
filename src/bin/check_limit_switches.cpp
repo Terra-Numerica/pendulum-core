@@ -60,6 +60,7 @@ int main(const int argc, char **argv) {
                 << "|   Limit switches configuration checking tool   |" << std::endl
                 << "|                                                |" << std::endl
                 << " ------------------------------------------------ " << std::endl
+                << std::endl << LABEL_COLOR << "Version " << PENDULE_PI_VERSION << std::endl
                 << RESET << std::endl
                 << "This tool checks that the track limit switches are properly configured and working." <<
                 std::endl

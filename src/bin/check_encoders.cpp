@@ -62,6 +62,7 @@ int main(const int argc, char **argv) {
                 << "|   Encoders configuration checking tool   |" << std::endl
                 << "|                                          |" << std::endl
                 << " ------------------------------------------ " << std::endl
+                << std::endl << LABEL_COLOR << "Version " << PENDULE_PI_VERSION << std::endl
                 << RESET << std::endl
                 << "This tool checks that the encoders are configured so that the returned values" << std::endl
                 << "progress according to the conventions used in the control laws." << std::endl << std::endl;
