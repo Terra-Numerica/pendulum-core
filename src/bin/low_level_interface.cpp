@@ -3,6 +3,7 @@
 #include <csignal>
 #include <thread>
 #include <unistd.h>
+#include <fstream>
 
 #include <pendule_pi/colors.h>
 #include <pendule_pi/config.hpp>
@@ -18,6 +19,8 @@ namespace pp = pendule_pi;
 constexpr auto ERROR = BRIGHT_RED;
 constexpr auto LABEL = BRIGHT_BLUE;
 
+constexpr auto STATUS_FILE = "/var/run/pendulum.status";
+
 
 int main(const int argc, char **argv) {
     const std::string program_name = argv[0];
@@ -29,6 +32,9 @@ int main(const int argc, char **argv) {
                 << "Usage: sudo " << program_name << " config_file.yaml" << RESET << std::endl;
         return EXIT_FAILURE;
     }
+
+    // ensure the status file is cleared
+    std::remove(STATUS_FILE);
 
     // check if the configuration file is passed as argument
     if (argc < 2) {
@@ -62,13 +68,22 @@ int main(const int argc, char **argv) {
                 << std::endl << LABEL << "Version " << PENDULE_PI_VERSION << std::endl
                 << RESET;
 
-        pendule->calibrate(config->getCalibrationPWM(), true);
+        try {
+            pendule->calibrate(config->getCalibrationPWM(), true);
+        } catch (...) {
+            // create the status file to report we failed and exit now
+            std::ofstream(STATUS_FILE).put('0');
+            return EXIT_FAILURE;
+        }
 
         // if here, the calibration process went fine, anomalies being reported by raising exceptions.
 
         std::cout
-                << BRIGHT_GREEN << "--- Pendulum ready ---" << RESET << std::endl << std::endl
-                << "Demo can be started now." << std::endl << std::endl;
+                << BRIGHT_GREEN << "--- Pendulum ready ---" << RESET << std::endl
+                << std::endl;
+
+        // create the status file to report that we are up and running
+        std::ofstream(STATUS_FILE).put('1');
 
         // Define soft limits for the pendulum.
         const double MAX_POSITION = pendule->softMinMaxPosition() - config->getSoftSafetyThreshold();
@@ -138,8 +153,11 @@ int main(const int argc, char **argv) {
             pendule->setCommand(pwm);
         }
     } catch (const pigpio::ActivationToken::PleaseStop &) {
-        std::cout << std::endl << "PleaseStop token received, terminating..." << std::endl;
+        std::cout << std::endl << BRIGHT_YELLOW << "PleaseStop token received, terminating..." << RESET << std::endl;
     }
+
+    // clear the status file before leaving
+    std::remove(STATUS_FILE);
 
     return EXIT_SUCCESS;
 }
