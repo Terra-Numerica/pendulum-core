@@ -138,17 +138,10 @@ static void display_status_line(
             << std::setw(3) << std::left << msg << RESET
             << " ] [ Err: angle=" << CYAN
             << std::setw(6) << std::right << std::setprecision(1) << e_theta_deg << RESET
-            << " | pos=" << CYAN;
-
-    if (control_mode == ControlMode::Manual) {
-        std::cout << " --- ";
-    } else {
-        std::cout << std::setw(5) << std::right << std::setprecision(2) << e_position;
-    }
-
-    std::cout << RESET;
-
-    std::cout << " ] [ AP: " << std::setw(3) << std::left;
+            << " | pos=" << CYAN
+            // position error is displayed in cm
+            << std::setw(6) << std::right << std::setprecision(1) << e_position * 100
+            << RESET << " ] [ AP: " << std::setw(3) << std::left;
 
     if (control_mode != ControlMode::Manual) {
         if (autopilot_engaged) {
@@ -351,6 +344,9 @@ int main(const int argc, char **argv) {
                 int ref = joy.axis(AXIS_PWM);
                 ref = robustZero(ref, JOYSTICK_DEAD_ZONE);
                 pwm = static_cast<int>(ref * PWM_LIMIT / 32768.);
+
+                // in manual mode, the center of the track is considered as the target position
+                e_pos = pendulum.position();
                 break;
             }
 
