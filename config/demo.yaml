@@ -1,4 +1,35 @@
 joystick:
-  btn_exit: 1
+  # the axis used to control the carriage in manual mode
+  axis_pwm: 0
+  # mode switch (manual -> LQR -> swing up)
   btn_switch: 0
+  # gives control to app in LQR and swing up modes
   btn_autopilot: 2
+  # comment the next line to disable the Exit button
+  btn_exit: 1
+  # edit and uncomment next line if you have several gamepads connected
+  # device: /dev/input/js0
+
+# communications between demo and low level controller
+sockets:
+  host: localhost
+  state_port: 10001
+  command_port: 10002
+
+# coefficients of the LQR control law
+lqr_gains:
+  position: -127.45880662905581
+  lin_vel: -822.638944546691
+  angle: 2234.654627319883
+  ang_vel: 437.1177135919267
+
+# coefficients of the swing-up control law
+swing_up:
+  k: 70
+  kx: 0
+
+misc:
+  # max angle error of the LQR range (> 0, default: 0.25)
+  lqr_e_theta_max: 0.25   # rd
+  # ratio of max LQR error to switch from swing up to LQR (in [0.0, 1.0], default: 1)
+  swingup_to_lqr_ratio: 1
