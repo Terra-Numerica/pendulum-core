@@ -63,29 +63,40 @@ static void display_help(const std::string &program_name) {
 
 static void print_configuration_example(const std::string &program_name) {
     std::cout <<
+            "joystick:\n"
+            "  # the axis used to control the carriage in manual mode\n"
+            "  axis_pwm: 0\n"
+            "  # mode switch (manual -> LQR -> swing up)\n"
+            "  btn_switch: 0\n"
+            "  # gives control to app in LQR and swing up modes\n"
+            "  btn_autopilot: 2\n"
+            "  # comment the next line to disable the Exit button\n"
+            "  btn_exit: 1\n"
+            "  # edit and uncomment next line if you have several gamepads connected\n"
+            "  # device: /dev/input/js0\n"
+            "\n"
+            "# communications between demo and low level controller\n"
             "sockets:\n"
             "  host: localhost\n"
             "  state_port: 10001\n"
             "  command_port: 10002\n"
-            "gains:\n"
+            "\n"
+            "# coefficients of the LQR control law\n"
+            "lqr_gains:\n"
             "  position: -127.45880662905581\n"
-            "  linvel: -822.638944546691\n"
+            "  lin_vel: -822.638944546691\n"
             "  angle: 2234.654627319883\n"
-            "  angvel: 437.1177135919267\n"
-            "swingup:\n"
+            "  ang_vel: 437.1177135919267\n"
+            "\n"
+            "# coefficients of the swing-up control law\n"
+            "swing_up:\n"
             "  k: 70\n"
             "  kx: 0\n"
-            "joystick:\n"
-            "  device: /dev/input/js0\n"
-            "  axis_pwm: 0\n"
-            "  btn_switch: 0\n"
-            "  btn_autopilot: 2\n"
-            "  # comment the next line to disable the Exit button\n"
-            "  btn_exit: 1 \n"
+            "\n"
             "misc:\n"
             "  # max angle error of the LQR range (> 0, default: 0.25)\n"
             "  lqr_e_theta_max: 0.25   # rd\n"
-            "  # ratio of max LQR error to switch from swingup to LQR (in [0.0, 1.0], default: 1)\n"
+            "  # ratio of max LQR error to switch from swing up to LQR (in [0.0, 1.0], default: 1)\n"
             "  swingup_to_lqr_ratio: 0.9\n";
 }
 
@@ -230,7 +241,7 @@ int main(const int argc, char **argv) {
     };
 
     // control gains for the swing-up phase
-    const auto swingup_config = configuration["swingup"];
+    const auto swingup_config = configuration["swing_up"];
     const auto kswing = swingup_config["k"].as<double>(70.0);
     const auto ksx = swingup_config["kx"].as<double>(0.0);
 
@@ -245,11 +256,11 @@ int main(const int argc, char **argv) {
     bool refresh_status_requested = true;
 
     // control gains for the LQR phase
-    const auto gains_config = configuration["gains"];
+    const auto gains_config = configuration["lqr_gains"];
     const auto kp = gains_config["position"].as<double>(-127.45880662905581);
-    const auto kpd = gains_config["linvel"].as<double>(-822.638944546691);
+    const auto kpd = gains_config["lin_vel"].as<double>(-822.638944546691);
     const auto kt = gains_config["angle"].as<double>(2234.654627319883);
-    const auto ktd = gains_config["angvel"].as<double>(437.1177135919267);
+    const auto ktd = gains_config["ang_vel"].as<double>(437.1177135919267);
 
     std::cout << BRIGHT_WHITE << "LQR gains:" << RESET << std::endl
             << LABEL << "  kp     : " << coeff_fmt << kp << std::endl
