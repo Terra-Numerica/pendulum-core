@@ -393,12 +393,11 @@ int main(const int argc, char **argv) {
                             pwm = 0;
                         } else {
                             // Swingup mode => move the cart so that the pendulum gradually comes close to the LQR range
-
-                            // TODO : make the formula less opaque by moving these magic numbers to explicitly named constants
-                            auto ks = kswing * (0.1 + 0.9 * 0.5 * (1 - std::cos(e_theta)));
+                            const double cos_e_theta = std::cos(e_theta);
                             pwm = static_cast<int>(
-                                +ks * (1 - std::cos(e_theta)) * sign(pendulum.angular_velocity() * std::cos(e_theta)) -
-                                ksx * pendulum.position()
+                                +kswing * (1 - cos_e_theta)
+                                * sign(pendulum.angular_velocity() * cos_e_theta)
+                                - ksx * pendulum.position()
                             );
                         }
                     }
