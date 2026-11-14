@@ -41,9 +41,15 @@ motor:
   # Pin used to invert the rotation direction of the motor.
   direction_pin: 16
 
-# Conversion coefficients for the encoders.
-meters_per_step: 1.6656494260794234e-05  # 0.846/50791
-radians_per_step: 0.002617993877991494  # 2*M_PI/2400
+# Encoders specifications
+# IMPORTANT :
+#   Provide the physical value, as indicated in the maker's datasheet,
+#   NOT the one used in internal computations.
+encoders_step_per_turn: 600
+
+# Mechanical specifications of the timing belt and pulley.
+timing_belt_module: 2.0         # mm
+pulley_teeth_count: 20
 
 # By default, the pendulum should read zero when in the downward position and PI
 # when pointing upward. However, you might prefer a different convention, or

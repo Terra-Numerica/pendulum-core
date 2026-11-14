@@ -81,17 +81,26 @@ namespace pendule_pi {
 
 
     std::unique_ptr<Pendule> Config::getPendule() const {
-        THROW_IF_MISSING("meters_per_step");
-        THROW_IF_MISSING("radians_per_step");
         THROW_IF_MISSING("angle_offset");
         THROW_IF_MISSING("safety_thresholds");
         THROW_IF_MISSING("safety_thresholds", "hard");
         THROW_IF_MISSING("pwm_offsets");
         THROW_IF_MISSING("pwm_offsets", "low");
         THROW_IF_MISSING("pwm_offsets", "high");
+
+        // all the edges of the A/B signals are used to count steps, hence multiply the base resolution by 4
+        const int encoders_step_per_turn = yaml_["encoders_step_per_turn"].as<int>(600) * 4;
+        // the distance between two consecutive teeth of the timing belt (a T2 model by default)
+        const double timing_belt_module = yaml_["timing_belt_module"].as<int>(2.0);
+
+        const int pulley_teeth_count = yaml_["pulley_teeth_count"].as<int>(20);
+
+        const double meters_per_step = pulley_teeth_count * timing_belt_module / encoders_step_per_turn / 1000.;
+        const double radian_per_step = 2 * M_PI / encoders_step_per_turn;
+
         auto pendule = std::make_unique<Pendule>(
-            yaml_["meters_per_step"].as<double>(),
-            yaml_["radians_per_step"].as<double>(),
+            meters_per_step,
+            radian_per_step,
             yaml_["safety_thresholds"]["hard"].as<double>(),
             yaml_["angle_offset"].as<double>(),
             getMotor(),
