@@ -149,8 +149,7 @@ namespace pendule_pi {
 
 
     std::unique_ptr<pigpio::Rate> Config::getControlRate() const {
-        THROW_IF_MISSING("period_ms");
-        const auto period_ms = yaml_["period_ms"].as<int>();
+        const auto period_ms = yaml_["period_ms"].as<int>(20);
         if (period_ms <= 0)
             throw std::runtime_error("Parameter 'period_ms' should be positive!");
         return std::make_unique<pigpio::Rate>(1000 * period_ms);
