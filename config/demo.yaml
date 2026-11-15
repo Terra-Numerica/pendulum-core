@@ -31,5 +31,7 @@ swing_up:
 misc:
   # max angle error of the LQR range (> 0, default: 0.25)
   lqr_e_theta_max: 0.25   # rd
-  # ratio of max LQR error to switch from swing up to LQR (in [0.0, 1.0], default: 1)
-  swingup_to_lqr_ratio: 1
+  # LQR to swing-up transition hysteresis (>= 0, added to lqr_e_theta_max to define the transition threshold)
+  lqr_to_swingup_hysteresis: 0.2        # rd
+  # duration of the blending transition when entering the LQR range while in swing-up mode
+  swingup_to_lqr_ramp: 0.100            # secs

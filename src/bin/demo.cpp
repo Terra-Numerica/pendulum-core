@@ -9,7 +9,9 @@
 #include <pendule_pi/pendule_cpp_client.hpp>
 // clang-format on
 
-enum class ControlMode { Manual, LQR, Swingup };
+namespace {
+    enum class ControlMode { Manual, LQR, Swingup };
+}
 
 static std::string to_string(const ControlMode &mode) {
     switch (mode) {
@@ -153,6 +155,9 @@ static volatile std::sig_atomic_t keep_running = 1;
 
 static void requestTermination([[maybe_unused]] int signum) { keep_running = false; }
 
+static double rad_to_deg(const double rad) {
+    return rad * 180. / M_PI;
+}
 
 int main(const int argc, char **argv) {
     namespace pp = pendule_pi;
@@ -282,15 +287,20 @@ int main(const int argc, char **argv) {
 
     const auto misc_config = configuration["misc"];
     const auto lqr_e_theta_max = std::fabs(misc_config["lqr_e_theta_max"].as<double>(0.25));
-    const auto swingup_to_lqr_ratio = std::fmin(misc_config["swingup_to_lqr_ratio"].as<double>(1.0), 1);
+    const auto lqr_to_swingup_hysteresis = misc_config["lqr_to_swingup_hysteresis"].as<double>(0.2);
+    const auto swingup_to_lqr_ramp_secs = std::fmax(0, misc_config["swingup_to_lqr_ramp"].as<double>(0.080));
 
     auto misc_fmt = [](std::ostream &os) -> std::ostream & {
         return os << RESET << std::fixed << std::setw(4) << std::setprecision(2);
     };
 
     std::cout << BRIGHT_WHITE << "Misc:" << RESET << std::endl
-            << LABEL << "  - LQR angle error max : " << misc_fmt << lqr_e_theta_max << std::endl
-            << LABEL << "  - swingup->LQR ratio  : " << misc_fmt << swingup_to_lqr_ratio << std::endl
+            << LABEL << "  - LQR angle error max : " << misc_fmt << lqr_e_theta_max
+            << " rd  (" << rad_to_deg(lqr_e_theta_max) << "°)" << std::endl
+            << LABEL << "  - swingup->LQR hysteresis : " << misc_fmt << lqr_to_swingup_hysteresis
+            << " rd  (" << rad_to_deg(lqr_to_swingup_hysteresis) << "°)" << std::endl
+            << LABEL << "  - swingup->LQR ramp time  : " << misc_fmt << swingup_to_lqr_ramp_secs << " s" <<
+            std::endl
             << std::endl;
 
     std::cout << BRIGHT_GREEN << "Demo started " << RESET << "(use Ctrl-C ";
@@ -310,18 +320,35 @@ int main(const int argc, char **argv) {
 
     double last_e_theta = 2 * M_PI; // out of range value to force the first update
 
-    const auto swingup_to_lqr_threshold = lqr_e_theta_max * swingup_to_lqr_ratio;
+    const auto lqr_to_swingup_threshold = lqr_e_theta_max + lqr_to_swingup_hysteresis;
+    // swing-up / lqr PWMs mix factor for blending the transition
+    double alpha = 0;
+
+    bool last_time_is_set = false;
+    std::chrono::time_point<std::chrono::steady_clock> last_time;
+    // initialize the dt to the theoretical value of the control period
+    std::chrono::duration<double> dt_secs(configuration["period_ms"].as<int>(20) / 1000.);
+
+    // tells if we are in LQR range while running in swing-up mode
+    // (used to add an hysteresis to the LQR/swing-up transition)
+    bool stabilizing = false;
 
     // Main loop!
     while (keep_running) {
         constexpr double target_angle = M_PI;
-        // we use a narrower range to switch from swing-up to LQR to avoid the brutal impulsion
-        // when LQR takes the control too far from the target angle.
 
         auto now = std::chrono::steady_clock::now();
 
+        if (last_time_is_set) {
+            // compute the real dt if we are not on the first iteration
+            dt_secs = now - last_time;
+        }
+
         // Retrieve the current state of the pendulum.
         pendulum.readState(pendule_pi::PenduleCppClient::BLOCKING);
+
+        // Since the low level sends state messages periodically, as configured by period_ms in YAML file
+        // and readState has been called in blocking mode, we are here at regular intervals.
 
         // compute errors whatever is the current mode so that the status line can be used for visual control
         double e_theta = shiftInCircle(pendulum.angle() - target_angle);
@@ -332,83 +359,92 @@ int main(const int argc, char **argv) {
         // detect changes to refresh the status line only when needed
         if (in_lqr_range != was_in_lqr_range) {
             refresh_status_requested = true;
-            was_in_lqr_range = in_lqr_range;
         }
 
         constexpr unsigned int JOYSTICK_DEAD_ZONE = 2500;
 
         // Compute the PWM to be applied to the motor, depending on the current mode
-        switch (control_mode) {
-            case ControlMode::Manual: {
-                // ensure autopilot is disengaged so that we'll start with a know state
-                // when switching mode eventually
-                autopilot_engaged = false;
+        if (control_mode == ControlMode::Manual) {
+            // ensure autopilot is disengaged so that we'll start with a know state
+            // when switching mode eventually
+            autopilot_engaged = false;
 
-                // in manual mode, the PWM is directly derived from the gamepad joystick position
-                constexpr double PWM_LIMIT = 250.;
+            // in manual mode, the PWM is directly derived from the gamepad joystick position
+            constexpr double PWM_LIMIT = 250.;
 
-                int ref = joy.axis(AXIS_PWM);
-                ref = robustZero(ref, JOYSTICK_DEAD_ZONE);
-                pwm = static_cast<int>(ref * PWM_LIMIT / 32768.);
+            int ref = joy.axis(AXIS_PWM);
+            ref = robustZero(ref, JOYSTICK_DEAD_ZONE);
+            pwm = static_cast<int>(ref * PWM_LIMIT / 32768.);
 
-                // in manual mode, the center of the track is considered as the target position
-                e_pos = pendulum.position();
-                break;
+            // in manual mode, the center of the track is considered as the target position
+            e_pos = pendulum.position();
+        } else {
+            // either in LQR or in swing-up mode
+
+            // check first if the autopilot button is pressed so that we don't make unneeded hard work
+            btn_autopilot.update(joy.button(BTN_AUTOPILOT));
+            if (btn_autopilot.switched()) {
+                autopilot_engaged = btn_autopilot.down();
+                refresh_status_requested = true;
             }
 
-            case ControlMode::LQR:
-            case ControlMode::Swingup: {
-                // check first if the autopilot button is pressed so that we don't make unneeded hard work
-                btn_autopilot.update(joy.button(BTN_AUTOPILOT));
-                if (btn_autopilot.switched()) {
-                    autopilot_engaged = btn_autopilot.down();
-                    refresh_status_requested = true;
-                }
+            if (autopilot_engaged) {
+                // the user asks us to take control => let's do the heavy lifting
+                double e_linear_velocity = pendulum.linear_velocity();
+                double e_angular_velocity = pendulum.angular_velocity();
 
-                if (autopilot_engaged) {
-                    // the user asks us to take control => let's do the heavy lifting
+                // let the user shift the cart target position by using the gamepad
+                constexpr double POSITION_SHIFT_LIMIT = 0.2;
+                target_pos = deadZoneFilter(joy.axis(AXIS_PWM), JOYSTICK_DEAD_ZONE) * POSITION_SHIFT_LIMIT / 32768.;
+                e_pos = pendulum.position() - target_pos;
 
-                    // in LQR or SWINGUP modes, let the system compute the PWM by applying the control law
-                    // related to the mode and present situation of the pendulum( in LQR zone or not)
+                // compute the LQR control law since we'll use its result whichever is the current mode
+                int pwm_lqr = static_cast<int>(
+                    -kp * e_pos
+                    - kpd * e_linear_velocity
+                    - kt * e_theta
+                    - ktd * e_angular_velocity
+                );
 
-                    double e_linear_velocity = pendulum.linear_velocity();
-                    double e_angular_velocity = pendulum.angular_velocity();
+                if (control_mode == ControlMode::Swingup) {
+                    const double cos_e_theta = std::cos(e_theta);
+                    int pwm_swing_up = static_cast<int>(
+                        +kswing * (1 - cos_e_theta)
+                        * sign(pendulum.angular_velocity() * cos_e_theta)
+                        - ksx * pendulum.position()
+                    );
 
-                    // let the user shift the cart target position by using the gamepad
-                    constexpr double POSITION_SHIFT_LIMIT = 0.2;
-                    target_pos = deadZoneFilter(joy.axis(AXIS_PWM), JOYSTICK_DEAD_ZONE) * POSITION_SHIFT_LIMIT / 32768.;
-                    e_pos = pendulum.position() - target_pos;
-
-                    if (fabs(e_theta) <= swingup_to_lqr_threshold) {
-                        // apply the LQR control law when inside the proper range
-                        pwm = static_cast<int>(
-                            -kp * e_pos
-                            - kpd * e_linear_velocity
-                            - kt * e_theta
-                            - ktd * e_angular_velocity
+                    // the switch between LQR and swing-up control laws is made less brutal by applying :
+                    // - a progressive mix of both laws when entering the LQR range
+                    // - an hysteresis when exiting the LQR range
+                    if (in_lqr_range) {
+                        stabilizing = true;
+                    } else if (std::abs(e_theta) > lqr_to_swingup_threshold) {
+                        stabilizing = false;
+                        // reset the swing-up to LQR ramp
+                        alpha = 0;
+                    }
+                    if (stabilizing) {
+                        // don't switch instantaneously, by let's transition smoothly by blending both control laws
+                        alpha = std::min(
+                            alpha + std::chrono::duration<double>(dt_secs).count() / swingup_to_lqr_ramp_secs,
+                            1.0
                         );
                     } else {
-                        // Not in LQR range: the command depends on the current mode.
-                        if (control_mode == ControlMode::LQR) {
-                            // LQR mode => just do nothing
-                            pwm = 0;
-                        } else {
-                            // Swingup mode => move the cart so that the pendulum gradually comes close to the LQR range
-                            const double cos_e_theta = std::cos(e_theta);
-                            pwm = static_cast<int>(
-                                +kswing * (1 - cos_e_theta)
-                                * sign(pendulum.angular_velocity() * cos_e_theta)
-                                - ksx * pendulum.position()
-                            );
-                        }
+                        // if not stabilizing anymore, apply the swing-up PWM only
+                        alpha = 0.0;
                     }
+                    pwm = static_cast<int>(alpha * pwm_lqr + (1.0 - alpha) * pwm_swing_up);
                 } else {
-                    // autopilot is off => don't move
-                    pwm = 0;
+                    // when in LQR mode, just apply the LQR PWM when in proper range
+                    pwm = in_lqr_range ? pwm_lqr : 0;
                 }
-                break;
+            } else {
+                // autopilot is off => don't move
+                pwm = 0;
+                // consider the track center as the target position
+                e_pos = pendulum.position();
             }
-                // no need for default case, since we have covered all the enumeration values
         }
 
         pendulum.sendCommand(pwm);
@@ -450,10 +486,25 @@ int main(const int argc, char **argv) {
             // reset status line refresh request
             refresh_status_requested = false;
         }
+
+        was_in_lqr_range = in_lqr_range;
+
+        // prepare dt_secs computation on next iteration
+        last_time = now;
+        last_time_is_set = true;
     } // end of the main loop
 
-    pendulum.sendCommand(0);
-    std::cout << RESET << std::endl;
+    pendulum
+            .
+            sendCommand(
+                0
+            );
+    std::cout
+            <<
+            RESET
+            <<
+            std::endl;
 
-    return EXIT_SUCCESS;
+    return
+            EXIT_SUCCESS;
 }
