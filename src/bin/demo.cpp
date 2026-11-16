@@ -209,6 +209,12 @@ static void print_config_error(const std::string &addit_info) {
 }
 
 int main(const int argc, char **argv) {
+    // intercept the version request before doing anything else
+    if (argc == 2 && strcmp(argv[1], "--version") == 0) {
+        std::cout << PENDULE_PI_VERSION << std::endl;
+        return EXIT_SUCCESS;
+    }
+
     namespace pp = pendule_pi;
     const std::string program_name = argv[0];
 
@@ -376,7 +382,7 @@ int main(const int argc, char **argv) {
     };
 
     std::cout << BRIGHT_WHITE << "Misc:" << RESET << std::endl
-            << LABEL << "  - LQR angle error max : " << misc_fmt << lqr_e_theta_max
+            << LABEL << "  - LQR angle error max     : " << misc_fmt << lqr_e_theta_max
             << " rd  (" << rad_to_deg(lqr_e_theta_max) << "°)" << std::endl
             << LABEL << "  - swingup->LQR hysteresis : " << misc_fmt << lqr_to_swingup_hysteresis
             << " rd  (" << rad_to_deg(lqr_to_swingup_hysteresis) << "°)" << std::endl

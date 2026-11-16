@@ -23,13 +23,19 @@ constexpr auto STATUS_FILE = "/var/run/pendulum.status";
 
 
 int main(const int argc, char **argv) {
+    // intercept the version request before doing anything else
+    if (argc == 2 && strcmp(argv[1], "--version") == 0) {
+        std::cout << PENDULE_PI_VERSION << std::endl;
+        return EXIT_SUCCESS;
+    }
+
     const std::string program_name = argv[0];
 
     // check if we are root
     if (getuid() != 0) {
         std::cout << ERROR
-                << "ERROR: this program must be executed as root." << std::endl
-                << "Usage: sudo " << program_name << " config_file.yaml" << RESET << std::endl;
+                << "ERROR: this program must be executed as root." << RESET << std::endl
+                << "Usage: sudo " << program_name << " config_file.yaml" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -39,8 +45,8 @@ int main(const int argc, char **argv) {
     // check if the configuration file is passed as argument
     if (argc < 2) {
         std::cout << ERROR
-                << "ERROR: missing configuration file argument." << std::endl
-                << "Usage: sudo " << program_name << " config_file.yaml" << RESET << std::endl;
+                << "ERROR: missing configuration file argument." << RESET << std::endl
+                << "Usage: sudo " << program_name << " config_file.yaml" << std::endl;
         return EXIT_FAILURE;
     }
 
