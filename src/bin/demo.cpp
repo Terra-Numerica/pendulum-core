@@ -103,6 +103,8 @@ static void print_configuration_example(const std::string &program_name) {
 }
 
 #define LABEL BRIGHT_BLUE
+#define ERROR BRIGHT_RED
+#define CLEAR_LINE "\033[2K"
 
 static void display_status_line(
     const ControlMode control_mode,
@@ -111,7 +113,7 @@ static void display_status_line(
     const double e_theta,
     const double e_position
 ) {
-    std::cout << "\r[ Mode: " << CYAN << std::setw(7) << std::left << to_string(control_mode) << RESET
+    std::cout << CLEAR_LINE << "\r[ Mode: " << CYAN << std::setw(7) << std::left << to_string(control_mode) << RESET
             << " ] [ LQR range: ";
 
     std::string msg;
@@ -150,6 +152,41 @@ static void display_status_line(
     std::cout << color << std::setw(3) << msg << RESET << " ] " << std::flush;
 }
 
+// Smoothing filter used to replace brutal control changes produced by a D-pad
+class LowPassFilter {
+private:
+    double alpha; // Computed smoothing factor
+    double smoothedValue; // Last computed value
+    bool isInitialized; // Prevents an artificial startup from 0
+
+public:
+    // timeConstantSec (tau): How sluggish the filter is (e.g., 0.5s or 1.0s).
+    // samplePeriodSec (dt):  Time between updates in seconds (20ms = 0.02s).
+    LowPassFilter(const double timeConstantSec, const double samplePeriodSec)
+        : smoothedValue(0.0), isInitialized(false) {
+        if (timeConstantSec <= 0.0) {
+            alpha = 1.0; // No filtering
+        } else {
+            alpha = samplePeriodSec / (timeConstantSec + samplePeriodSec);
+        }
+    }
+
+    double update(double newReading) {
+        if (!isInitialized) {
+            smoothedValue = newReading;
+            isInitialized = true;
+        } else {
+            smoothedValue = (alpha * newReading) + ((1.0 - alpha) * smoothedValue);
+        }
+        return smoothedValue;
+    }
+
+    void reset() {
+        isInitialized = false;
+    }
+};
+
+
 // main forever loop termination flag
 static volatile std::sig_atomic_t keep_running = 1;
 
@@ -159,13 +196,25 @@ static double rad_to_deg(const double rad) {
     return rad * 180. / M_PI;
 }
 
+static void print_error(const std::string &msg, const std::string &addit_info) {
+    std::cerr << ERROR << "ERROR: " << msg << " " << addit_info << RESET << std::endl;
+}
+
+static void print_error(const std::string &msg) {
+    print_error(msg, "");
+}
+
+static void print_config_error(const std::string &addit_info) {
+    print_error("bad configuration", addit_info);
+}
+
 int main(const int argc, char **argv) {
     namespace pp = pendule_pi;
     const std::string program_name = argv[0];
 
     if (argc == 1) {
-        std::cerr << "ERROR: missing configuration file path argument." << std::endl
-                << "Try '" << program_name << " --help' for more information." << std::endl;
+        print_error("missing configuration file path argument.");
+        std::cout << "Try '" << program_name << " --help' for more information." << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -187,10 +236,31 @@ int main(const int argc, char **argv) {
     try {
         configuration = YAML::LoadFile(argv[1]);
     } catch (const YAML::Exception &e) {
-        std::cerr << "ERROR: YAML configuration loading error: " << e.what() << std::endl;
+        print_error("YAML configuration loading error: ", e.what());
         return EXIT_FAILURE;
     } catch (const std::exception &e) {
         std::cerr << "ERROR: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // load and validate configuration parameters
+
+    const auto period_ms = configuration["period_ms"].as<int>(20);
+    if (period_ms < 0) {
+        print_config_error("period_ms must be positive");
+        return EXIT_FAILURE;
+    }
+
+    const auto misc_config = configuration["misc"];
+    const auto lqr_e_theta_max = std::fabs(misc_config["lqr_e_theta_max"].as<double>(0.25));
+    const auto lqr_to_swingup_hysteresis = misc_config["lqr_to_swingup_hysteresis"].as<double>(0.2);
+    if (lqr_to_swingup_hysteresis < 0) {
+        print_config_error("lqr_to_swingup_hysteresis must be positive");
+        return EXIT_FAILURE;
+    }
+    const auto swingup_to_lqr_ramp_secs = misc_config["swingup_to_lqr_ramp_secs"].as<double>(0.080);
+    if (swingup_to_lqr_ramp_secs < 0) {
+        print_config_error("swingup_to_lqr_ramp_secs must be positive");
         return EXIT_FAILURE;
     }
 
@@ -203,17 +273,27 @@ int main(const int argc, char **argv) {
         5
     );
 
+    /*
+     * Game controller setup
+     */
+
     // Create the joystick device to be used for controlling the demo.
     const auto joystick_config = configuration["joystick"];
 
+    // Joystick buttons.
+    const auto AXIS_PWM = joystick_config["axis_pwm"].as<int>(0);
+    const auto BTN_EXIT = joystick_config["btn_exit"].as<int>(0);
+    const auto BTN_SWITCH = joystick_config["btn_switch"].as<int>(1);
+    const auto BTN_AUTOPILOT = joystick_config["btn_autopilot"].as<int>(4);
+    const auto USES_DPAD = joystick_config["uses_dpad"].as<bool>(false);
+    const auto DPAD_SMOOTHING_TAU = joystick_config["dpad_smoothing_tau_secs"].as<double>(0.1);
+    if (DPAD_SMOOTHING_TAU < 0) {
+        print_config_error("dpad_smoothing_tau_secs must be positive");
+        return EXIT_FAILURE;
+    }
+
     const auto js_device = joystick_config["device"].as<std::string>("/dev/input/js0");
     pp::Joystick joy(js_device);
-
-    // Joystick buttons.
-    const int AXIS_PWM = joystick_config["axis_pwm"].as<int>(0);
-    const int BTN_EXIT = joystick_config["btn_exit"].as<int>(0);
-    const int BTN_SWITCH = joystick_config["btn_switch"].as<int>(1);
-    const int BTN_AUTOPILOT = joystick_config["btn_autopilot"].as<int>(4);
 
     // The joystick is not polled on every iteration of the control loop.
     unsigned int JOY_UPDATE_PACE = 5;
@@ -224,6 +304,9 @@ int main(const int argc, char **argv) {
 
     // Autopilot button
     CachedButton btn_autopilot;
+
+    // D-pad smoothing
+    auto dpad_filter = LowPassFilter(DPAD_SMOOTHING_TAU, period_ms / 1000.);
 
     // Variables used to perform control.
     int pwm = 0;
@@ -277,6 +360,9 @@ int main(const int argc, char **argv) {
     std::cout << BRIGHT_WHITE << "Control:" << RESET << std::endl
             << LABEL << "  Joystick device            : " << RESET << js_device << std::endl
             << LABEL << "  Axis for carriage control  : " << RESET << AXIS_PWM << std::endl
+            << LABEL << "  Uses D-pad                 : " << RESET << USES_DPAD << std::endl
+            << LABEL << "  D-pad smoothing tau        : " << RESET << std::setprecision(2) << DPAD_SMOOTHING_TAU << " s"
+            << std::endl
             << LABEL << "  Buttons : " << RESET << std::endl
             << LABEL << "   - switch control mode     : " << RESET << BTN_SWITCH << std::endl
             << LABEL << "   - toggle autopilot        : " << RESET << BTN_AUTOPILOT << std::endl
@@ -284,11 +370,6 @@ int main(const int argc, char **argv) {
                                                                            ? std::to_string(BTN_EXIT)
                                                                            : "-- disabled --")
             << std::endl << std::endl;
-
-    const auto misc_config = configuration["misc"];
-    const auto lqr_e_theta_max = std::fabs(misc_config["lqr_e_theta_max"].as<double>(0.25));
-    const auto lqr_to_swingup_hysteresis = misc_config["lqr_to_swingup_hysteresis"].as<double>(0.2);
-    const auto swingup_to_lqr_ramp_secs = std::fmax(0, misc_config["swingup_to_lqr_ramp"].as<double>(0.080));
 
     auto misc_fmt = [](std::ostream &os) -> std::ostream & {
         return os << RESET << std::fixed << std::setw(4) << std::setprecision(2);
@@ -327,7 +408,7 @@ int main(const int argc, char **argv) {
     bool last_time_is_set = false;
     std::chrono::time_point<std::chrono::steady_clock> last_time;
     // initialize the dt to the theoretical value of the control period
-    std::chrono::duration<double> dt_secs(configuration["period_ms"].as<int>(20) / 1000.);
+    std::chrono::duration<double> dt_secs(period_ms / 1000.);
 
     // tells if we are in LQR range while running in swing-up mode
     // (used to add an hysteresis to the LQR/swing-up transition)
@@ -372,8 +453,12 @@ int main(const int argc, char **argv) {
             // in manual mode, the PWM is directly derived from the gamepad joystick position
             constexpr double PWM_LIMIT = 250.;
 
-            int ref = joy.axis(AXIS_PWM);
-            ref = robustZero(ref, JOYSTICK_DEAD_ZONE);
+            double ref = robustZero(joy.axis(AXIS_PWM), JOYSTICK_DEAD_ZONE);
+            if (USES_DPAD) {
+                // smooth the input value to avoid brutal changes of the PWW that can damage
+                // the mechanical part and make the PSU security circuit trip.
+                ref = dpad_filter.update(ref);
+            }
             pwm = static_cast<int>(ref * PWM_LIMIT / 32768.);
 
             // in manual mode, the center of the track is considered as the target position
@@ -455,8 +540,7 @@ int main(const int argc, char **argv) {
 
             // should we exit?
             if (BTN_EXIT != -1 && joy.button(BTN_EXIT)) {
-                std::cout
-                        << std::endl << std::endl
+                std::cout << std::endl << std::endl
                         << BRIGHT_YELLOW << "--- Gamepad Exit button pressed. Quitting now ---" << RESET;
                 break;
             }
@@ -494,17 +578,8 @@ int main(const int argc, char **argv) {
         last_time_is_set = true;
     } // end of the main loop
 
-    pendulum
-            .
-            sendCommand(
-                0
-            );
-    std::cout
-            <<
-            RESET
-            <<
-            std::endl;
+    pendulum.sendCommand(0);
+    std::cout << RESET << std::endl;
 
-    return
-            EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }

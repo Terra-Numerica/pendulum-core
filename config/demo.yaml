@@ -1,6 +1,12 @@
 joystick:
   # the axis used to control the carriage in manual mode
   axis_pwm: 0
+  # is the device equipped with a D-pad instead or a directional stick (default: 0)
+  uses_dpad: true
+  # D-pad smoothing time constant (default: 0.02 s)
+  # Used to avoid brutal PWM changes, ignored if D-pad is not used
+  # Can be disabled by setting tau to 0. DISCOURAGED since creates equipment wear.
+  dpad_smoothing_tau_secs: 0.02
   # mode switch (manual -> LQR -> swing up)
   btn_switch: 0
   # gives control to app in LQR and swing up modes
@@ -34,4 +40,4 @@ misc:
   # LQR to swing-up transition hysteresis (>= 0, added to lqr_e_theta_max to define the transition threshold)
   lqr_to_swingup_hysteresis: 0.2        # rd
   # duration of the blending transition when entering the LQR range while in swing-up mode
-  swingup_to_lqr_ramp: 0.100            # secs
+  swingup_to_lqr_ramp_secs: 0.100
