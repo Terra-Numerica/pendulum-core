@@ -56,6 +56,35 @@ int main(const int argc, char **argv) {
     }
 
     try {
+        // Do all the initializations depending on mandatory configuration parameters before anything else,
+        // including displaying the starting banner.
+        // If same parameter is missing, a Config::MissingParameter is thrown, and we'll catch it and exit cleanly
+        // (and not with a dirty abort leaving everything in place).
+
+        // Define soft limits for the pendulum (positive value).
+        const double soft_safety_threshold = config->getSoftSafetyThreshold();
+
+        // define the braking distance by applying a security factor on the soft safety
+        const double braking_distance = std::fmin(config->getBrakingDistance(), soft_safety_threshold);
+
+        // Set up the filters now so that we can intercept an invalid configuration before starting.
+        const auto filter_position = config->getFilter();
+        const auto filter_angle = config->getFilter();
+        const auto filter_linear_vel = config->getFilter();
+        const auto filter_angular_vel = config->getFilter();
+
+        const auto calibration_pwm = config->getCalibrationPWM();
+
+        // Create the timer used for enforcing a stable control rate.
+        const auto rate = config->getControlRate();
+        const double PERIOD_SEC = rate->period() / 1000000.0;
+
+        // Socket connections.
+        const auto tcp = config->getPenduleServer();
+        const unsigned int MAX_MISSED_MESSAGES = 1 + static_cast<int>(1. / PERIOD_SEC);
+
+        // If here, we should have anything we need for the job
+
         // Let the token manage the pigpio library!
         pigpio::ActivationToken token;
 
@@ -75,14 +104,14 @@ int main(const int argc, char **argv) {
                 << RESET;
 
         try {
-            pendule->calibrate(config->getCalibrationPWM(), true);
+            pendule->calibrate(calibration_pwm, true);
         } catch (...) {
             // create the status file to report we failed and exit now
             std::ofstream(STATUS_FILE).put('0');
             return EXIT_FAILURE;
         }
 
-        // if here, the calibration process went fine, anomalies being reported by raising exceptions.
+        // if here, the calibration process went fine, anomalies having been reported by risen exceptions.
 
         std::cout
                 << BRIGHT_GREEN << "--- Pendulum ready ---" << RESET << std::endl
@@ -90,19 +119,6 @@ int main(const int argc, char **argv) {
 
         // create the status file to report that we are up and running
         std::ofstream(STATUS_FILE).put('1');
-
-        // Define soft limits for the pendulum.
-        const double MAX_POSITION = pendule->softMinMaxPosition() - config->getSoftSafetyThreshold();
-
-        // Create the timer used for enforcing a stable control rate.
-        const auto rate = config->getControlRate();
-        const double PERIOD_SEC = rate->period() / 1000000.0;
-
-        // Setup filters.
-        const auto filter_position = config->getFilter();
-        const auto filter_angle = config->getFilter();
-        const auto filter_linear_vel = config->getFilter();
-        const auto filter_angular_vel = config->getFilter();
 
         filter_position->initInput(pendule->position());
         filter_position->initOutput(pendule->position());
@@ -116,12 +132,10 @@ int main(const int argc, char **argv) {
         // Control and process variables.
         int pwm = 0;
 
-        // Socket connections.
-        const auto tcp = config->getPenduleServer();
-        const unsigned int MAX_MISSED_MESSAGES = 1 + static_cast<int>(1. / PERIOD_SEC);
-
         // sleep a little bit before starting with the main loop
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+        const double POSITION_MAX = pendule->softMinMaxPosition() - soft_safety_threshold;
 
         // Main loop!
         while (true) {
@@ -148,16 +162,27 @@ int main(const int argc, char **argv) {
             }
 
             // Enforce soft safety limits, then send the command.
+
+            // Don't stop brutally when reached, but slow progressively along the braking distance.
+            // Note : we consider the track symmetrical, and thus use the same limits for both ends.
             if (
-                (pendule->position() > MAX_POSITION && pwm > 0) ||
-                (pendule->position() < -MAX_POSITION && pwm < 0)
+                (pendule->position() > POSITION_MAX && pwm > 0) ||
+                (pendule->position() < -POSITION_MAX && pwm < 0)
             ) {
-                pwm = 0;
+                // reduced the pwm as much as we have past the limit and in relation with the braking distance
+                pwm = static_cast<int>(std::round(
+                    pwm * std::fmax(1.0 - (std::fabs(pendule->position()) - POSITION_MAX) / braking_distance, 0)
+                ));
             }
 
             // ReSharper disable once CppExpressionWithoutSideEffects
             pendule->setCommand(pwm);
         }
+    } catch (const pendule_pi::Config::MissingParameter &e) {
+        std::cerr << std::endl << BRIGHT_RED << "ERROR: " << e.what() << RESET << std::endl;
+        // signal we end here without having been able to start
+        std::ofstream(STATUS_FILE).put('0');
+        return EXIT_FAILURE;
     } catch (const pigpio::ActivationToken::PleaseStop &) {
         std::cout << std::endl << BRIGHT_YELLOW << "PleaseStop token received, terminating..." << RESET << std::endl;
     }

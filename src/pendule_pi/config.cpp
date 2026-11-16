@@ -133,8 +133,7 @@ namespace pendule_pi {
 
 
     int Config::getCalibrationPWM() const {
-        THROW_IF_MISSING("calibration_pwm");
-        const auto pwm = yaml_["calibration_pwm"].as<int>();
+        const auto pwm = yaml_["calibration_pwm"].as<int>(60);
         if (pwm <= 0)
             throw std::runtime_error("Parameter 'calibration_pwm' should be positive!");
         return pwm;
@@ -145,6 +144,12 @@ namespace pendule_pi {
         THROW_IF_MISSING("safety_thresholds");
         THROW_IF_MISSING("safety_thresholds", "soft");
         return yaml_["safety_thresholds"]["soft"].as<double>();
+    }
+
+    double Config::getBrakingDistance() const {
+        THROW_IF_MISSING("safety_thresholds");
+        THROW_IF_MISSING("safety_thresholds", "braking_distance");
+        return yaml_["safety_thresholds"]["braking_distance"].as<double>();
     }
 
 

@@ -75,6 +75,8 @@ namespace pendule_pi {
 
         double getSoftSafetyThreshold() const;
 
+        double getBrakingDistance() const;
+
         std::unique_ptr<pigpio::Rate> getControlRate() const;
 
         std::unique_ptr<digital_filters::Filter<double, double> > getFilter() const;

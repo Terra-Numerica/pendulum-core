@@ -11,6 +11,12 @@
 #include "pendule_pi/pigpio.hpp"
 // clang-format on
 
+#define HI BRIGHT_WHITE
+#define STEP BRIGHT_MAGENTA
+#define SUCCESS BRIGHT_GREEN
+#define WARNING BRIGHT_YELLOW
+#define ERROR BRIGHT_RED
+
 namespace pendule_pi {
     Pendule::Pendule(
         const double meters_per_step,
@@ -92,7 +98,7 @@ namespace pendule_pi {
         // clang-format on
         if (verbose) {
             std::cout << std::endl
-                    << BRIGHT_MAGENTA << "- waiting for the pendulum to be still..." << std::endl
+                    << STEP << "- waiting for the pendulum to be still..." << std::endl
                     << RESET;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -105,16 +111,17 @@ namespace pendule_pi {
         }
 
         if (verbose) {
-            std::cout << BRIGHT_GREEN << "-> angle encoder initialized." << RESET << std::endl << std::endl;
+            std::cout << SUCCESS << "-> angle encoder initialized." << RESET << std::endl << std::endl;
 
-            std::cout << BRIGHT_MAGENTA << "- calibrating position encoder now..." << RESET << std::endl;
+            std::cout << STEP << "- calibrating position encoder now..." << RESET << std::endl;
         }
 
         // if we are already at the rightmost end of the track, back off a bit before
         // starting the calibration process (we don't care if we are at the leftmost
         // end, since we're going to move rightwards first anyway)
         if (!right_switch_->atRest()) {
-            std::cout << YELLOW << "-> carriage already at the right end of the track => backing off..." <<
+            std::cout << WARNING
+                    << "-> carriage already at the right end of the track => backing off..." <<
                     RESET << std::endl;
             // move leftwards enough to clear the switch
             motor_->setPWM(-calibration_pwm);
@@ -148,7 +155,7 @@ namespace pendule_pi {
         while (motor_->getPWM() != 0) {
             if (wrong_switch) {
                 if (verbose) {
-                    std::cerr << RED
+                    std::cerr << ERROR
                             << "Left limit switch activated while moving rightwards." << std::endl
                             << RESET;
                 }
@@ -176,7 +183,7 @@ namespace pendule_pi {
         while (motor_->getPWM() != 0) {
             if (wrong_switch) {
                 if (verbose) {
-                    std::cerr << RED
+                    std::cerr << ERROR
                             << "Right limit switch activated while moving leftwards." << std::endl
                             << RESET;
                 }
@@ -197,7 +204,7 @@ namespace pendule_pi {
         // Check that min and max are coherent
         if (min_position_steps_ > max_position_steps_) {
             if (verbose) {
-                std::cerr << RED
+                std::cerr << ERROR
                         << "Minimum and maximum position are inverted. " << std::endl
                         << "Possible cause :" << std::endl
                         << "- A/B signals are swapped" << std::endl
@@ -210,7 +217,7 @@ namespace pendule_pi {
 
         if (min_position_steps_ == max_position_steps_) {
             if (verbose) {
-                std::cerr << RED
+                std::cerr << ERROR
                         << "Minimum and maximum position steps are equal. " << std::endl
                         << "Possible causes :" << std::endl
                         << "- the belt is loose or not on the pulleys anymore" << std::endl
@@ -236,7 +243,7 @@ namespace pendule_pi {
         motor_->setPWM(0);
 
         if (verbose) {
-            std::cout << BRIGHT_GREEN << "-> position encoder calibrated." << RESET << std::endl << std::endl;
+            std::cout << SUCCESS << "-> position encoder calibrated." << RESET << std::endl << std::endl;
         }
 
         // Ok, we are in the central position!
@@ -255,19 +262,20 @@ namespace pendule_pi {
         soft_minmax_position_meters_ = std::fabs(steps2meters(soft_max));
         calibrated_ = true;
 
-        if (verbose) {
+#define LABEL(v) BRIGHT_BLUE << "- " << std::setw(20) << std::left << (v) << " : " << RESET
 #define STEPS(v) std::setw(6) << std::right << (v)
 #define DIST(v) " (" << std::setw(5) << std::fixed << std::setprecision(2) << std::right << steps2meters(v) << " m)"
 #define DIST_NO_CONV(v) " (" << std::setw(5) << std::fixed << std::setprecision(2) << std::right << (v) << " m)"
 
+        if (verbose) {
             // clang-format off
-            std::cout << BRIGHT_WHITE << "Calibration complete." << RESET << std::endl
-                    << "- min steps          : " << STEPS(min_position_steps_) << DIST(min_position_steps_) << std::endl
-                    << "- max steps          : " << STEPS(max_position_steps_) << DIST(max_position_steps_) << std::endl
-                    << "- center pos steps   : " << STEPS(mid_position_steps_) << DIST(mid_position_steps_) << std::endl
-                    << "- safety_margin_steps: " << STEPS(safety_margin_steps) << DIST_NO_CONV(safety_margin_meters_) << std::endl
-                    << "- soft_min           : " << STEPS(soft_min) << DIST(soft_min) << std::endl
-                    << "- soft_max           : " << STEPS(soft_max) << DIST(soft_max) << std::endl
+            std::cout << HI << "Calibration complete." << RESET << std::endl
+                    <<  LABEL("min steps") << STEPS(min_position_steps_) << DIST(min_position_steps_) << std::endl
+                    << LABEL("max steps") << STEPS(max_position_steps_) << DIST(max_position_steps_) << std::endl
+                    << LABEL("center pos steps") << STEPS(mid_position_steps_) << DIST(mid_position_steps_) << std::endl
+                    << LABEL("safety_margin_steps") << STEPS(safety_margin_steps) << DIST(safety_margin_steps) << std::endl
+                    << LABEL("soft_mi") << STEPS(soft_min) << DIST(soft_min) << std::endl
+                    << LABEL("soft_max") << STEPS(soft_max) << DIST(soft_max) << std::endl
                     << std::endl;
             // clang-format on
         }

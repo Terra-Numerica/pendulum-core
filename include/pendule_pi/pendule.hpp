@@ -163,6 +163,9 @@ namespace pendule_pi {
         /// Read the value of the soft position limits (in meters).
         [[nodiscard]] const double &softMinMaxPosition() const;
 
+        // Get the safety margin setting for track ends stop points (in meters)
+        [[nodiscard]] const double &safetyMarginMeters() const { return safety_margin_meters_; }
+
         /// Set offsets to compensate for friction.
         /** This function sets internal offsets that should be applied to the pwm
           * passed to setCommand(). This should allow to compensate for static

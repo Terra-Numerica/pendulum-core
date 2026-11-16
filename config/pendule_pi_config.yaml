@@ -68,6 +68,9 @@ safety_thresholds:
   # commands are zeroed. Giving a non-negative value in practice removes the
   # soft threshold (only the hard one will remain active).
   soft: 0.1
+  # sets the slowdown distance after the soft limit, to avoid brutal stops
+  # MUST BE LOWER than the soft safety distance.
+  braking_distance: 0.05
 
 # Offsets to be applied to pwm commands. Both should be integers.
 pwm_offsets:
