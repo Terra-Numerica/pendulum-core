@@ -32,7 +32,7 @@ namespace pendule_pi {
             /// Fills the error message.
             /** @param why reason for the failure.
               */
-            CalibrationFailed(const std::string &why) : std::runtime_error(
+            explicit CalibrationFailed(const std::string &why) : std::runtime_error(
                 "Pendulum calibration failed! Reason: " + why) {
             }
         };
@@ -43,7 +43,7 @@ namespace pendule_pi {
             /// Fills the error message.
             /** @param why reason to stop.
               */
-            EmergencyStop(const std::string &why) : std::runtime_error(
+            explicit EmergencyStop(const std::string &why) : std::runtime_error(
                 "Pendulum::eStop has been called! Reason: " + why) {
             }
         };
@@ -65,10 +65,8 @@ namespace pendule_pi {
           *   \f$ \frac{2 \pi}{100} \text{rad} / \text{step} \f$.
           * @param safety_margin_meters distance from the switches at which the
           *   pendulum should request an emergency stop. This margin allows to add
-          *   a software-based level of safety, since the system should shutdown
+          *   a software-based level of safety, since the system should shut down
           *   before actually experiencing collisions.
-          * @param rest_angle value, in radians, that should be returned by angle()
-          *   when the pendulum points downward due to gravity.
           * @param motor the Motor that allows to actuate the base. It should be
           *   wired in such a way that a positive command moves the base to the right.
           * @param left_switch the Switch that should be reached when the base moves
@@ -97,7 +95,6 @@ namespace pendule_pi {
             double meters_per_step,
             double radians_per_step,
             double safety_margin_meters,
-            double rest_angle,
             std::unique_ptr<Motor> motor,
             std::unique_ptr<Switch> left_switch,
             std::unique_ptr<Switch> right_switch,
@@ -206,7 +203,6 @@ namespace pendule_pi {
         double soft_minmax_position_meters_{}; ///< Position (in meters) at which emergency stop is requested.
         const double meters_per_step_; ///< Multiplicative factor to convert from encoder steps to meters.
         const double radians_per_step_; ///< Multiplicative factor to convert from encoder steps to radians.
-        const double rest_angle_; ///< Position of the pendulum when it is at rest.
         int offset_up_; ///< Offset to be applied to positive pwm commands.
         int offset_down_; ///< Offset to be applied to negative pwm commands.
         int offset_static_; ///< Static offset to be applied to the command.
@@ -219,12 +215,12 @@ namespace pendule_pi {
 
         /// Auxiliary method that converts steps into meters.
         [[nodiscard]] double steps2meters(const int &steps) const {
-            return meters_per_step_ * (steps - mid_position_steps_);
+            return meters_per_step_ * steps;
         }
 
         /// Auxiliary method that converts steps into radians.
         [[nodiscard]] double steps2radians(const int &steps) const {
-            return radians_per_step_ * steps - rest_angle_;
+            return radians_per_step_ * steps;
         }
     };
 }

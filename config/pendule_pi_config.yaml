@@ -51,13 +51,6 @@ encoders_step_per_turn: 600
 timing_belt_module: 2.0         # mm
 pulley_teeth_count: 20
 
-# By default, the pendulum should read zero when in the downward position and PI
-# when pointing upward. However, you might prefer a different convention, or
-# simply ensure that the pendulum really stays at PI when it is manually
-# balanced in the upward position. To achieve such result, the low level
-# interface will subtract angle_offset from the "raw" reading.
-angle_offset: 0.0
-
 # Safety distances to stop the pendulum, in meters.
 safety_thresholds:
   # Minimum allowed distance from the switches. If violated, the interface

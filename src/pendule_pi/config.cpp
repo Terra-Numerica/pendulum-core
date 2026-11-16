@@ -81,7 +81,6 @@ namespace pendule_pi {
 
 
     std::unique_ptr<Pendule> Config::getPendule() const {
-        THROW_IF_MISSING("angle_offset");
         THROW_IF_MISSING("safety_thresholds");
         THROW_IF_MISSING("safety_thresholds", "hard");
         THROW_IF_MISSING("pwm_offsets");
@@ -102,7 +101,6 @@ namespace pendule_pi {
             meters_per_step,
             radian_per_step,
             yaml_["safety_thresholds"]["hard"].as<double>(),
-            yaml_["angle_offset"].as<double>(),
             getMotor(),
             getLeftSwitch(),
             getRightSwitch(),

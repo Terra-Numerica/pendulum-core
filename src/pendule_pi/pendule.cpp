@@ -22,7 +22,6 @@ namespace pendule_pi {
         const double meters_per_step,
         const double radians_per_step,
         const double safety_margin_meters,
-        const double rest_angle,
         std::unique_ptr<Motor> motor,
         std::unique_ptr<Switch> left_switch,
         std::unique_ptr<Switch> right_switch,
@@ -34,7 +33,6 @@ namespace pendule_pi {
           safety_margin_meters_(safety_margin_meters),
           meters_per_step_(meters_per_step),
           radians_per_step_(radians_per_step),
-          rest_angle_(rest_angle),
           offset_up_(0),
           offset_down_(0),
           offset_static_(0),
@@ -250,7 +248,8 @@ namespace pendule_pi {
         left_switch_->enableInterrupts([&] { eStop("left switch hit"); });
         right_switch_->enableInterrupts([&] { eStop("right switch hit"); });
         const int safety_margin_steps = static_cast<int>(
-            std::ceil(std::fabs(safety_margin_meters_ / meters_per_step_)));
+            std::ceil(std::fabs(safety_margin_meters_ / meters_per_step_))
+        );
         const int soft_min = min_position_steps_ + safety_margin_steps;
         const int soft_max = max_position_steps_ - safety_margin_steps;
         position_encoder_->setSafetyCallbacks(
@@ -264,8 +263,8 @@ namespace pendule_pi {
 
 #define LABEL(v) BRIGHT_BLUE << "- " << std::setw(20) << std::left << (v) << " : " << RESET
 #define STEPS(v) std::setw(6) << std::right << (v)
-#define DIST(v) " (" << std::setw(5) << std::fixed << std::setprecision(2) << std::right << steps2meters(v) << " m)"
-#define DIST_NO_CONV(v) " (" << std::setw(5) << std::fixed << std::setprecision(2) << std::right << (v) << " m)"
+#define DIST(v) " (" << std::setw(6) << std::fixed << std::setprecision(3) << std::right << steps2meters(v) << " m)"
+#define DIST_NO_CONV(v) " (" << std::setw(6) << std::fixed << std::setprecision(3) << std::right << (v) << " m)"
 
         if (verbose) {
             // clang-format off
@@ -273,8 +272,8 @@ namespace pendule_pi {
                     <<  LABEL("min steps") << STEPS(min_position_steps_) << DIST(min_position_steps_) << std::endl
                     << LABEL("max steps") << STEPS(max_position_steps_) << DIST(max_position_steps_) << std::endl
                     << LABEL("center pos steps") << STEPS(mid_position_steps_) << DIST(mid_position_steps_) << std::endl
-                    << LABEL("safety_margin_steps") << STEPS(safety_margin_steps) << DIST(safety_margin_steps) << std::endl
-                    << LABEL("soft_mi") << STEPS(soft_min) << DIST(soft_min) << std::endl
+                    << LABEL("safety_margin_steps") << STEPS(safety_margin_steps) << DIST_NO_CONV(safety_margin_meters_) << std::endl
+                    << LABEL("soft_min") << STEPS(soft_min) << DIST(soft_min) << std::endl
                     << LABEL("soft_max") << STEPS(soft_max) << DIST(soft_max) << std::endl
                     << std::endl;
             // clang-format on
