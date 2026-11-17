@@ -13,6 +13,9 @@
 #include "utils.hpp"
 // clang-format on
 
+// if set to 1, don't brake abruptly when reaching the evolution area limits
+#define PROGRESSIVE_STOP 1
+
 namespace pp = pendule_pi;
 
 
@@ -55,17 +58,15 @@ int main(const int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    int return_code = EXIT_SUCCESS;
+
     try {
         // Do all the initializations depending on mandatory configuration parameters before anything else,
         // including displaying the starting banner.
         // If same parameter is missing, a Config::MissingParameter is thrown, and we'll catch it and exit cleanly
         // (and not with a dirty abort leaving everything in place).
 
-        // Define soft limits for the pendulum (positive value).
-        const double soft_safety_threshold = config->getSoftSafetyThreshold();
-
-        // define the braking distance by applying a security factor on the soft safety
-        const double braking_distance = std::fmin(config->getBrakingDistance(), soft_safety_threshold);
+        const double safety_margin = config->getSafetyMargin();
 
         // Set up the filters now so that we can intercept an invalid configuration before starting.
         const auto filter_position = config->getFilter();
@@ -135,9 +136,15 @@ int main(const int argc, char **argv) {
         // sleep a little bit before starting with the main loop
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-        const double POSITION_MAX = pendule->softMinMaxPosition() - soft_safety_threshold;
+        const auto full_speed_max_position = pendule->softMaxPosition() - safety_margin;
+        const auto full_speed_min_position = pendule->softMinPosition() + safety_margin;
 
-        // Main loop!
+#if PROGRESSIVE_STOP
+        // braking distance must be shorter that the safety margin, otherwise the inertia
+        // can make the base pass the position limits and trip the emergency stop
+        const auto braking_distance = safety_margin / 2;
+#endif
+
         while (true) {
             // Sleep and update the state of the pendulum
             const double hw_time = 1e-6 * rate->sleep();
@@ -165,24 +172,35 @@ int main(const int argc, char **argv) {
 
             // Don't stop brutally when reached, but slow progressively along the braking distance.
             // Note : we consider the track symmetrical, and thus use the same limits for both ends.
-            if (
-                (pendule->position() > POSITION_MAX && pwm > 0) ||
-                (pendule->position() < -POSITION_MAX && pwm < 0)
-            ) {
-                // reduced the pwm as much as we have past the limit and in relation with the braking distance
+            if (pwm > 0 && pendule->position() > full_speed_max_position) {
+#if PROGRESSIVE_STOP
                 pwm = static_cast<int>(std::round(
-                    pwm * std::fmax(1.0 - (std::fabs(pendule->position()) - POSITION_MAX) / braking_distance, 0)
+                    pwm * std::fmax(1.0 - (pendule->position() - full_speed_max_position) / braking_distance, 0)
                 ));
+#else
+                pwm = 0;
+#endif
+            } else if (pwm < 0 && pendule->position() < full_speed_min_position) {
+#if PROGRESSIVE_STOP
+                pwm = static_cast<int>(std::round(
+                    pwm * std::fmax(1.0 - (full_speed_min_position - pendule->position()) / braking_distance, 0)
+                ));
+#else
+                pwm = 0;
+#endif
             }
 
             // ReSharper disable once CppExpressionWithoutSideEffects
             pendule->setCommand(pwm);
         }
-    } catch (const pendule_pi::Config::MissingParameter &e) {
+    } catch (const pendule_pi::Config::ConfigException &e) {
         std::cerr << std::endl << BRIGHT_RED << "ERROR: " << e.what() << RESET << std::endl;
         // signal we end here without having been able to start
         std::ofstream(STATUS_FILE).put('0');
         return EXIT_FAILURE;
+    } catch (const pendule_pi::Pendule::EmergencyStop &e) {
+        std::cerr << std::endl << BRIGHT_RED << "ERROR: " << e.what() << RESET << std::endl;
+        return_code = EXIT_FAILURE;
     } catch (const pigpio::ActivationToken::PleaseStop &) {
         std::cout << std::endl << BRIGHT_YELLOW << "PleaseStop token received, terminating..." << RESET << std::endl;
     }
@@ -190,5 +208,5 @@ int main(const int argc, char **argv) {
     // clear the status file before leaving
     std::remove(STATUS_FILE);
 
-    return EXIT_SUCCESS;
+    return return_code;
 }

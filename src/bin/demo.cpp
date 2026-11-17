@@ -152,39 +152,41 @@ static void display_status_line(
     std::cout << color << std::setw(3) << msg << RESET << " ] " << std::flush;
 }
 
-// Smoothing filter used to replace brutal control changes produced by a D-pad
-class LowPassFilter {
-private:
-    double alpha; // Computed smoothing factor
-    double smoothedValue; // Last computed value
-    bool isInitialized; // Prevents an artificial startup from 0
-
-public:
-    // timeConstantSec (tau): How sluggish the filter is (e.g., 0.5s or 1.0s).
-    // samplePeriodSec (dt):  Time between updates in seconds (20ms = 0.02s).
-    LowPassFilter(const double timeConstantSec, const double samplePeriodSec)
-        : smoothedValue(0.0), isInitialized(false) {
-        if (timeConstantSec <= 0.0) {
-            alpha = 1.0; // No filtering
-        } else {
-            alpha = samplePeriodSec / (timeConstantSec + samplePeriodSec);
+namespace {
+    // Smoothing filter used to replace brutal control changes produced by a D-pad
+    class LowPassFilter {
+    public:
+        // timeConstantSec (tau): How sluggish the filter is (e.g., 0.5s or 1.0s).
+        // samplePeriodSec (dt):  Time between updates in seconds (20ms = 0.02s).
+        LowPassFilter(const double timeConstantSec, const double samplePeriodSec)
+            : smoothedValue(0.0), isInitialized(false) {
+            if (timeConstantSec <= 0.0) {
+                alpha = 1.0; // No filtering
+            } else {
+                alpha = samplePeriodSec / (timeConstantSec + samplePeriodSec);
+            }
         }
-    }
 
-    double update(double newReading) {
-        if (!isInitialized) {
-            smoothedValue = newReading;
-            isInitialized = true;
-        } else {
-            smoothedValue = (alpha * newReading) + ((1.0 - alpha) * smoothedValue);
+        double update(double newReading) {
+            if (!isInitialized) {
+                smoothedValue = newReading;
+                isInitialized = true;
+            } else {
+                smoothedValue = (alpha * newReading) + ((1.0 - alpha) * smoothedValue);
+            }
+            return smoothedValue;
         }
-        return smoothedValue;
-    }
 
-    void reset() {
-        isInitialized = false;
-    }
-};
+        void reset() {
+            isInitialized = false;
+        }
+
+    private:
+        double alpha; // Computed smoothing factor
+        double smoothedValue; // Last computed value
+        bool isInitialized; // Prevents an artificial startup from 0
+    };
+}
 
 
 // main forever loop termination flag

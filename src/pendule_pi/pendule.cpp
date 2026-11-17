@@ -30,7 +30,7 @@ namespace pendule_pi {
     )
         : calibrated_(false),
           emergency_stopped_(false),
-          safety_margin_meters_(safety_margin_meters),
+          hard_stop_margin_meters_(safety_margin_meters),
           meters_per_step_(meters_per_step),
           radians_per_step_(radians_per_step),
           offset_up_(0),
@@ -57,22 +57,7 @@ namespace pendule_pi {
         PENDULE_PI_DBG("Pendule object created");
     }
 
-    void Pendule::calibrate(const int calibration_pwm, const bool verbose) {
-        PENDULE_PI_DBG("Requested calibration via Pendule::calibrate(" << calibration_pwm << ")");
-
-        // Reset it no matter what!
-        calibrated_ = false;
-
-        // Ensure that we are not in emergency stop
-        if (emergency_stopped_)
-            throw CalibrationFailed("eStop has been called");
-
-        // Reset all callbacks
-        position_encoder_->removeSafetyCallbacks();
-        angle_encoder_->removeSafetyCallbacks();
-        left_switch_->disableInterrupts();
-        right_switch_->disableInterrupts();
-
+    void Pendule::calibrate_angle_encoder(const bool verbose) const {
         // Calibrate the angle encoder. It simply consists in checking that it is still.
         // Note: don't be too sensitive since the encoder is configured as 4096 steps
         // per turn
@@ -108,9 +93,16 @@ namespace pendule_pi {
             throw CalibrationFailed("the pendulum is moving");
         }
 
+        // Cleanup motion detection callback
+        angle_encoder_->removeSafetyCallbacks();
+
         if (verbose) {
             std::cout << SUCCESS << "-> angle encoder initialized." << RESET << std::endl << std::endl;
+        }
+    }
 
+    void Pendule::calibrate_position_encoder(const int calibration_pwm, const bool verbose) {
+        if (verbose) {
             std::cout << STEP << "- calibrating position encoder now..." << RESET << std::endl;
         }
 
@@ -131,9 +123,6 @@ namespace pendule_pi {
                 throw CalibrationFailed("right limit switch stuck in active state");
             }
         }
-
-        // Remove callbacks on the angle encoder
-        angle_encoder_->removeSafetyCallbacks();
 
         // prepare some auxiliary callbacks used to reach the switches
         bool wrong_switch = false;
@@ -226,14 +215,35 @@ namespace pendule_pi {
             }
             throw CalibrationFailed("position min and max step counts are equal");
         }
+
+        // define the "home" position, at mid-distance from both ends
         mid_position_steps_ = (max_position_steps_ + min_position_steps_) / 2;
+    }
+
+    void Pendule::calibrate(const int calibration_pwm, const bool verbose) {
+        PENDULE_PI_DBG("Requested calibration via Pendule::calibrate(" << calibration_pwm << ")");
+
+        // Reset it no matter what!
+        calibrated_ = false;
+
+        // Ensure that we are not in emergency stop
+        if (emergency_stopped_)
+            throw CalibrationFailed("eStop has been called");
+
+        // Reset all callbacks
+        position_encoder_->removeSafetyCallbacks();
+        angle_encoder_->removeSafetyCallbacks();
+        left_switch_->disableInterrupts();
+        right_switch_->disableInterrupts();
+
+        calibrate_angle_encoder(verbose);
+
+        calibrate_position_encoder(calibration_pwm, verbose);
 
         // Go to the central position
         if (verbose) {
             std::cout << "... homing to center..." << std::endl;
         }
-        right_switch_->disableInterrupts();
-        left_switch_->disableInterrupts();
         motor_->setPWM(calibration_pwm);
         while (position_encoder_->steps() < mid_position_steps_) {
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -244,37 +254,49 @@ namespace pendule_pi {
             std::cout << SUCCESS << "-> position encoder calibrated." << RESET << std::endl << std::endl;
         }
 
-        // Ok, we are in the central position!
-        left_switch_->enableInterrupts([&] { eStop("left switch hit"); });
-        right_switch_->enableInterrupts([&] { eStop("right switch hit"); });
-        const int safety_margin_steps = static_cast<int>(
-            std::ceil(std::fabs(safety_margin_meters_ / meters_per_step_))
+        // Configure end-limit switches as hard limits that always stop the motor whenever they are reached
+        // IMPORTANT :
+        //  When using mechanical switches, this can lead to violent collision if the carriage is
+        //  traveling full speed. Better use magnetic switches that trigger before the physical contact.
+        left_switch_->enableInterrupts([&] { eStop("left limit-switch activated"); });
+        right_switch_->enableInterrupts([&] { eStop("right limit-switch activated"); });
+
+        // Configure encoder based travel limitation as an additional precaution. Emergency stop is
+        // triggered at a safety distance from the physical switch.
+        // This is not mandatory when using magnetic switches since this distance exists already thanks
+        // to the physical principle of these sensors.
+        const int hard_stop_margin_steps = static_cast<int>(
+            std::ceil(std::fabs(hard_stop_margin_meters_ / meters_per_step_))
         );
-        const int soft_min = min_position_steps_ + safety_margin_steps;
-        const int soft_max = max_position_steps_ - safety_margin_steps;
+        const int soft_min_steps = min_position_steps_ + hard_stop_margin_steps;
+        const int soft_max_steps = max_position_steps_ - hard_stop_margin_steps;
         position_encoder_->setSafetyCallbacks(
-            soft_min,
-            soft_max,
-            [&] { eStop("Software-imposed minimum position limit reached"); },
-            [&] { eStop("Software-imposed maximum position limit reached"); }
+            soft_min_steps,
+            soft_max_steps,
+            [&] { eStop("position lower limit reached"); },
+            [&] { eStop("position upper limit reached"); }
         );
-        soft_minmax_position_meters_ = std::fabs(steps2meters(soft_max));
+
+        soft_min_position_meters_ = steps2meters(soft_min_steps);
+        soft_max_position_meters_ = steps2meters(soft_max_steps);
+
         calibrated_ = true;
 
 #define LABEL(v) BRIGHT_BLUE << "- " << std::setw(20) << std::left << (v) << " : " << RESET
 #define STEPS(v) std::setw(6) << std::right << (v)
-#define DIST(v) " (" << std::setw(6) << std::fixed << std::setprecision(3) << std::right << steps2meters(v) << " m)"
-#define DIST_NO_CONV(v) " (" << std::setw(6) << std::fixed << std::setprecision(3) << std::right << (v) << " m)"
+#define DIST(v)  std::setw(6) << std::fixed << std::setprecision(3) << std::right << (v) << " m"
 
         if (verbose) {
             // clang-format off
             std::cout << HI << "Calibration complete." << RESET << std::endl
-                    <<  LABEL("min steps") << STEPS(min_position_steps_) << DIST(min_position_steps_) << std::endl
-                    << LABEL("max steps") << STEPS(max_position_steps_) << DIST(max_position_steps_) << std::endl
-                    << LABEL("center pos steps") << STEPS(mid_position_steps_) << DIST(mid_position_steps_) << std::endl
-                    << LABEL("safety_margin_steps") << STEPS(safety_margin_steps) << DIST_NO_CONV(safety_margin_meters_) << std::endl
-                    << LABEL("soft_min") << STEPS(soft_min) << DIST(soft_min) << std::endl
-                    << LABEL("soft_max") << STEPS(soft_max) << DIST(soft_max) << std::endl
+                    <<  LABEL("min steps") << STEPS(min_position_steps_) << std::endl
+                    << LABEL("max steps") << STEPS(max_position_steps_)  << std::endl
+                    << LABEL("track length") << DIST(steps2dist(max_position_steps_ - min_position_steps_))  << std::endl
+                    << LABEL("center pos steps") << STEPS(mid_position_steps_) << std::endl
+                    << LABEL("hard stop margin") << DIST(hard_stop_margin_meters_) << std::endl
+                    << LABEL("soft_min steps") << STEPS(soft_min_steps) << std::endl
+                    << LABEL("soft_max steps") << STEPS(soft_max_steps) << std::endl
+                    << LABEL("travel length") << DIST(steps2dist(soft_max_steps - soft_min_steps))  << std::endl
                     << std::endl;
             // clang-format on
         }
@@ -336,12 +358,6 @@ namespace pendule_pi {
         if (!calibrated_)
             throw NotCalibrated("Pendule::midPositionSteps()");
         return mid_position_steps_;
-    }
-
-    const double &Pendule::softMinMaxPosition() const {
-        if (!calibrated_)
-            throw NotCalibrated("Pendule::softMinMaxPosition()");
-        return soft_minmax_position_meters_;
     }
 
     void Pendule::setPwmOffsets(int offset_down, int offset_up) {

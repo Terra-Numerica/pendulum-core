@@ -57,13 +57,9 @@ safety_thresholds:
   # shuts-down. It should be positive. Negative values will be inverted.
   # Passing a zero is not illegal, but very unsafe.
   hard: 0.05
-  # Minimum allowed distance from the hard safety threshold. If violated,
-  # commands are zeroed. Giving a non-negative value in practice removes the
-  # soft threshold (only the hard one will remain active).
-  soft: 0.1
-  # sets the slowdown distance after the soft limit, to avoid brutal stops
-  # MUST BE LOWER than the soft safety distance.
-  braking_distance: 0.05
+  # added margin for base evolution during demo
+  # The base is stopped when closer than hard + margin from the end position
+  margin: 0.10
 
 # Offsets to be applied to pwm commands. Both should be integers.
 pwm_offsets:

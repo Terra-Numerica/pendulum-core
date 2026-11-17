@@ -89,10 +89,17 @@ namespace pendule_pi {
 
         // all the edges of the A/B signals are used to count steps, hence multiply the base resolution by 4
         const int encoders_step_per_turn = yaml_["encoders_step_per_turn"].as<int>(600) * 4;
+        if (encoders_step_per_turn <= 0)
+            throw BadParameterValue("encoders_step_per_turn", "should be strictly positive");
+
         // the distance between two consecutive teeth of the timing belt (a T2 model by default)
         const double timing_belt_module = yaml_["timing_belt_module"].as<int>(2.0);
+        if (timing_belt_module <= 0)
+            throw BadParameterValue("timing_belt_module", "should be strictly positive");
 
         const int pulley_teeth_count = yaml_["pulley_teeth_count"].as<int>(20);
+        if (pulley_teeth_count <= 0)
+            throw BadParameterValue("pulley_teeth_count", "should be strictly positive");
 
         const double meters_per_step = pulley_teeth_count * timing_belt_module / encoders_step_per_turn / 1000.;
         const double radian_per_step = 2 * M_PI / encoders_step_per_turn;
@@ -133,28 +140,25 @@ namespace pendule_pi {
     int Config::getCalibrationPWM() const {
         const auto pwm = yaml_["calibration_pwm"].as<int>(60);
         if (pwm <= 0)
-            throw std::runtime_error("Parameter 'calibration_pwm' should be positive!");
+            throw BadParameterValue("calibration_pwm", "should be strictly positive");
         return pwm;
     }
 
 
-    double Config::getSoftSafetyThreshold() const {
+    double Config::getSafetyMargin() const {
         THROW_IF_MISSING("safety_thresholds");
-        THROW_IF_MISSING("safety_thresholds", "soft");
-        return yaml_["safety_thresholds"]["soft"].as<double>();
-    }
-
-    double Config::getBrakingDistance() const {
-        THROW_IF_MISSING("safety_thresholds");
-        THROW_IF_MISSING("safety_thresholds", "braking_distance");
-        return yaml_["safety_thresholds"]["braking_distance"].as<double>();
+        THROW_IF_MISSING("safety_thresholds", "margin");
+        const auto value = yaml_["safety_thresholds"]["margin"].as<double>();
+        if (value <= 0)
+            throw BadParameterValue("margin", "should be strictly positive");
+        return value;
     }
 
 
     std::unique_ptr<pigpio::Rate> Config::getControlRate() const {
         const auto period_ms = yaml_["period_ms"].as<int>(20);
         if (period_ms <= 0)
-            throw std::runtime_error("Parameter 'period_ms' should be positive!");
+            throw BadParameterValue("period_ms", "should be strictly positive");
         return std::make_unique<pigpio::Rate>(1000 * period_ms);
     }
 
@@ -165,9 +169,9 @@ namespace pendule_pi {
         const auto period_ms = yaml_["period_ms"].as<int>();
         const auto cutoff_frequency = yaml_["cutoff_frequency"].as<double>();
         if (period_ms <= 0)
-            throw std::runtime_error("Parameter 'period_ms' should be positive!");
+            throw BadParameterValue("period_ms", "should be strictly positive");
         if (cutoff_frequency <= 0)
-            throw std::runtime_error("Parameter 'cutoff_frequency' should be positive!");
+            throw BadParameterValue("cutoff_frequency", "should be strictly positive");
         return std::make_unique<digital_filters::Filter<double, double> >(
             digital_filters::butterworth<double, double>(4, cutoff_frequency, 1000. / period_ms)
         );

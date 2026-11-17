@@ -1,11 +1,15 @@
 #pragma once
+#include <string>
+
 #include <yaml-cpp/yaml.h>
+
 #include <pendule_pi/pigpio.hpp>
 #include <pendule_pi/switch.hpp>
 #include <pendule_pi/encoder.hpp>
 #include <pendule_pi/motor.hpp>
 #include <pendule_pi/pendule.hpp>
 #include <pendule_pi/pendule_cpp_server.hpp>
+
 #include <digital_filters/filter.hpp>
 
 
@@ -34,13 +38,31 @@ namespace pendule_pi {
     /// Class that stores configuration parameters read from a YAML file.
     class Config {
     public:
+        class ConfigException : public std::runtime_error {
+        public:
+            explicit ConfigException(const std::string &msg)
+                : std::runtime_error(msg) {
+            }
+        };
+
         /// Class to signal that a configuration file is missing a requested parameter.
-        class MissingParameter : public std::runtime_error {
+        class MissingParameter : public ConfigException {
         public:
             /// Fill-in the exception message.
             explicit MissingParameter(const std::string &param)
-                : std::runtime_error(
-                    "The configuration file does not contain the requested parameter '" + param + "'") {
+                : ConfigException(
+                    "Missing mandatory parameter '" + param + "'"
+                ) {
+            }
+        };
+
+        class BadParameterValue : public ConfigException {
+        public:
+            /// Fill-in the exception message.
+            explicit BadParameterValue(const std::string &param, const std::string &msg)
+                : ConfigException(
+                    "Bad value for parameter '" + param + "' (" + msg + ")"
+                ) {
             }
         };
 
@@ -73,9 +95,7 @@ namespace pendule_pi {
 
         int getCalibrationPWM() const;
 
-        double getSoftSafetyThreshold() const;
-
-        double getBrakingDistance() const;
+        double getSafetyMargin() const;
 
         std::unique_ptr<pigpio::Rate> getControlRate() const;
 

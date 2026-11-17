@@ -158,10 +158,11 @@ namespace pendule_pi {
         [[nodiscard]] const int &midPositionSteps() const;
 
         /// Read the value of the soft position limits (in meters).
-        [[nodiscard]] const double &softMinMaxPosition() const;
+        [[nodiscard]] double softMinPosition() const noexcept { return soft_min_position_meters_; }
+        [[nodiscard]] double softMaxPosition() const noexcept { return soft_max_position_meters_; }
 
-        // Get the safety margin setting for track ends stop points (in meters)
-        [[nodiscard]] const double &safetyMarginMeters() const { return safety_margin_meters_; }
+        // Get the safety margin setting for track ends limits (in meters)
+        [[nodiscard]] double hardStopMarginMeters() const noexcept { return hard_stop_margin_meters_; }
 
         /// Set offsets to compensate for friction.
         /** This function sets internal offsets that should be applied to the pwm
@@ -188,33 +189,40 @@ namespace pendule_pi {
         void eStop(const std::string &why);
 
     private:
-        bool calibrated_; ///< Variable that is set to true once the pendulum calibration has been completed.
-        bool emergency_stopped_; ///< Variable that is set to true when the pendulum has to stop.
+        bool calibrated_{}; ///< Variable that is set to true once the pendulum calibration has been completed.
+        bool emergency_stopped_{}; ///< Variable that is set to true when the pendulum has to stop.
         // State variables
         double position_{}; ///< Current position of the moving base.
         double angle_{}; ///< Current angle of the pendulum.
         double linear_velocity_{}; ///< Current velocity of the moving base.
         double angular_velocity_{}; ///< Current velocity of the pendulum.
         // Calibration values
-        int min_position_steps_{}; ///< Encoder reading when the base is at the minimum position.
-        int max_position_steps_{}; ///< Encoder reading when the base is at the maximum position.
-        int mid_position_steps_{}; ///< Encoder reading when the base is at the middle position.
-        double safety_margin_meters_; ///< Safety distance from the switches at which emergency stop is requested.
-        double soft_minmax_position_meters_{}; ///< Position (in meters) at which emergency stop is requested.
-        const double meters_per_step_; ///< Multiplicative factor to convert from encoder steps to meters.
-        const double radians_per_step_; ///< Multiplicative factor to convert from encoder steps to radians.
-        int offset_up_; ///< Offset to be applied to positive pwm commands.
-        int offset_down_; ///< Offset to be applied to negative pwm commands.
-        int offset_static_; ///< Static offset to be applied to the command.
+        int min_position_steps_{}; ///< Encoder reading at the left limit switch.
+        int max_position_steps_{}; ///< Encoder reading at the right limit switch.
+        int mid_position_steps_{}; ///< Encoder reading at mid-distance from limit switches.
+        double hard_stop_margin_meters_{}; ///< Safety distance from the switches at which emergency stop is triggered.
+        // double soft_minmax_position_meters_{}; ///< Position (in meters) at which emergency stop is requested.
+        double soft_min_position_meters_{}; ///< Soft stop on left side, hard_stop_margin_meters_ from min position.
+        double soft_max_position_meters_{}; ///< Soft stop on right side, hard_stop_margin_meters_ from max position.
+        const double meters_per_step_{}; ///< Steps to meters conversion ratio (derived from the hardware specs).
+        const double radians_per_step_{}; ///< Steps to radians conversion ratio (derived from the hardware specs).
+        int offset_up_{}; ///< Offset to be applied to positive pwm commands.
+        int offset_down_{}; ///< Offset to be applied to negative pwm commands.
+        int offset_static_{}; ///< Static offset to be applied to the command.
         // Hardware components
         std::unique_ptr<Motor> motor_; ///< Actuator to move the base of the pendulum.
-        std::unique_ptr<Switch> left_switch_; ///< Left switch (should be near to the motor).
-        std::unique_ptr<Switch> right_switch_; ///< Right switch (should be near to the encoder).
+        std::unique_ptr<Switch> left_switch_; ///< Track left limit switch.
+        std::unique_ptr<Switch> right_switch_; ///< Track right limit switch.
         std::unique_ptr<Encoder> position_encoder_; ///< Encoder to read the current position of the base.
         std::unique_ptr<Encoder> angle_encoder_; ///< Encoder to read the current angle of the pendulum.
 
-        /// Auxiliary method that converts steps into meters.
+        /// Auxiliary method that converts steps into a position in meters.
         [[nodiscard]] double steps2meters(const int &steps) const {
+            return meters_per_step_ * (steps - mid_position_steps_);
+        }
+
+        /// Auxiliary method that converts steps into a distance in meters.
+        [[nodiscard]] double steps2dist(const int &steps) const {
             return meters_per_step_ * steps;
         }
 
@@ -222,5 +230,11 @@ namespace pendule_pi {
         [[nodiscard]] double steps2radians(const int &steps) const {
             return radians_per_step_ * steps;
         }
+
+        /// Angle encoder calibration step
+        void calibrate_angle_encoder(bool verbose) const;
+
+        /// Position encoder calibration step
+        void calibrate_position_encoder(int calibration_pwm, bool verbose);
     };
 }
