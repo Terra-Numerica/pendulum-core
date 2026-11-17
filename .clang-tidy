@@ -1,0 +1,19 @@
+---
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  cppcoreguidelines-init-variables,
+  cppcoreguidelines-pro-type-member-init,
+  modernize-use-nullptr,
+  modernize-use-override,
+  modernize-use-equals-default,
+  performance-for-range-copy,
+  performance-unnecessary-copy-initialization,
+  performance-noexcept-move-constructor,
+  readability-redundant-member-init,
+  readability-const-return-type
+
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+FormatStyle: file
