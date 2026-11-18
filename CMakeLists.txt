@@ -4,7 +4,7 @@ project(pendule_pi VERSION 0.5.4 LANGUAGES CXX)
 # Build Release by default : the control loop must run with same optimizations
 # as the demonstrator (see README)
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-    set(CMAKE_BUILD_TYPE Release CACHE STRING "Type de build" FORCE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif ()
 
 set(CMAKE_CXX_STANDARD 17)
