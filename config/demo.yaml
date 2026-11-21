@@ -16,7 +16,7 @@ joystick:
   # edit and uncomment next line if you have several gamepads connected
   # device: /dev/input/js0
 
-# communications between demo and low level controller
+# communications between demo and hw_interface
 sockets:
   host: localhost
   state_port: 10001

@@ -22,7 +22,7 @@ Les communications entre les deux couches sont assurées par [**ZeroMQ**](https:
 
 ## Exécution
 
-### `low_level_interface`
+### `hw_interface`
 
 Cet exécutable gère les interactions bas niveau avec le matériel. Il doit donc
 être en cours d'exécution pour que l'application `demo` puisse être démarrée.
@@ -31,18 +31,18 @@ Le plus simple est par conséquent de le lancer en *background*.
 **Attention :** il nécessite de s'exécuter en *root*. Un message d'erreur le signale
 au démarrage si ce n'est pas le cas.
 
-Le binaire prend en paramètre le path vers le fichier de configuration du pendule,
+Le binaire prend en paramètre (option `-f` / `--config-file`) le path vers le fichier de configuration du pendule,
 concernant les aspects matériels (identification et configuration des GPIO par exemple)
 ainsi que le paramétrage des filtres appliqués aux mesures et des lois de contrôle
 utilisées dans ses différents modes.
 
 ```
-$ sudo /path/to/low_level_interface /path/to/pendulum_pi_config.yaml &
+$ sudo /path/to/hw_interface -f /path/to/pendulum_pi_config.yaml &
 ```
 
 Exemple de sortie console :
 
-![](img/low_level_interface.png)
+![](img/hw_interface.png)
 
 ### `demo`
 
@@ -51,11 +51,14 @@ différents modes et de le contrôler à l'aide du gamepad.
 
 Elle est exécuté en tant que user standard.
 
-Le binaire prend en paramètre le path vers le fichier de configuration de la
+Le binaire prend en paramètre (option `-f` / `--config-file`) le path vers le fichier de configuration de la
 démonstration elle-même (pas celui du pendule).
 
+L'option `--help` détaille les options disponibles, dont `--check` (validation du fichier de configuration)
+et `--example` (affichage d'un exemple de fichier de configuration).
+
 ```
-$ /path/to/demo /path/to/demo.yaml
+$ /path/to/demo -f /path/to/demo.yaml
 ```
 
 Exemple de sortie console :

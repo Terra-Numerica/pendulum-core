@@ -90,7 +90,7 @@ std::string get_demo_config_example() {
             "  # edit and uncomment next line if you have several gamepads connected\n"
             "  # device: /dev/input/js0\n"
             "\n"
-            "# communications between demo and low level controller\n"
+            "# communications between demo and hw_interface\n"
             "sockets:\n"
             "  host: localhost\n"
             "  state_port: 10001\n"

@@ -33,7 +33,7 @@
 * **Executable-specific code:** a header used by a single executable stays next to its `.cpp` and is not published in
   `include/` (ex: `src/bin/demo/demo_config.hpp`). Code shared by several executables goes in a library.
 * **Executables:** an executable made of several files has its own folder in `src/bin/` (`demo/`,
-  `low_level_interface/`). Small single-file tools are grouped in `src/bin/tools/`. Helpers shared by executables only
+  `hw_interface/`). Small single-file tools are grouped in `src/bin/tools/`. Helpers shared by executables only
   go in `src/bin/common/`.
 * **Third-party code:** dependencies tracked by git go in `third_party/`. `deps/` is git-ignored and reserved to
   dependencies built locally.

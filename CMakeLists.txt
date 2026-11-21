@@ -90,13 +90,13 @@ target_precompile_headers(pendule_cli PRIVATE
 ###
 
 # ----------------------------------------
-add_executable(low_level_interface
-        src/bin/low_level_interface/low_level_interface.cpp
+add_executable(hw_interface
+        src/bin/hw_interface/hw_interface.cpp
         src/bin/common/utils.hpp
         include/pendule_pi/pendulum_config.hpp
         include/pendule_pi/sockets_config.hpp
 )
-target_link_libraries(low_level_interface PRIVATE
+target_link_libraries(hw_interface PRIVATE
         pendule_pi
         pendule_cli
         digital_filters

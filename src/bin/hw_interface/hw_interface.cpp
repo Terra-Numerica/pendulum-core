@@ -149,7 +149,7 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     std::cout << std::endl << C_BR_WHITE
             << " ------------------------------------------------ " << std::endl
             << "|                                                |" << std::endl
-            << "|    Pendulum low level controller starting...   |" << std::endl
+            << "|    Pendulum hardware interface starting...     |" << std::endl
             << "|                                                |" << std::endl
             << " ------------------------------------------------ " << std::endl
             << std::endl << LABEL << "Version " << PENDULE_PI_VERSION << std::endl
@@ -273,7 +273,7 @@ int main(const int argc, char **argv) {
     int exit_code = EXIT_SUCCESS;
     const auto cli_options = parse_cli(
         {
-            .description = "Pendulum low level controller\n\n"
+            .description = "Pendulum hardware interface\n\n"
             "- reads the position and angle encoders, filters the measurements and publishes them on the state socket\n"
             "- gets the motor command from the control socket and generates the control signals for the driver\n"
             "- monitors the limit switches",
