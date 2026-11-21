@@ -24,3 +24,20 @@
   destructors.
 * **Move Operations:** Mark move constructors and move assignment operators `noexcept` so `std::vector` reallocates
   without copying.
+
+## Source Tree Organization
+
+* **Libraries:** a library has its public headers in `include/<lib>/` and its sources in `src/<lib>/`
+  (`pendule_pi`, `pendule_cli`). Header-only libraries (`yamlcfg`, `digital_filters`) live in `include/` and are
+  declared as `INTERFACE` targets in `CMakeLists.txt`.
+* **Executable-specific code:** a header used by a single executable stays next to its `.cpp` and is not published in
+  `include/` (ex: `src/bin/demo/demo_config.hpp`). Code shared by several executables goes in a library.
+* **Executables:** an executable made of several files has its own folder in `src/bin/` (`demo/`,
+  `low_level_interface/`). Small single-file tools are grouped in `src/bin/tools/`. Helpers shared by executables only
+  go in `src/bin/common/`.
+* **Third-party code:** dependencies tracked by git go in `third_party/`. `deps/` is git-ignored and reserved to
+  dependencies built locally.
+* **Not C++ sources:** notebooks and measurement data go in `analysis/`, Python scripts in `python/`. Nothing but C++
+  code belongs in `src/`.
+* **Moving files:** after moving or deleting a source, delete the old path on the build target as well, otherwise the
+  stale copy remains there.
