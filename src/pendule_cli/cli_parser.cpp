@@ -1,4 +1,4 @@
-#include "pendule_pi/cli_parser.hpp"
+#include "pendule_cli/cli_parser.hpp"
 #include "CLI11/CLI11.hpp" // Compiled only when cli_parser.cpp changes
 
 #include <memory>

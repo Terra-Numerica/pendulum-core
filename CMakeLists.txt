@@ -20,8 +20,21 @@ find_package(Threads REQUIRED)
 # (Release = -O3 -DNDEBUG).
 add_compile_options(-Wall)
 
-# code shared by demo and low_level_interface
+# Header-only libraries living in include/
+add_library(yamlcfg INTERFACE)
+target_include_directories(yamlcfg INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(yamlcfg INTERFACE
+        yaml-cpp::yaml-cpp
+)
 
+add_library(digital_filters INTERFACE)
+target_include_directories(digital_filters INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+# Code shared by the executables
 add_library(pendule_pi
         src/pendule_pi/joystick.cpp
         src/pendule_pi/pigpio.cpp
@@ -45,7 +58,7 @@ target_link_libraries(pendule_pi PUBLIC
         Threads::Threads
         zmq
         zmqpp
-        yaml-cpp::yaml-cpp
+        yamlcfg
 )
 
 target_compile_definitions(pendule_pi PUBLIC
@@ -56,17 +69,20 @@ target_compile_definitions(pendule_pi PUBLIC
 # Command line parsing shared by the executables. Built once as a library : CLI11 is expensive to compile
 # (header-only), so it is isolated in cli_parser.cpp and precompiled.
 add_library(pendule_cli STATIC
-        src/bin/cli_parser.cpp
-        include/pendule_pi/cli_parser.hpp
+        src/pendule_cli/cli_parser.cpp
+        include/pendule_cli/cli_parser.hpp
 )
 target_include_directories(pendule_cli PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_include_directories(pendule_cli PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party
 )
 target_compile_definitions(pendule_cli PRIVATE
         PENDULE_PI_VERSION="${PROJECT_VERSION}"
 )
 target_precompile_headers(pendule_cli PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/CLI11/CLI11.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/CLI11/CLI11.hpp
 )
 
 ###
@@ -75,21 +91,24 @@ target_precompile_headers(pendule_cli PRIVATE
 
 # ----------------------------------------
 add_executable(low_level_interface
-        src/bin/low_level_interface.cpp
+        src/bin/low_level_interface/low_level_interface.cpp
+        src/bin/common/utils.hpp
         include/pendule_pi/pendulum_config.hpp
         include/pendule_pi/sockets_config.hpp
 )
 target_link_libraries(low_level_interface PRIVATE
         pendule_pi
         pendule_cli
+        digital_filters
 )
 
 # ----------------------------------------
 add_executable(demo
         src/bin/demo/demo.cpp
         src/bin/demo/demo_config.cpp
+        src/bin/demo/demo_config.hpp
+        src/bin/common/utils.hpp
         include/pendule_pi/sockets_config.hpp
-        include/pendule_pi/demo_config.hpp
 )
 target_link_libraries(demo PRIVATE
         pendule_pi
@@ -98,7 +117,7 @@ target_link_libraries(demo PRIVATE
 
 # ----------------------------------------
 add_executable(reset_gpio
-        src/bin/reset_gpio.cpp
+        src/bin/tools/reset_gpio.cpp
 )
 target_link_libraries(reset_gpio
         pendule_pi
@@ -107,7 +126,7 @@ target_link_libraries(reset_gpio
 
 # ----------------------------------------
 add_executable(check_encoders
-        src/bin/check_encoders.cpp
+        src/bin/tools/check_encoders.cpp
 )
 target_link_libraries(check_encoders
         pendule_pi
@@ -116,7 +135,7 @@ target_link_libraries(check_encoders
 
 # ----------------------------------------
 add_executable(check_limit_switches
-        src/bin/check_limit_switches.cpp
+        src/bin/tools/check_limit_switches.cpp
 )
 target_link_libraries(check_limit_switches
         pendule_pi
@@ -125,7 +144,7 @@ target_link_libraries(check_limit_switches
 
 # ----------------------------------------
 add_executable(check_motor
-        src/bin/check_motor.cpp
+        src/bin/tools/check_motor.cpp
 )
 target_link_libraries(check_motor
         pendule_pi

@@ -1,7 +1,7 @@
 #include <yamlcfg/config_node.hpp>
 #include <yamlcfg/constraints.hpp>
 
-#include "pendule_pi/demo_config.hpp"
+#include "demo_config.hpp"
 #include "pendule_pi/sockets_config.hpp"
 
 namespace {

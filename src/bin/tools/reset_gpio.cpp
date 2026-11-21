@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 #include <pigpio.h>
-#include <pendule_pi/cli_parser.hpp>
+#include <pendule_cli/cli_parser.hpp>
 #include <pendule_pi/pendulum_config.hpp>
 #include <pendule_pi/colors.h>
 

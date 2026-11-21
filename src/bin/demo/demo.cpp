@@ -3,12 +3,12 @@
 #include <iostream>
 #include <csignal>
 #include <yaml-cpp/yaml.h>
-#include "../utils.hpp"
+#include "../common/utils.hpp"
 #include <pendule_pi/colors.h>
 #include <pendule_pi/joystick.hpp>
 #include <pendule_pi/pendule_cpp_client.hpp>
-#include <pendule_pi/cli_parser.hpp>
-#include <pendule_pi/demo_config.hpp>
+#include <pendule_cli/cli_parser.hpp>
+#include "demo_config.hpp"
 // clang-format on
 
 namespace {

@@ -6,14 +6,14 @@
 #include <fstream>
 
 
-#include <pendule_pi/cli_parser.hpp>
+#include <pendule_cli/cli_parser.hpp>
 #include <pendule_pi/colors.h>
 #include <pendule_pi/pendulum_config.hpp>
 #include <pendule_pi/pigpio.hpp>
 #include <pendule_pi/pendule.hpp>
 #include <digital_filters/filters_implementations/butterworth.hpp>
 
-#include "utils.hpp"
+#include "../common/utils.hpp"
 #include "pendule_pi/pendule_cpp_server.hpp"
 // clang-format on
 

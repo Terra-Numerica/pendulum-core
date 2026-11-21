@@ -2,7 +2,7 @@
 
 #include <yamlcfg/fields.hpp>
 #include <string>
-#include "sockets_config.hpp"
+#include <pendule_pi/sockets_config.hpp>
 
 struct Joystick {
     int axis_pwm{};
