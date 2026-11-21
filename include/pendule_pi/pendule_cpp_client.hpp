@@ -8,8 +8,8 @@ namespace pendule_pi {
     class PenduleCppClient {
     public:
         static auto constexpr DEFAULT_HOST = "localhost";
-        static auto constexpr DEFAULT_STATE_PORT = "10001";
-        static auto constexpr DEFAULT_COMMAND_PORT = "10002";
+        static auto constexpr DEFAULT_STATE_PORT = 10001;
+        static auto constexpr DEFAULT_COMMAND_PORT = 10002;
 
         /// Named option to be passed to PenduleCppClient::readState.
         /** @see PenduleCppClient::readState */
@@ -36,8 +36,8 @@ namespace pendule_pi {
           */
         PenduleCppClient(
             const std::string &host,
-            const std::string &state_port,
-            const std::string &command_port,
+            const int state_port,
+            const int command_port,
             int wait = -1
         );
 

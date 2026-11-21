@@ -11,11 +11,7 @@
 #include "pendule_pi/pigpio.hpp"
 // clang-format on
 
-#define HI BRIGHT_WHITE
-#define STEP BRIGHT_MAGENTA
-#define SUCCESS BRIGHT_GREEN
-#define WARNING BRIGHT_YELLOW
-#define ERROR BRIGHT_RED
+#define STEP C_BR_MAGENTA
 
 namespace pendule_pi {
     Pendule::Pendule(
@@ -28,14 +24,9 @@ namespace pendule_pi {
         std::unique_ptr<Encoder> position_encoder,
         std::unique_ptr<Encoder> angle_encoder
     )
-        : calibrated_(false),
-          emergency_stopped_(false),
-          hard_stop_margin_meters_(safety_margin_meters),
+        : hard_stop_margin_meters_(safety_margin_meters),
           meters_per_step_(meters_per_step),
           radians_per_step_(radians_per_step),
-          offset_up_(0),
-          offset_down_(0),
-          offset_static_(0),
           motor_(std::move(motor)),
           left_switch_(std::move(left_switch)),
           right_switch_(std::move(right_switch)),
@@ -82,13 +73,13 @@ namespace pendule_pi {
         if (verbose) {
             std::cout << std::endl
                     << STEP << "- waiting for the pendulum to be still..." << std::endl
-                    << RESET;
+                    << C_RESET;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         if (moving) {
             if (verbose) {
-                std::cout << RED << "Cannot start calibration : the pendulum is not still" << std::endl << RESET;
+                std::cout << C_ERROR << "Cannot start calibration : the pendulum is not still" << std::endl << C_RESET;
             }
             throw CalibrationFailed("the pendulum is moving");
         }
@@ -97,22 +88,22 @@ namespace pendule_pi {
         angle_encoder_->removeSafetyCallbacks();
 
         if (verbose) {
-            std::cout << SUCCESS << "-> angle encoder initialized." << RESET << std::endl << std::endl;
+            std::cout << C_SUCCESS << "-> angle encoder initialized." << C_RESET << std::endl << std::endl;
         }
     }
 
     void Pendule::calibrate_position_encoder(const int calibration_pwm, const bool verbose) {
         if (verbose) {
-            std::cout << STEP << "- calibrating position encoder now..." << RESET << std::endl;
+            std::cout << STEP << "- calibrating position encoder now..." << C_RESET << std::endl;
         }
 
         // if we are already at the rightmost end of the track, back off a bit before
         // starting the calibration process (we don't care if we are at the leftmost
         // end, since we're going to move rightwards first anyway)
         if (!right_switch_->atRest()) {
-            std::cout << WARNING
+            std::cout << C_WARNING
                     << "-> carriage already at the right end of the track => backing off..." <<
-                    RESET << std::endl;
+                    C_RESET << std::endl;
             // move leftwards enough to clear the switch
             motor_->setPWM(-calibration_pwm);
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -142,9 +133,9 @@ namespace pendule_pi {
         while (motor_->getPWM() != 0) {
             if (wrong_switch) {
                 if (verbose) {
-                    std::cerr << ERROR
+                    std::cerr << C_ERROR
                             << "Left limit switch activated while moving rightwards." << std::endl
-                            << RESET;
+                            << C_RESET;
                 }
                 throw CalibrationFailed("unexpected left limit switch activation");
             }
@@ -170,9 +161,9 @@ namespace pendule_pi {
         while (motor_->getPWM() != 0) {
             if (wrong_switch) {
                 if (verbose) {
-                    std::cerr << ERROR
+                    std::cerr << C_ERROR
                             << "Right limit switch activated while moving leftwards." << std::endl
-                            << RESET;
+                            << C_RESET;
                 }
                 throw CalibrationFailed("unexpected right limit switch activation");
             }
@@ -191,12 +182,12 @@ namespace pendule_pi {
         // Check that min and max are coherent
         if (min_position_steps_ > max_position_steps_) {
             if (verbose) {
-                std::cerr << ERROR
+                std::cerr << C_ERROR
                         << "Minimum and maximum position are inverted. " << std::endl
                         << "Possible cause :" << std::endl
                         << "- A/B signals are swapped" << std::endl
                         << "Swap A/B pin settings in the configuration file." << std::endl
-                        << RESET;
+                        << C_RESET;
             }
             throw CalibrationFailed("the minimum step position is greater than the maximum one. This likely "
                 "means that the encoder 'reads backward'. Try inverting the A/B pins settings in the configuration.");
@@ -204,14 +195,14 @@ namespace pendule_pi {
 
         if (min_position_steps_ == max_position_steps_) {
             if (verbose) {
-                std::cerr << ERROR
+                std::cerr << C_ERROR
                         << "Minimum and maximum position steps are equal. " << std::endl
                         << "Possible causes :" << std::endl
                         << "- the belt is loose or not on the pulleys anymore" << std::endl
                         << "- the encoder pulley screws are loose and the pulley is slipping on the shaft"
                         << "- an encoder wire is disconnected"
                         << "- the encoder is broken" << std::endl
-                        << RESET;
+                        << C_RESET;
             }
             throw CalibrationFailed("position min and max step counts are equal");
         }
@@ -251,7 +242,7 @@ namespace pendule_pi {
         motor_->setPWM(0);
 
         if (verbose) {
-            std::cout << SUCCESS << "-> position encoder calibrated." << RESET << std::endl << std::endl;
+            std::cout << C_SUCCESS << "-> position encoder calibrated." << C_RESET << std::endl << std::endl;
         }
 
         // Configure end-limit switches as hard limits that always stop the motor whenever they are reached
@@ -282,21 +273,21 @@ namespace pendule_pi {
 
         calibrated_ = true;
 
-#define LABEL(v) BRIGHT_BLUE << "- " << std::setw(20) << std::left << (v) << " : " << RESET
+#define C_LABEL(v) C_BR_BLUE << "- " << std::setw(20) << std::left << (v) << " : " << C_RESET
 #define STEPS(v) std::setw(6) << std::right << (v)
 #define DIST(v)  std::setw(6) << std::fixed << std::setprecision(3) << std::right << (v) << " m"
 
         if (verbose) {
             // clang-format off
-            std::cout << HI << "Calibration complete." << RESET << std::endl
-                    <<  LABEL("min steps") << STEPS(min_position_steps_) << std::endl
-                    << LABEL("max steps") << STEPS(max_position_steps_)  << std::endl
-                    << LABEL("track length") << DIST(steps2dist(max_position_steps_ - min_position_steps_))  << std::endl
-                    << LABEL("center pos steps") << STEPS(mid_position_steps_) << std::endl
-                    << LABEL("hard stop margin") << DIST(hard_stop_margin_meters_) << std::endl
-                    << LABEL("soft_min steps") << STEPS(soft_min_steps) << std::endl
-                    << LABEL("soft_max steps") << STEPS(soft_max_steps) << std::endl
-                    << LABEL("travel length") << DIST(steps2dist(soft_max_steps - soft_min_steps))  << std::endl
+            std::cout << C_HEADER << "Calibration complete." << C_RESET << std::endl
+                    <<  C_LABEL("min steps") << STEPS(min_position_steps_) << std::endl
+                    << C_LABEL("max steps") << STEPS(max_position_steps_)  << std::endl
+                    << C_LABEL("track length") << DIST(steps2dist(max_position_steps_ - min_position_steps_))  << std::endl
+                    << C_LABEL("center pos steps") << STEPS(mid_position_steps_) << std::endl
+                    << C_LABEL("hard stop margin") << DIST(hard_stop_margin_meters_) << std::endl
+                    << C_LABEL("soft_min steps") << STEPS(soft_min_steps) << std::endl
+                    << C_LABEL("soft_max steps") << STEPS(soft_max_steps) << std::endl
+                    << C_LABEL("travel length") << DIST(steps2dist(soft_max_steps - soft_min_steps))  << std::endl
                     << std::endl;
             // clang-format on
         }

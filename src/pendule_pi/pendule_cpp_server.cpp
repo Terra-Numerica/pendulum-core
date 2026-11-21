@@ -13,16 +13,16 @@ namespace pendule_pi {
 
     PenduleCppServer::PenduleCppServer(
         const std::string &host,
-        const std::string &state_port,
-        const std::string &command_port
+        const int state_port,
+        const int command_port
     ) {
         // Connect to the sockets to exchange data with the low-level interface.
         context_ = std::make_unique<zmqpp::context>();
         state_pub_ = std::make_unique<zmqpp::socket>(*context_, zmqpp::socket_type::publish);
-        state_pub_->bind("tcp://" + host + ":" + state_port);
+        state_pub_->bind("tcp://" + host + ":" + std::to_string(state_port));
         command_sub_ = std::make_unique<zmqpp::socket>(*context_, zmqpp::socket_type::subscribe);
         command_sub_->set(zmqpp::socket_option::conflate, 1);
-        command_sub_->bind("tcp://" + host + ":" + command_port);
+        command_sub_->bind("tcp://" + host + ":" + std::to_string(command_port));
         command_sub_->subscribe("");
         command_poller_ = std::make_unique<zmqpp::poller>();
         command_poller_->add(*command_sub_, zmqpp::poller::poll_in);

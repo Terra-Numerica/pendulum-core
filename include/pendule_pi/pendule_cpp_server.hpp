@@ -8,8 +8,8 @@ namespace pendule_pi {
     class PenduleCppServer {
     public:
         static auto constexpr DEFAULT_HOST = "*";
-        static auto constexpr DEFAULT_STATE_PORT = "10001";
-        static auto constexpr DEFAULT_COMMAND_PORT = "10002";
+        static auto constexpr DEFAULT_STATE_PORT = 10001;
+        static auto constexpr DEFAULT_COMMAND_PORT = 10002;
 
         /// Creates the socket connections.
         PenduleCppServer();
@@ -23,8 +23,8 @@ namespace pendule_pi {
           */
         PenduleCppServer(
             const std::string &host,
-            const std::string &state_port,
-            const std::string &command_port
+            int state_port,
+            int command_port
         );
 
         /// Deallocates the memory for the sockets.
