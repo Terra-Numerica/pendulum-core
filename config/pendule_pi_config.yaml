@@ -41,15 +41,16 @@ motor:
   # Pin used to invert the rotation direction of the motor.
   direction_pin: 16
 
-# Encoders specifications
-# IMPORTANT :
-#   Provide the physical value, as indicated in the maker's datasheet,
-#   NOT the one used in internal computations.
-encoders_step_per_turn: 600
+hardware_specs:
+  # Encoders specifications
+  # IMPORTANT :
+  #   Provide the physical value, as indicated in the maker's datasheet,
+  #   NOT the one used in internal computations.
+  encoders_step_per_turn: 600
 
-# Mechanical specifications of the timing belt and pulley.
-timing_belt_module: 2.0         # mm
-pulley_teeth_count: 20
+  # Mechanical specifications of the timing belt and pulley.
+  timing_belt_module: 2.0         # mm
+  pulley_teeth_count: 20
 
 # Safety distances to stop the pendulum, in meters.
 safety_thresholds:

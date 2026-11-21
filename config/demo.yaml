@@ -25,9 +25,9 @@ sockets:
 # coefficients of the LQR control law
 lqr_gains:
   position: -127.45880662905581
-  lin_vel: -822.638944546691
+  linear_velocity: -822.638944546691
   angle: 2234.654627319883
-  ang_vel: 437.1177135919267
+  angular_velocity: 437.1177135919267
 
 # coefficients of the swing-up control law
 swing_up:
@@ -41,3 +41,5 @@ misc:
   lqr_to_swingup_hysteresis: 0.2        # rd
   # duration of the blending transition when entering the LQR range while in swing-up mode
   swingup_to_lqr_ramp_secs: 0.100
+  # Control period in milliseconds (integer). Optional parameter, defaults to 20. Must match pendulum config value.
+  period_ms: 20
