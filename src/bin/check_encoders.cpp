@@ -1,94 +1,86 @@
 // clang-format off
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <chrono>
 #include <thread>
 #include <csignal>
 #include <cstdlib>
 
-#include <pendule_pi/pendule.hpp>
-#include <pendule_pi/config.hpp>
+#include <pendule_pi/cli_parser.hpp>
 #include <pendule_pi/colors.h>
+#include <pendule_pi/pendulum_config.hpp>
+#include <pendule_pi/pigpio.hpp>
+#include <pendule_pi/encoder.hpp>
 // clang-format on
 
-constexpr auto POS_COLOR = BRIGHT_GREEN;
-constexpr auto NEG_COLOR = BRIGHT_RED;
-constexpr auto LABEL_COLOR = BRIGHT_BLUE;
-constexpr auto HI = BRIGHT_WHITE;
+constexpr auto POS_COLOR = C_BR_GREEN;
+constexpr auto NEG_COLOR = C_BR_RED;
+constexpr auto LABEL_COLOR = C_BR_BLUE;
 
 
 static void display_value(const std::string &label, const int value, const int last_value) {
-    constexpr auto STATIC_COLOR = RESET;
-    std::cout << STATIC_COLOR << "[ " << label << " : " << RESET;
+    constexpr auto STATIC_COLOR = C_RESET;
+    std::cout << STATIC_COLOR << "[ " << label << " : " << C_RESET;
     if (value > last_value)
         std::cout << POS_COLOR;
     else if (value < last_value)
         std::cout << NEG_COLOR;
     else
-        std::cout << RESET;
-    std::cout << std::setw(6) << std::right << value << STATIC_COLOR << " ]  " << RESET;
+        std::cout << C_RESET;
+    std::cout << std::setw(6) << std::right << value << STATIC_COLOR << " ]  " << C_RESET;
 }
 
-int main(const int argc, char **argv) {
+static int run(const PendulumConfig &config) {
     namespace pp = pendule_pi;
-    const std::string program_name = argv[0];
-
-    // Load all parameters from a configuration file.
-    if (argc < 2) {
-        std::cout << RED << "Usage: sudo " << program_name << " config_file.yaml" << RESET << std::endl;
-        std::cout << "- 'sudo' is needed for pigpio to work" << std::endl;
-        std::cout << "- the configuration file is needed to setup the interface" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    const auto config = pp::Config::loadFromFile(argv[1]);
-    if (!config) {
-        return EXIT_FAILURE;
-    }
-
 
     try {
-        // Let the token manage the pigpio library!
         pigpio::ActivationToken token;
 
         signal(SIGINT, pigpio::ActivationToken::pleaseStop);
         signal(SIGTERM, pigpio::ActivationToken::pleaseStop);
 
         std::cout
-                << HI
+                << C_HEADER
                 << " ------------------------------------------ " << std::endl
                 << "|                                          |" << std::endl
                 << "|   Encoders configuration checking tool   |" << std::endl
                 << "|                                          |" << std::endl
                 << " ------------------------------------------ " << std::endl
                 << std::endl << LABEL_COLOR << "Version " << PENDULE_PI_VERSION << std::endl
-                << RESET << std::endl
+                << C_RESET << std::endl
                 << "This tool checks that the encoders are configured so that the returned values" << std::endl
                 << "progress according to the conventions used in the control laws." << std::endl << std::endl;
 
-        const auto position_encoder = config->getPositionEncoder();
-        const auto angle_encoder = config->getAngleEncoder();
+        const auto position_encoder = std::make_unique<pp::Encoder>(
+            config.position_encoder.pin_a, config.position_encoder.pin_b
+        );
+        const auto angle_encoder = std::make_unique<pp::Encoder>(
+            config.angle_encoder.pin_a, config.angle_encoder.pin_b
+        );
         constexpr auto POLLING_PERIOD_MS = 100;
 
-        std::cout << HI << "Configuration :" << RESET << std::endl;
-        std::cout << LABEL_COLOR << "- position : " << RESET
+        std::cout << C_HEADER << "Configuration :" << C_RESET << std::endl;
+        std::cout << LABEL_COLOR << "- position : " << C_RESET
                 << "A->GPIO " << position_encoder->getPinA() << " - B->GPIO " << position_encoder->getPinB()
                 << std::endl;
-        std::cout << LABEL_COLOR << "- angle    : " << RESET
+        std::cout << LABEL_COLOR << "- angle    : " << C_RESET
                 << "A->GPIO " << angle_encoder->getPinA() << " - B->GPIO " << angle_encoder->getPinB()
                 << std::endl;
 
         std::cout << std::endl
                 << "If the wiring and configuration are OK, the following behaviours are expected :" << std::endl
-                << "- position values " << HI << "increase" << RESET << " when the cart moves " << HI <<
+                << "- position values " << C_HEADER << "increase" << C_RESET << " when the cart moves " << C_HEADER <<
                 "rightwards" <<
-                LABEL_COLOR << " (positive X)" << RESET << std::endl
-                << "- angle values " << HI << "increase" << RESET << " when the arm is rotated " << HI << "CCW" <<
-                LABEL_COLOR << " (trigonometric convention)" << RESET << std::endl
+                LABEL_COLOR << " (positive X)" << C_RESET << std::endl
+                << "- angle values " << C_HEADER << "increase" << C_RESET << " when the arm is rotated " << C_HEADER <<
+                "CCW"
+                <<
+                LABEL_COLOR << " (trigonometric convention)" << C_RESET << std::endl
                 << std::endl
                 << "Reading encoders every " << POLLING_PERIOD_MS << " ms... "
-                << LABEL_COLOR << "(Ctrl-C to end)" << RESET << std::endl
+                << LABEL_COLOR << "(Ctrl-C to end)" << C_RESET << std::endl
                 << std::endl;
 
         auto last_position = position_encoder->steps();
@@ -103,9 +95,9 @@ int main(const int argc, char **argv) {
             display_value("angle", angle, last_angle);
             std::cout
                     << LABEL_COLOR << "(legend: "
-                    << POS_COLOR << "INC" << RESET
+                    << POS_COLOR << "INC" << C_RESET
                     << " "
-                    << NEG_COLOR << "DEC" << LABEL_COLOR << ")  " << RESET;
+                    << NEG_COLOR << "DEC" << LABEL_COLOR << ")  " << C_RESET;
             std::cout.flush();
 
             last_position = position;
@@ -114,8 +106,53 @@ int main(const int argc, char **argv) {
             std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_PERIOD_MS));
         }
     } catch (const pigpio::ActivationToken::PleaseStop &) {
-        std::cout << std::endl << YELLOW << "Termination signal received, terminating..." << std::endl;
+        std::cout << std::endl << C_YELLOW << "Termination signal received, terminating..." << std::endl;
     }
-    std::cout << RESET;
+    std::cout << C_RESET;
     return EXIT_SUCCESS;
+}
+
+static int list_gpios(const PendulumConfig &config) {
+    std::cout << C_HEADER << "GPIOs used by the process :" << C_RESET << std::endl;
+    const auto mapping = get_GPIO_mapping(config);
+
+    const auto print_gpio_usage = [](const GPIOPin &gpio) {
+        std::cout << "- GPIO " << std::setw(2) << gpio.pin << " : " << gpio.label << std::endl;
+    };
+
+    print_gpio_usage(mapping.position_encoder_A);
+    print_gpio_usage(mapping.position_encoder_B);
+    print_gpio_usage(mapping.angle_encoder_A);
+    print_gpio_usage(mapping.angle_encoder_B);
+
+    return EXIT_SUCCESS;
+}
+
+
+int main(const int argc, char **argv) {
+    int exit_code = EXIT_SUCCESS;
+    const auto cli_options = parse_cli(
+        {
+            .description = "Encoders configuration checking tool\n\n"
+            "Must be run as root (needed by pigpio).",
+            .features = CliFeature::ListGpios,
+        },
+        argc, argv,
+        exit_code
+    );
+    if (!cli_options) {
+        return exit_code;
+    }
+
+    try {
+        const auto config = load_pendulum_config(cli_options->config_path);
+
+        if (cli_options->list_gpios)
+            return list_gpios(config);
+
+        return run(config);
+    } catch (const yamlcfg::InvalidConfiguration &e) {
+        std::cerr << C_ERROR << "ERROR: Invalid configuration\n" << e.what() << C_RESET << std::endl;
+        return EXIT_FAILURE;
+    }
 }

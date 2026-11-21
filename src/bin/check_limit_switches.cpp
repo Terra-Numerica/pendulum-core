@@ -1,50 +1,39 @@
 // clang-format off
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <chrono>
 #include <thread>
 #include <csignal>
 #include <cstdlib>
 
-#include <pendule_pi/pendule.hpp>
-#include <pendule_pi/config.hpp>
+#include <pendule_pi/cli_parser.hpp>
 #include <pendule_pi/colors.h>
+#include <pendule_pi/pendulum_config.hpp>
+#include <pendule_pi/pigpio.hpp>
+#include <pendule_pi/switch.hpp>
 // clang-format on
 
 
-constexpr auto ACT_COLOR = BRIGHT_GREEN;
-constexpr auto INACT_COLOR = RESET;
-constexpr auto LABEL_COLOR = BRIGHT_BLUE;
-constexpr auto HI = BRIGHT_WHITE;
+constexpr auto ACT_COLOR = C_BR_GREEN;
+constexpr auto INACT_COLOR = C_RESET;
+constexpr auto LABEL_COLOR = C_BR_BLUE;
+constexpr auto HI = C_BR_WHITE;
 
 
 static void display_state(const std::string &label, const bool active) {
-    constexpr auto STATIC_COLOR = RESET;
-    std::cout << STATIC_COLOR << "[ " << label << " : " << RESET;
+    constexpr auto STATIC_COLOR = C_RESET;
+    std::cout << STATIC_COLOR << "[ " << label << " : " << C_RESET;
     if (active)
         std::cout << ACT_COLOR << "ACT";
     else
         std::cout << INACT_COLOR << "---";
-    std::cout << STATIC_COLOR << " ]  " << RESET;
+    std::cout << STATIC_COLOR << " ]  " << C_RESET;
 }
 
-int main(const int argc, char **argv) {
+static int run(const PendulumConfig &config) {
     namespace pp = pendule_pi;
-    const std::string program_name = argv[0];
-
-    // Load all parameters from a configuration file.
-    if (argc < 2) {
-        std::cout << RED << "Usage: sudo " << program_name << " config_file.yaml" << RESET << std::endl;
-        std::cout << "- 'sudo' is needed for pigpio to work" << std::endl;
-        std::cout << "- the configuration file is needed to setup the interface" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    const auto config = pp::Config::loadFromFile(argv[1]);
-    if (!config) {
-        return EXIT_FAILURE;
-    }
 
     try {
         // Let the token manage the pigpio library!
@@ -61,17 +50,22 @@ int main(const int argc, char **argv) {
                 << "|                                                |" << std::endl
                 << " ------------------------------------------------ " << std::endl
                 << std::endl << LABEL_COLOR << "Version " << PENDULE_PI_VERSION << std::endl
-                << RESET << std::endl
+                << C_RESET << std::endl
                 << "This tool checks that the track limit switches are properly configured and working." <<
                 std::endl
                 << std::endl;
 
-        const auto left_switch = config->getLeftSwitch();
-        const auto right_switch = config->getRightSwitch();
+        const auto make_switch = [](const SwitchConfig &cfg) {
+            return std::make_unique<pp::Switch>(
+                cfg.pin, cfg.normally_up, cfg.use_internal_pull_resistor, cfg.debounce_us
+            );
+        };
+        const auto left_switch = make_switch(config.left_switch);
+        const auto right_switch = make_switch(config.right_switch);
 
-        std::cout << HI << "Configuration :" << RESET << std::endl;
-        std::cout << LABEL_COLOR << "- left switch  : " << RESET << "GPIO " << left_switch->getPin() << std::endl;
-        std::cout << LABEL_COLOR << "- right switch : " << RESET << "GPIO " << right_switch->getPin() << std::endl;
+        std::cout << HI << "Configuration :" << C_RESET << std::endl;
+        std::cout << LABEL_COLOR << "- left switch  : " << C_RESET << "GPIO " << left_switch->getPin() << std::endl;
+        std::cout << LABEL_COLOR << "- right switch : " << C_RESET << "GPIO " << right_switch->getPin() << std::endl;
 
         std::cout << std::endl
                 << "If the wiring and configuration are OK, the switches must be shown as active" << std::endl
@@ -88,9 +82,52 @@ int main(const int argc, char **argv) {
             std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_PERIOD_MS));
         }
     } catch (const pigpio::ActivationToken::PleaseStop &) {
-        std::cout << std::endl << YELLOW << "Termination signal received, terminating..." << std::endl;
+        std::cout << std::endl << C_YELLOW << "Termination signal received, terminating..." << std::endl;
     }
 
-    std::cout << RESET;
+    std::cout << C_RESET;
     return EXIT_SUCCESS;
+}
+
+static int list_gpios(const PendulumConfig &config) {
+    std::cout << C_HEADER << "GPIOs used by the process :" << C_RESET << std::endl;
+    const auto mapping = get_GPIO_mapping(config);
+
+    const auto print_gpio_usage = [](const GPIOPin &gpio) {
+        std::cout << "- GPIO " << std::setw(2) << gpio.pin << " : " << gpio.label << std::endl;
+    };
+
+    print_gpio_usage(mapping.left_switch);
+    print_gpio_usage(mapping.right_switch);
+
+    return EXIT_SUCCESS;
+}
+
+
+int main(const int argc, char **argv) {
+    int exit_code = EXIT_SUCCESS;
+    const auto cli_options = parse_cli(
+        {
+            .description = "Limit switches configuration checking tool\n\n"
+            "Must be run as root (needed by pigpio).",
+            .features = CliFeature::ListGpios,
+        },
+        argc, argv,
+        exit_code
+    );
+    if (!cli_options) {
+        return exit_code;
+    }
+
+    try {
+        const auto config = load_pendulum_config(cli_options->config_path);
+
+        if (cli_options->list_gpios)
+            return list_gpios(config);
+
+        return run(config);
+    } catch (const yamlcfg::InvalidConfiguration &e) {
+        std::cerr << C_ERROR << "ERROR: Invalid configuration\n" << e.what() << C_RESET << std::endl;
+        return EXIT_FAILURE;
+    }
 }

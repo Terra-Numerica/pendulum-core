@@ -3,15 +3,19 @@
 #include <iostream>
 #include <csignal>
 #include <yaml-cpp/yaml.h>
-#include "utils.hpp"
+#include "../utils.hpp"
 #include <pendule_pi/colors.h>
 #include <pendule_pi/joystick.hpp>
 #include <pendule_pi/pendule_cpp_client.hpp>
+#include <pendule_pi/cli_parser.hpp>
+#include <pendule_pi/demo_config.hpp>
 // clang-format on
 
 namespace {
     enum class ControlMode { Manual, LQR, Swingup };
 }
+
+namespace pp = pendule_pi;
 
 static std::string to_string(const ControlMode &mode) {
     switch (mode) {
@@ -55,55 +59,7 @@ namespace {
     };
 }
 
-static void display_help(const std::string &program_name) {
-    std::cout << "Usage: " << program_name << " [OPTION] CONFIG_FILE_PATH" << std::endl
-            << std::endl
-            << std::setw(20) << std::left << "  --example"
-            << "outputs an configuration file example" << std::endl
-            << std::setw(20) << std::left << "  -h, --help" << "displays this help" << std::endl;
-}
-
-static void print_configuration_example(const std::string &program_name) {
-    std::cout <<
-            "joystick:\n"
-            "  # the axis used to control the carriage in manual mode\n"
-            "  axis_pwm: 0\n"
-            "  # mode switch (manual -> LQR -> swing up)\n"
-            "  btn_switch: 0\n"
-            "  # gives control to app in LQR and swing up modes\n"
-            "  btn_autopilot: 2\n"
-            "  # comment the next line to disable the Exit button\n"
-            "  btn_exit: 1\n"
-            "  # edit and uncomment next line if you have several gamepads connected\n"
-            "  # device: /dev/input/js0\n"
-            "\n"
-            "# communications between demo and low level controller\n"
-            "sockets:\n"
-            "  host: localhost\n"
-            "  state_port: 10001\n"
-            "  command_port: 10002\n"
-            "\n"
-            "# coefficients of the LQR control law\n"
-            "lqr_gains:\n"
-            "  position: -127.45880662905581\n"
-            "  lin_vel: -822.638944546691\n"
-            "  angle: 2234.654627319883\n"
-            "  ang_vel: 437.1177135919267\n"
-            "\n"
-            "# coefficients of the swing-up control law\n"
-            "swing_up:\n"
-            "  k: 70\n"
-            "  kx: 0\n"
-            "\n"
-            "misc:\n"
-            "  # max angle error of the LQR range (> 0, default: 0.25)\n"
-            "  lqr_e_theta_max: 0.25   # rd\n"
-            "  # ratio of max LQR error to switch from swing up to LQR (in [0.0, 1.0], default: 1)\n"
-            "  swingup_to_lqr_ratio: 0.9\n";
-}
-
-#define LABEL BRIGHT_BLUE
-#define ERROR BRIGHT_RED
+#define C_LABEL C_BR_BLUE
 #define CLEAR_LINE "\033[2K"
 
 static void display_status_line(
@@ -113,7 +69,7 @@ static void display_status_line(
     const double e_theta,
     const double e_position
 ) {
-    std::cout << CLEAR_LINE << "\r[ Mode: " << CYAN << std::setw(7) << std::left << to_string(control_mode) << RESET
+    std::cout << CLEAR_LINE << "\r[ Mode: " << C_CYAN << std::setw(7) << std::left << to_string(control_mode) << C_RESET
             << " ] [ LQR range: ";
 
     std::string msg;
@@ -123,33 +79,33 @@ static void display_status_line(
 
     if (in_lqr_range) {
         msg = "in";
-        color = GREEN;
+        color = C_GREEN;
     } else {
         msg = "out";
-        color = RED;
+        color = C_RED;
     }
     std::cout << color
-            << std::setw(3) << std::left << msg << RESET
-            << " ] [ Err: angle=" << CYAN
-            << std::setw(6) << std::right << std::setprecision(1) << e_theta_deg << RESET
-            << " | pos=" << CYAN
+            << std::setw(3) << std::left << msg << C_RESET
+            << " ] [ Err: angle=" << C_CYAN
+            << std::setw(6) << std::right << std::setprecision(1) << e_theta_deg << C_RESET
+            << " | pos=" << C_CYAN
             // position error is displayed in cm
             << std::setw(5) << std::right << std::setprecision(1) << e_position * 100
-            << RESET << " ] [ AP: " << std::setw(3) << std::left;
+            << C_RESET << " ] [ AP: " << std::setw(3) << std::left;
 
     if (control_mode != ControlMode::Manual) {
         if (autopilot_engaged) {
             msg = "on";
-            color = GREEN;
+            color = C_GREEN;
         } else {
             msg = "off";
-            color = RED;
+            color = C_RED;
         }
     } else {
         msg = "---";
-        color = RESET;
+        color = C_RESET;
     }
-    std::cout << color << std::setw(3) << msg << RESET << " ] " << std::flush;
+    std::cout << color << std::setw(3) << msg << C_RESET << " ] " << std::flush;
 }
 
 namespace {
@@ -167,7 +123,7 @@ namespace {
             }
         }
 
-        double update(double newReading) {
+        double update(const double newReading) {
             if (!isInitialized) {
                 smoothedValue = newReading;
                 isInitialized = true;
@@ -177,7 +133,7 @@ namespace {
             return smoothedValue;
         }
 
-        void reset() {
+        [[maybe_unused]] void reset() {
             isInitialized = false;
         }
 
@@ -198,109 +154,72 @@ static double rad_to_deg(const double rad) {
     return rad * 180. / M_PI;
 }
 
-static void print_error(const std::string &msg, const std::string &addit_info) {
-    std::cerr << ERROR << "ERROR: " << msg << " " << addit_info << RESET << std::endl;
-}
-
-static void print_error(const std::string &msg) {
-    print_error(msg, "");
-}
-
-static void print_config_error(const std::string &addit_info) {
-    print_error("bad configuration", addit_info);
-}
-
-int main(const int argc, char **argv) {
-    // intercept the version request before doing anything else
-    if (argc == 2 && strcmp(argv[1], "--version") == 0) {
-        std::cout << PENDULE_PI_VERSION << std::endl;
-        return EXIT_SUCCESS;
-    }
-
-    namespace pp = pendule_pi;
-    const std::string program_name = argv[0];
-
-    if (argc == 1) {
-        print_error("missing configuration file path argument.");
-        std::cout << "Try '" << program_name << " --help' for more information." << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    // from now on, we know we have at least one CLI argument, so we can check for help or example requests
-
-    if (argv[1] == std::string("-h") || argv[1] == std::string("--help")) {
-        display_help(program_name);
-        return EXIT_SUCCESS;
-    }
-
-    if (argv[1] == std::string("--example")) {
-        print_configuration_example(program_name);
-        return EXIT_SUCCESS;
-    }
-
-    // Load the configuration which path is passed as a command argument
-    YAML::Node configuration;
-
-    try {
-        configuration = YAML::LoadFile(argv[1]);
-    } catch (const YAML::Exception &e) {
-        print_error("YAML configuration loading error: ", e.what());
-        return EXIT_FAILURE;
-    } catch (const std::exception &e) {
-        std::cerr << "ERROR: " << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    // load and validate configuration parameters
-
-    const auto period_ms = configuration["period_ms"].as<int>(20);
-    if (period_ms < 0) {
-        print_config_error("period_ms must be positive");
-        return EXIT_FAILURE;
-    }
-
-    const auto misc_config = configuration["misc"];
-    const auto lqr_e_theta_max = std::fabs(misc_config["lqr_e_theta_max"].as<double>(0.25));
-    const auto lqr_to_swingup_hysteresis = misc_config["lqr_to_swingup_hysteresis"].as<double>(0.2);
-    if (lqr_to_swingup_hysteresis < 0) {
-        print_config_error("lqr_to_swingup_hysteresis must be positive");
-        return EXIT_FAILURE;
-    }
-    const auto swingup_to_lqr_ramp_secs = misc_config["swingup_to_lqr_ramp_secs"].as<double>(0.080);
-    if (swingup_to_lqr_ramp_secs < 0) {
-        print_config_error("swingup_to_lqr_ramp_secs must be positive");
-        return EXIT_FAILURE;
-    }
-
+static int run(const DemoConfig &config) {
     // Connect to the low-level interface.
-    const auto socket_config = configuration["socket"];
     pp::PenduleCppClient pendulum(
-        socket_config["host"].as<std::string>("localhost"),
-        socket_config["state_port"].as<std::string>("10001"),
-        socket_config["command_port"].as<std::string>("10002"),
+        config.sockets.host,
+        config.sockets.state_port,
+        config.sockets.command_port,
         5
     );
 
-    /*
-     * Game controller setup
-     */
+    // Variables used to perform control.
+    int pwm = 0;
+    auto control_mode(ControlMode::Manual);
+    double target_pos = 0;
+
+    std::cout << C_HEADER
+            << " ------------------------------------------------ " << std::endl
+            << "|                                                |" << std::endl
+            << "|          Pendulum demo starting...             |" << std::endl
+            << "|                                                |" << std::endl
+            << " ------------------------------------------------ " << std::endl
+            << std::endl << C_MUTED << "Version " << PENDULE_PI_VERSION << std::endl
+            << std::endl << C_RESET;
+
+    std::cout << C_INFO << "--- Configuration ---" << C_RESET << std::endl << std::endl;
+
+    auto coeff_fmt = [](std::ostream &os) -> std::ostream & {
+        return os << C_RESET << std::fixed << std::setw(12) << std::setprecision(6);
+    };
+
+    // control gains for the swing-up phase
+    const auto kswing = config.swing_up_gains.k;
+    const auto ksx = config.swing_up_gains.kx;
+
+    std::cout << C_HEADER << "Swing-up gains:" << C_RESET << std::endl
+            << C_LABEL << "  kswing : " << coeff_fmt << kswing << std::endl
+            << C_LABEL << "  ksx    : " << coeff_fmt << ksx << std::endl
+            << std::endl;
+
+    bool autopilot_engaged = false;
+    bool in_lqr_range = false;
+    bool was_in_lqr_range = false;
+    bool refresh_status_requested = true;
+
+    // control gains for the LQR phase
+    const auto kp = config.lqr_gains.position;
+    const auto kpd = config.lqr_gains.linear_velocity;
+    const auto kt = config.lqr_gains.angle;
+    const auto ktd = config.lqr_gains.angular_velocity;
+
+    std::cout << C_HEADER << "LQR gains:" << C_RESET << std::endl
+            << C_LABEL << "  kp     : " << coeff_fmt << kp << std::endl
+            << C_LABEL << "  kpd    : " << coeff_fmt << kpd << std::endl
+            << C_LABEL << "  kt     : " << coeff_fmt << kt << std::endl
+            << C_LABEL << "  ktd    : " << coeff_fmt << ktd << std::endl
+            << std::endl;
 
     // Create the joystick device to be used for controlling the demo.
-    const auto joystick_config = configuration["joystick"];
 
-    // Joystick buttons.
-    const auto AXIS_PWM = joystick_config["axis_pwm"].as<int>(0);
-    const auto BTN_EXIT = joystick_config["btn_exit"].as<int>(0);
-    const auto BTN_SWITCH = joystick_config["btn_switch"].as<int>(1);
-    const auto BTN_AUTOPILOT = joystick_config["btn_autopilot"].as<int>(4);
-    const auto USES_DPAD = joystick_config["uses_dpad"].as<bool>(false);
-    const auto DPAD_SMOOTHING_TAU = joystick_config["dpad_smoothing_tau_secs"].as<double>(0.1);
-    if (DPAD_SMOOTHING_TAU < 0) {
-        print_config_error("dpad_smoothing_tau_secs must be positive");
-        return EXIT_FAILURE;
-    }
+    const auto AXIS_PWM = config.joystick.axis_pwm;
+    const auto BTN_EXIT = config.joystick.btn_exit;
+    const auto BTN_SWITCH = config.joystick.btn_switch;
+    const auto BTN_AUTOPILOT = config.joystick.btn_autopilot;
+    const auto USES_DPAD = config.joystick.uses_dpad;
+    const auto DPAD_SMOOTHING_TAU = config.joystick.dpad_smoothing_tau_secs;
 
-    const auto js_device = joystick_config["device"].as<std::string>("/dev/input/js0");
+    const auto js_device = config.joystick.device;
     pp::Joystick joy(js_device);
 
     // The joystick is not polled on every iteration of the control loop.
@@ -314,85 +233,41 @@ int main(const int argc, char **argv) {
     CachedButton btn_autopilot;
 
     // D-pad smoothing
-    auto dpad_filter = LowPassFilter(DPAD_SMOOTHING_TAU, period_ms / 1000.);
+    auto dpad_filter = LowPassFilter(DPAD_SMOOTHING_TAU, config.misc.period_ms / 1000.);
 
-    // Variables used to perform control.
-    int pwm = 0;
-    auto control_mode(ControlMode::Manual);
-    double target_pos = 0;
-
-    std::cout << BRIGHT_WHITE
-            << " ------------------------------------------------ " << std::endl
-            << "|                                                |" << std::endl
-            << "|          Pendulum demo starting...             |" << std::endl
-            << "|                                                |" << std::endl
-            << " ------------------------------------------------ " << std::endl
-            << std::endl << LABEL << "Version " << PENDULE_PI_VERSION << std::endl
-            << std::endl << RESET;
-
-    std::cout << BRIGHT_CYAN << "--- Configuration ---" << RESET << std::endl << std::endl;
-
-    auto coeff_fmt = [](std::ostream &os) -> std::ostream & {
-        return os << RESET << std::fixed << std::setw(12) << std::setprecision(6);
-    };
-
-    // control gains for the swing-up phase
-    const auto swingup_config = configuration["swing_up"];
-    const auto kswing = swingup_config["k"].as<double>(70.0);
-    const auto ksx = swingup_config["kx"].as<double>(0.0);
-
-    std::cout << BRIGHT_WHITE << "Swing-up gains:" << RESET << std::endl
-            << LABEL << "  kswing : " << coeff_fmt << kswing << std::endl
-            << LABEL << "  ksx    : " << coeff_fmt << ksx << std::endl
-            << std::endl;
-
-    bool autopilot_engaged = false;
-    bool in_lqr_range = false;
-    bool was_in_lqr_range = false;
-    bool refresh_status_requested = true;
-
-    // control gains for the LQR phase
-    const auto gains_config = configuration["lqr_gains"];
-    const auto kp = gains_config["position"].as<double>(-127.45880662905581);
-    const auto kpd = gains_config["lin_vel"].as<double>(-822.638944546691);
-    const auto kt = gains_config["angle"].as<double>(2234.654627319883);
-    const auto ktd = gains_config["ang_vel"].as<double>(437.1177135919267);
-
-    std::cout << BRIGHT_WHITE << "LQR gains:" << RESET << std::endl
-            << LABEL << "  kp     : " << coeff_fmt << kp << std::endl
-            << LABEL << "  kpd    : " << coeff_fmt << kpd << std::endl
-            << LABEL << "  kt     : " << coeff_fmt << kt << std::endl
-            << LABEL << "  ktd    : " << coeff_fmt << ktd << std::endl
-            << std::endl;
-
-    std::cout << BRIGHT_WHITE << "Control:" << RESET << std::endl
-            << LABEL << "  Joystick device            : " << RESET << js_device << std::endl
-            << LABEL << "  Axis for carriage control  : " << RESET << AXIS_PWM << std::endl
-            << LABEL << "  Uses D-pad                 : " << RESET << USES_DPAD << std::endl
-            << LABEL << "  D-pad smoothing tau        : " << RESET << std::setprecision(2) << DPAD_SMOOTHING_TAU << " s"
+    std::cout << C_HEADER << "Control:" << C_RESET << std::endl
+            << C_LABEL << "  Joystick device            : " << C_RESET << js_device << std::endl
+            << C_LABEL << "  Axis for carriage control  : " << C_RESET << AXIS_PWM << std::endl
+            << C_LABEL << "  Uses D-pad                 : " << C_RESET << USES_DPAD << std::endl
+            << C_LABEL << "  D-pad smoothing tau        : " << C_RESET << std::setprecision(2) << DPAD_SMOOTHING_TAU <<
+            " s"
             << std::endl
-            << LABEL << "  Buttons : " << RESET << std::endl
-            << LABEL << "   - switch control mode     : " << RESET << BTN_SWITCH << std::endl
-            << LABEL << "   - toggle autopilot        : " << RESET << BTN_AUTOPILOT << std::endl
-            << LABEL << "   - exit                    : " << RESET << (BTN_EXIT != -1
-                                                                           ? std::to_string(BTN_EXIT)
-                                                                           : "-- disabled --")
+            << C_LABEL << "  Buttons : " << C_RESET << std::endl
+            << C_LABEL << "   - switch control mode     : " << C_RESET << BTN_SWITCH << std::endl
+            << C_LABEL << "   - toggle autopilot        : " << C_RESET << BTN_AUTOPILOT << std::endl
+            << C_LABEL << "   - exit                    : " << C_RESET << (BTN_EXIT != -1
+                                                                               ? std::to_string(BTN_EXIT)
+                                                                               : "-- disabled --")
             << std::endl << std::endl;
 
     auto misc_fmt = [](std::ostream &os) -> std::ostream & {
-        return os << RESET << std::fixed << std::setw(4) << std::setprecision(2);
+        return os << C_RESET << std::fixed << std::setw(4) << std::setprecision(2);
     };
 
-    std::cout << BRIGHT_WHITE << "Misc:" << RESET << std::endl
-            << LABEL << "  - LQR angle error max     : " << misc_fmt << lqr_e_theta_max
+    const auto lqr_e_theta_max = config.misc.lqr_e_theta_max;
+    const auto lqr_to_swing_up_hysteresis = config.misc.lqr_to_swing_up_hysteresis;
+    const auto swing_up_to_lqr_ramp_secs = config.misc.swing_up_to_lqr_ramp_secs;
+
+    std::cout << C_HEADER << "Misc:" << C_RESET << std::endl
+            << C_LABEL << "  - LQR angle error max     : " << misc_fmt << lqr_e_theta_max
             << " rd  (" << rad_to_deg(lqr_e_theta_max) << "°)" << std::endl
-            << LABEL << "  - swingup->LQR hysteresis : " << misc_fmt << lqr_to_swingup_hysteresis
-            << " rd  (" << rad_to_deg(lqr_to_swingup_hysteresis) << "°)" << std::endl
-            << LABEL << "  - swingup->LQR ramp time  : " << misc_fmt << swingup_to_lqr_ramp_secs << " s" <<
+            << C_LABEL << "  - swingup->LQR hysteresis : " << misc_fmt << lqr_to_swing_up_hysteresis
+            << " rd  (" << rad_to_deg(lqr_to_swing_up_hysteresis) << "°)" << std::endl
+            << C_LABEL << "  - swingup->LQR ramp time  : " << misc_fmt << swing_up_to_lqr_ramp_secs << " s" <<
             std::endl
             << std::endl;
 
-    std::cout << BRIGHT_GREEN << "Demo started " << RESET << "(use Ctrl-C ";
+    std::cout << C_SUCCESS << "Demo started " << C_RESET << "(use Ctrl-C ";
 
     if (BTN_EXIT != -1) {
         std::cout << "or the EXIT button of the gamepad ";
@@ -409,14 +284,14 @@ int main(const int argc, char **argv) {
 
     double last_e_theta = 2 * M_PI; // out of range value to force the first update
 
-    const auto lqr_to_swingup_threshold = lqr_e_theta_max + lqr_to_swingup_hysteresis;
+    const auto lqr_to_swingup_threshold = lqr_e_theta_max + lqr_to_swing_up_hysteresis;
     // swing-up / lqr PWMs mix factor for blending the transition
     double alpha = 0;
 
     bool last_time_is_set = false;
     std::chrono::time_point<std::chrono::steady_clock> last_time;
     // initialize the dt to the theoretical value of the control period
-    std::chrono::duration<double> dt_secs(period_ms / 1000.);
+    std::chrono::duration<double> dt_secs(config.misc.period_ms / 1000.);
 
     // tells if we are in LQR range while running in swing-up mode
     // (used to add an hysteresis to the LQR/swing-up transition)
@@ -520,7 +395,7 @@ int main(const int argc, char **argv) {
                     if (stabilizing) {
                         // don't switch instantaneously, by let's transition smoothly by blending both control laws
                         alpha = std::min(
-                            alpha + std::chrono::duration<double>(dt_secs).count() / swingup_to_lqr_ramp_secs,
+                            alpha + std::chrono::duration<double>(dt_secs).count() / swing_up_to_lqr_ramp_secs,
                             1.0
                         );
                     } else {
@@ -549,7 +424,7 @@ int main(const int argc, char **argv) {
             // should we exit?
             if (BTN_EXIT != -1 && joy.button(BTN_EXIT)) {
                 std::cout << std::endl << std::endl
-                        << BRIGHT_YELLOW << "--- Gamepad Exit button pressed. Quitting now ---" << RESET;
+                        << C_BR_YELLOW << "--- Gamepad Exit button pressed. Quitting now ---" << C_RESET;
                 break;
             }
 
@@ -587,7 +462,37 @@ int main(const int argc, char **argv) {
     } // end of the main loop
 
     pendulum.sendCommand(0);
-    std::cout << RESET << std::endl;
+    std::cout << C_RESET << std::endl;
 
     return EXIT_SUCCESS;
+}
+
+int main(const int argc, char **argv) {
+    int exit_code = EXIT_SUCCESS;
+    const auto cli_options = parse_cli(
+        {
+            .description = "Pendulum demonstrator",
+            .features = CliFeature::Check | CliFeature::Example,
+            .print_example = [] { std::cout << get_demo_config_example(); },
+        },
+        argc, argv,
+        exit_code
+    );
+
+    if (!cli_options) {
+        return exit_code;
+    }
+
+    try {
+        const auto config = load_demo_config(cli_options->config_path);
+        if (cli_options->check) {
+            std::cout << C_SUCCESS << "No error found in configuration file." << C_RESET << std::endl;
+            std::cout << C_HEADER << "Summary :\n" << C_RESET << yamlcfg::to_string(config, 2);
+            return EXIT_SUCCESS;
+        }
+        return run(config);
+    } catch (const yamlcfg::InvalidConfiguration &e) {
+        std::cerr << C_ERROR << "ERROR: Invalid configuration\n" << e.what() << C_RESET << std::endl;
+        return EXIT_FAILURE;
+    }
 }
