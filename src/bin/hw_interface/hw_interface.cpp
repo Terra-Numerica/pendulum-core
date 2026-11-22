@@ -32,8 +32,12 @@ static std::unique_ptr<pendule_pi::Pendule> make_pendulum(const PendulumConfig &
         timing_belt_module,
         pulley_teeth_count
     ] = config.hardware_specs;
-    const double meters_per_step = pulley_teeth_count * timing_belt_module / encoders_step_per_turn / 1000.;
-    const double radian_per_step = 2 * M_PI / encoders_step_per_turn;
+
+    // remember that the encoder logic uses all phase edges for counting => 4 times the hw step count
+    const auto sw_steps_per_turn = encoders_step_per_turn * 4;
+
+    const double meters_per_step = pulley_teeth_count * timing_belt_module / sw_steps_per_turn / 1000.;
+    const double radian_per_step = 2 * M_PI / sw_steps_per_turn;
 
     const auto make_switch = [](const SwitchConfig &cfg) {
         return std::make_unique<pendule_pi::Switch>(
