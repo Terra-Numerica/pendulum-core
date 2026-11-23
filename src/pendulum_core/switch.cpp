@@ -74,7 +74,7 @@ namespace pendulum_core {
     void Switch::on_change(
         [[maybe_unused]] const int gpio,
         const int level,
-        const unsigned int tick
+        const unsigned int /*tick*/
     ) {
         at_rest_now_ = level == at_rest_;
 

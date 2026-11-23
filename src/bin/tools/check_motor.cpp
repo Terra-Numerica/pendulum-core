@@ -5,7 +5,6 @@
 #include <string>
 #include <chrono>
 #include <thread>
-#include <csignal>
 #include <cstdlib>
 
 #include <pendulum_cli/cli_parser.hpp>

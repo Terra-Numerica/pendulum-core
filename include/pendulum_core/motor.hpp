@@ -37,8 +37,8 @@ namespace pendulum_core {
         [[nodiscard]] int pwm() const noexcept { return pwm_; }
 
         /// read access to pins
-        [[nodiscard]] int direction_pin() const { return dir_pin_; };
-        [[nodiscard]] int pwm_pin() const { return pwm_pin_; };
+        [[nodiscard]] int direction_pin() const { return dir_pin_; }
+        [[nodiscard]] int pwm_pin() const { return pwm_pin_; }
 
     private:
         int pwm_pin_; ///< Pin used to control the force of the motor via PWM.

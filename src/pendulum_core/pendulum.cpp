@@ -92,8 +92,8 @@ namespace pendulum_core {
 
     void Pendulum::calibrate_position_encoder(const int calibration_pwm, const bool verbose) {
         // Track ends as raw encoder counts: they are only meaningful until the origin is set below.
-        int min_raw_steps = 0;
-        int max_raw_steps = 0;
+        int min_raw_steps = 0; // NOLINT(CppInitializedValueIsAlwaysRewritten)
+        int max_raw_steps = 0; // NOLINT(CppInitializedValueIsAlwaysRewritten)
 
         if (verbose) {
             std::cout << STEP << "- calibrating position encoder now..." << C_RESET << std::endl;
@@ -272,7 +272,7 @@ namespace pendulum_core {
         calibrated_ = true;
 
 #define C_LABEL(v) C_BR_BLUE << "- " << std::setw(20) << std::left << (v) << " : " << C_RESET
-    // raw encoder count (rounded to the nearest step) corresponding to a position
+        // raw encoder count (rounded to the nearest step) corresponding to a position
 #define STEPS(pos) "  (" << std::setw(6) << std::right << position_encoder_->position_to_steps(pos) << " steps)"
 #define DIST(v)  std::setw(6) << std::fixed << std::setprecision(3) << std::right << (v) << " m"
 
@@ -332,7 +332,7 @@ namespace pendulum_core {
         return retval;
     }
 
-    void Pendulum::set_pwm_offsets(int offset_down, int offset_up) {
+    void Pendulum::set_pwm_offsets(const int offset_down, const int offset_up) {
         offset_up_ = std::max(0, offset_up);
         offset_down_ = std::max(0, offset_down);
     }

@@ -28,17 +28,19 @@ constexpr bool has_feature(const CliFeature features, const CliFeature feature) 
 struct ExtraOption {
     enum class Kind { Flag, String, Int, Double };
 
-    Kind kind;
-    std::string names; // CLI11 syntax, ex: "--duration,-d"
-    std::string description;
-    void *target; // bool* (Flag), std::string* (String), int* (Int) or double* (Double)
+    Kind kind{};
+    std::string names{}; // CLI11 syntax, ex: "--duration,-d"
+    std::string description{};
+    void *target{}; // bool* (Flag), std::string* (String), int* (Int) or double* (Double)
     bool required = false;
 };
 
 struct CliSpec {
     std::string description;
     CliFeature features = CliFeature::None;
+
     void (*print_example)() = nullptr;
+
     std::vector<ExtraOption> extra;
 };
 

@@ -181,4 +181,4 @@ struct GPIOMapping {
 // Detects a field added to GPIOMapping and forgotten in all()
 static_assert(sizeof(GPIOMapping) == GPIOS_COUNT * sizeof(GPIOPin), "GPIOMapping and all() are out of sync");
 
-GPIOMapping get_GPIO_mapping(const PendulumConfig &config);
+GPIOMapping get_GPIO_mapping(const PendulumConfig &config); // NOLINT

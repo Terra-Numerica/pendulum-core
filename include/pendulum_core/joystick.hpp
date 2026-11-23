@@ -11,7 +11,7 @@ namespace pendulum_core {
         /** @param device file that should be used for the communication with the
     *   joystick.
     */
-        Joystick(
+        explicit Joystick(
             const std::string &device = "/dev/input/js0"
         );
 
@@ -26,14 +26,14 @@ namespace pendulum_core {
         /// Get the number of axes on the Joystick.
         [[nodiscard]] std::size_t n_axes() const { return axes_.size(); }
         /// Get the state of the given button.
-        [[nodiscard]] const int &button(int i) const { return buttons_.at(i); }
+        [[nodiscard]] const int &button(const int i) const { return buttons_.at(i); }
         /// Get the state of the given axis.
-        [[nodiscard]] const int &axis(int i) const { return axes_.at(i); }
+        [[nodiscard]] const int &axis(const int i) const { return axes_.at(i); }
 
     private:
         int joy_file_descriptor_; ///< File descriptor to read the joystick state.
-        std::vector<int> axes_{}; ///< Stores the state of each axis.
-        std::vector<int> buttons_{}; ///< Stores the state of each button.
+        std::vector<int> axes_; ///< Stores the state of each axis.
+        std::vector<int> buttons_; ///< Stores the state of each button.
         std::string joy_name_; ///< Name of the joystick.
         js_event joy_event_; ///< Used to read joystick events.
     };

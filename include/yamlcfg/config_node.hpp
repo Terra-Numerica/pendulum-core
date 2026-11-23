@@ -42,7 +42,7 @@ namespace yamlcfg {
         }
 
         // Cross-field rule: reports the problem on `field`, with a custom reason
-        void ensure(bool condition, const std::string &field, const std::string &reason) const {
+        void ensure(bool const condition, const std::string &field, const std::string &reason) const {
             if (!condition) {
                 fail(field, lookup(field), reason);
             }

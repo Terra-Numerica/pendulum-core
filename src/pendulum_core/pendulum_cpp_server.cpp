@@ -64,12 +64,12 @@ namespace pendulum_core {
 
 
     void PendulumCppServer::send_state(
-        double time,
-        double position,
-        double angle,
-        double linvel,
-        double angvel
-    ) {
+        const double time,
+        const double position,
+        const double angle,
+        const double linvel,
+        const double angvel
+    ) const {
         // Create the message to be sent.
         zmqpp::message msg;
         msg << std::to_string(time) + " "

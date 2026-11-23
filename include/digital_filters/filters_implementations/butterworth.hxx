@@ -7,7 +7,7 @@
 namespace digital_filters {
     template<class CoeffType>
     void butterworth(
-        unsigned int order,
+        const unsigned int order,
         const CoeffType &cutoff,
         const CoeffType &sampling,
         std::vector<CoeffType> &numerator,
@@ -62,7 +62,7 @@ namespace digital_filters {
 
     template<class DataType, class CoeffType>
     Filter<DataType, CoeffType> butterworth(
-        unsigned int order,
+        const unsigned int order,
         const CoeffType &cutoff,
         const CoeffType &sampling
     ) {

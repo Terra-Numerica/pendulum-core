@@ -91,11 +91,10 @@ static DigitalFilter make_filter(const std::string &name, const PendulumConfig &
     } catch (...) {
         throw FilterCreationError(name, "unknown exception");
     }
-    return nullptr;
 }
 
 namespace {
-    struct Filters {
+    struct Filters { // NOLINT(*-pro-type-member-init)
         DigitalFilter position;
         DigitalFilter angle;
         DigitalFilter linear_velocity;
@@ -175,7 +174,7 @@ static int run(const Filters &filters, const PendulumConfig &config) {
 
     // ready to run now
 
-    int exit_status = EXIT_SUCCESS;
+    int exit_status = EXIT_SUCCESS; // NOLINT(CppInitializedValueIsAlwaysRewritten)
 
     std::cout
             << C_BR_GREEN << "--- Pendulum ready ---" << C_RESET << std::endl

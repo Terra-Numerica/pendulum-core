@@ -80,8 +80,10 @@ namespace yamlcfg {
         return {{{first, static_cast<T>(rest)...}}};
     }
 
+    // NOLINTBEGIN
     inline constexpr Positive positive{};
     inline constexpr NonNegative non_negative{};
     inline constexpr NotZero not_zero{};
     inline constexpr NotEmpty not_empty{};
+    // NOLINTEND
 } // namespace yamlcfg

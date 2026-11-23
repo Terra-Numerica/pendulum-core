@@ -36,8 +36,8 @@ namespace pendulum_core {
           */
         PendulumCppClient(
             const std::string &host,
-            const int state_port,
-            const int command_port,
+            int state_port,
+            int command_port,
             int wait = -1
         );
 

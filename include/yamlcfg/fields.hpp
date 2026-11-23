@@ -39,8 +39,8 @@ namespace yamlcfg {
 
     namespace detail {
         // "Does fields(const T*) exist?"
-        template<typename T, typename = void>
-        struct has_fields : std::false_type {
+        template<typename T, typename = void> // NOLINT
+        struct has_fields : std::false_type { // NOLINT
         };
 
         template<typename T>
@@ -53,7 +53,7 @@ namespace yamlcfg {
             int indent;
             int level;
 
-            [[nodiscard]] std::string spaces(int lvl) const {
+            [[nodiscard]] std::string spaces(const int lvl) const {
                 return std::string(static_cast<std::size_t>(indent * lvl), ' ');
             }
 
@@ -83,7 +83,7 @@ namespace yamlcfg {
             bool first = true;
             // Writes one field: separator, name, value
             const auto write_field = [&](const auto &f) {
-                using FieldType = std::decay_t<decltype(obj.*(f.member))>;
+                using FieldType = std::decay_t<decltype(obj.*f.member)>;
                 constexpr bool is_object = has_fields<FieldType>::value;
                 const auto &value = obj.*(f.member);
 

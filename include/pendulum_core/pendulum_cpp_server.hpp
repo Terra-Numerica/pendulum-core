@@ -45,7 +45,7 @@ namespace pendulum_core {
             double angle,
             double linvel,
             double angvel
-        );
+        ) const;
 
         /// Tries to read a command from the socket.
         /** @param wait_ms maximum time to wait for a command to be received. If

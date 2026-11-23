@@ -84,7 +84,7 @@ namespace pendulum_core {
         [[nodiscard]] bool at_rest_cached() const;
 
         /// read access to pin
-        [[nodiscard]] int pin() const { return pin_; };
+        [[nodiscard]] int pin() const { return pin_; }
 
         /// Auxiliary exception class to be thrown when reading the cached state with disabled interrupts.
         class InterruptsAreDisabled : public std::runtime_error {

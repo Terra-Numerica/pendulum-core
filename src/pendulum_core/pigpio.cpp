@@ -6,7 +6,7 @@
 namespace pigpio {
     Exception::Exception(
         const std::string &caller,
-        int return_code
+        const int return_code
     )
         : std::runtime_error(make_message(caller, return_code)) {
         // nothing else to do here!
@@ -15,7 +15,7 @@ namespace pigpio {
 
     std::string Exception::make_message(
         const std::string &caller,
-        int return_code
+        const int return_code
     ) {
         return "pigpio::Exception encountered while running '" + caller + "'. Return "
                "code: " + error2msg(return_code);
@@ -36,7 +36,7 @@ namespace pigpio {
     ActivationToken *ActivationToken::active_token = nullptr;
 
 
-    ActivationToken::ActivationToken(bool register_sigint) {
+    ActivationToken::ActivationToken(const bool register_sigint) {
         PENDULUM_CORE_DBG("ActivationToken: checking that no other token exists");
         // Make sure that no other active token exists
         if (active_token != nullptr) {
@@ -114,7 +114,7 @@ namespace pigpio {
 
 
     Rate::Rate(
-        unsigned int period_us
+        const unsigned int period_us
     )
         : period_(period_us)
           , time_now_(0)
@@ -132,14 +132,14 @@ namespace pigpio {
 
 
     unsigned int Rate::residual() const {
-        auto from_last_tick = gpioTick() - time_past_;
+        const auto from_last_tick = gpioTick() - time_past_;
         return from_last_tick >= period_ ? 0 : period_ - from_last_tick;
     }
 
 
     Timer::Timer(
-        unsigned int period_us,
-        bool auto_reset
+        const unsigned int period_us,
+        const bool auto_reset
     )
         : period_(period_us)
           , auto_reset_(auto_reset)
@@ -169,7 +169,7 @@ namespace pigpio {
 
 
 #define MAKE_CODE_ENTRY(CODE,DESCR) {CODE, #CODE " (" + std::to_string(CODE) + "): '" DESCR "'"}
-    const std::map<int, std::string> Exception::ERROR_CODES{
+    const std::map<int, std::string> Exception::ERROR_CODES{ // NOLINT(bugprone-throwing-static-initialization)
         MAKE_CODE_ENTRY(PI_INIT_FAILED, "gpioInitialise failed"),
         MAKE_CODE_ENTRY(PI_BAD_USER_GPIO, "GPIO not 0-31"),
         MAKE_CODE_ENTRY(PI_BAD_GPIO, "GPIO not 0-53"),

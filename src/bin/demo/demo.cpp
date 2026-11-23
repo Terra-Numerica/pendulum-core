@@ -128,7 +128,7 @@ namespace {
                 smoothed_value_ = new_reading;
                 is_initialized_ = true;
             } else {
-                smoothed_value_ = (alpha_ * new_reading) + ((1.0 - alpha_) * smoothed_value_);
+                smoothed_value_ = alpha_ * new_reading + (1.0 - alpha_) * smoothed_value_;
             }
             return smoothed_value_;
         }
@@ -223,7 +223,7 @@ static int run(const DemoConfig &config) {
     pc::Joystick joy(js_device);
 
     // The joystick is not polled on every iteration of the control loop.
-    const unsigned int JOY_UPDATE_PACE = 5;
+    constexpr unsigned int JOY_UPDATE_PACE = 5;
     unsigned int iterations_to_joystick_update = JOY_UPDATE_PACE;
 
     // Mode switching button.
@@ -395,7 +395,7 @@ static int run(const DemoConfig &config) {
                     if (stabilizing) {
                         // don't switch instantaneously, by let's transition smoothly by blending both control laws
                         alpha = std::min(
-                            alpha + std::chrono::duration<double>(dt_secs).count() / swing_up_to_lqr_ramp_secs,
+                            alpha + std::chrono::duration(dt_secs).count() / swing_up_to_lqr_ramp_secs,
                             1.0
                         );
                     } else {

@@ -9,7 +9,7 @@ using yamlcfg::InRange;
 
 constexpr InRange<int> TCP_PORT{1, 65535};
 
-SocketsConfig parse_sockets(const yamlcfg::ConfigNode &n) {
+SocketsConfig parse_sockets(const ConfigNode &n) {
     const SocketsConfig s = {
         .host = n.get_or<std::string>("host", "localhost", not_empty),
         .state_port = n.get_required<int>("state_port", TCP_PORT),

@@ -71,7 +71,7 @@ namespace {
             main_invocation += extra.required ? " " + usage : " [" + usage + "]";
         }
 
-        std::vector<std::string> invocations = {main_invocation};
+        std::vector invocations = {main_invocation};
         if (with_example) {
             invocations.emplace_back("--example");
         }

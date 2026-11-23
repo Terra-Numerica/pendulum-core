@@ -55,7 +55,7 @@ namespace pendulum_core {
 
 
     bool Joystick::update(
-        bool process_all
+        const bool process_all
     ) {
         bool something_changed = false;
         do {
