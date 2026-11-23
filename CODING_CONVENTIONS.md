@@ -1,5 +1,14 @@
 # C++17 Coding Conventions
 
+## Naming
+
+* **Types** (classes, structs, enums): `CamelCase`.
+* **Functions and methods:** `snake_case`. Accessors drop the `get` prefix (`position()`, not `getPosition()`).
+* **Variables and parameters:** `snake_case`; private data members get a trailing underscore (`steps_`).
+* **Constants and macros:** `UPPER_CASE`.
+* **Legacy code:** some `camelCase` names remain from the original code base and are being migrated. New code must
+  not introduce any.
+
 ## Member Initialization
 
 * **Primitives & Pointers:** Always use empty brace initialization `{}` (e.g., `double velocity_{};`, `bool armed_{};`,
