@@ -1,4 +1,4 @@
-#include "pendule_pi/sockets_config.hpp"
+#include "pendulum_core/sockets_config.hpp"
 
 #include "yamlcfg/config_node.hpp"
 #include "yamlcfg/constraints.hpp"

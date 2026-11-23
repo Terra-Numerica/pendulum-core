@@ -1,4 +1,4 @@
-#include "pendule_cli/cli_parser.hpp"
+#include "pendulum_cli/cli_parser.hpp"
 #include "CLI11/CLI11.hpp" // Compiled only when cli_parser.cpp changes
 
 #include <memory>
@@ -86,7 +86,7 @@ std::optional<ApplicationCLIOptions> parse_cli(
     int &exit_code
 ) {
     CLI::App app{spec.description, program_invocation_short_name};
-    app.set_version_flag("--version", PENDULE_PI_VERSION);
+    app.set_version_flag("--version", PENDULUM_CORE_VERSION);
 
     ApplicationCLIOptions cli_options{};
 

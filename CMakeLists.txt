@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19.4)
-project(pendule_pi VERSION 0.6.0 LANGUAGES CXX)
+project(pendulum_core VERSION 0.6.0 LANGUAGES CXX)
 
 # Build Release by default : the control loop must run with same optimizations
 # as the demonstrator (see README)
@@ -35,25 +35,25 @@ target_include_directories(digital_filters INTERFACE
 )
 
 # Code shared by the executables
-add_library(pendule_pi
-        src/pendule_pi/joystick.cpp
-        src/pendule_pi/pigpio.cpp
-        src/pendule_pi/switch.cpp
-        src/pendule_pi/motor.cpp
-        src/pendule_pi/encoder.cpp
-        src/pendule_pi/pendule.cpp
-        src/pendule_pi/pendule_cpp_server.cpp
-        src/pendule_pi/pendule_cpp_client.cpp
-        src/pendule_pi/pendulum_config.cpp
-        src/pendule_pi/sockets_config.cpp
+add_library(pendulum_core
+        src/pendulum_core/joystick.cpp
+        src/pendulum_core/pigpio.cpp
+        src/pendulum_core/switch.cpp
+        src/pendulum_core/motor.cpp
+        src/pendulum_core/encoder.cpp
+        src/pendulum_core/pendulum.cpp
+        src/pendulum_core/pendulum_cpp_server.cpp
+        src/pendulum_core/pendulum_cpp_client.cpp
+        src/pendulum_core/pendulum_config.cpp
+        src/pendulum_core/sockets_config.cpp
 )
 
-target_include_directories(pendule_pi PUBLIC
+target_include_directories(pendulum_core PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-# PUBLIC : every binary linked to pendule_pi inherits these dependencies
-target_link_libraries(pendule_pi PUBLIC
+# PUBLIC : every binary linked to pendulum_core inherits these dependencies
+target_link_libraries(pendulum_core PUBLIC
         pigpio::pigpio
         Threads::Threads
         zmq
@@ -61,27 +61,27 @@ target_link_libraries(pendule_pi PUBLIC
         yamlcfg
 )
 
-target_compile_definitions(pendule_pi PUBLIC
-        PENDULE_PI_VERSION="${PROJECT_VERSION}"
-        $<$<CONFIG:Debug>:PENDULE_PI_DEBUG_ENABLED>
+target_compile_definitions(pendulum_core PUBLIC
+        PENDULUM_CORE_VERSION="${PROJECT_VERSION}"
+        $<$<CONFIG:Debug>:PENDULUM_CORE_DEBUG_ENABLED>
 )
 
 # Command line parsing shared by the executables. Built once as a library : CLI11 is expensive to compile
 # (header-only), so it is isolated in cli_parser.cpp and precompiled.
-add_library(pendule_cli STATIC
-        src/pendule_cli/cli_parser.cpp
-        include/pendule_cli/cli_parser.hpp
+add_library(pendulum_cli STATIC
+        src/pendulum_cli/cli_parser.cpp
+        include/pendulum_cli/cli_parser.hpp
 )
-target_include_directories(pendule_cli PUBLIC
+target_include_directories(pendulum_cli PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
-target_include_directories(pendule_cli PRIVATE
+target_include_directories(pendulum_cli PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/third_party
 )
-target_compile_definitions(pendule_cli PRIVATE
-        PENDULE_PI_VERSION="${PROJECT_VERSION}"
+target_compile_definitions(pendulum_cli PRIVATE
+        PENDULUM_CORE_VERSION="${PROJECT_VERSION}"
 )
-target_precompile_headers(pendule_cli PRIVATE
+target_precompile_headers(pendulum_cli PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/CLI11/CLI11.hpp
 )
 
@@ -93,12 +93,12 @@ target_precompile_headers(pendule_cli PRIVATE
 add_executable(hw_interface
         src/bin/hw_interface/hw_interface.cpp
         src/bin/common/utils.hpp
-        include/pendule_pi/pendulum_config.hpp
-        include/pendule_pi/sockets_config.hpp
+        include/pendulum_core/pendulum_config.hpp
+        include/pendulum_core/sockets_config.hpp
 )
 target_link_libraries(hw_interface PRIVATE
-        pendule_pi
-        pendule_cli
+        pendulum_core
+        pendulum_cli
         digital_filters
 )
 
@@ -108,11 +108,11 @@ add_executable(demo
         src/bin/demo/demo_config.cpp
         src/bin/demo/demo_config.hpp
         src/bin/common/utils.hpp
-        include/pendule_pi/sockets_config.hpp
+        include/pendulum_core/sockets_config.hpp
 )
 target_link_libraries(demo PRIVATE
-        pendule_pi
-        pendule_cli
+        pendulum_core
+        pendulum_cli
 )
 
 # ----------------------------------------
@@ -120,8 +120,8 @@ add_executable(reset_gpio
         src/bin/tools/reset_gpio.cpp
 )
 target_link_libraries(reset_gpio
-        pendule_pi
-        pendule_cli
+        pendulum_core
+        pendulum_cli
 )
 
 # ----------------------------------------
@@ -129,8 +129,8 @@ add_executable(check_encoders
         src/bin/tools/check_encoders.cpp
 )
 target_link_libraries(check_encoders
-        pendule_pi
-        pendule_cli
+        pendulum_core
+        pendulum_cli
 )
 
 # ----------------------------------------
@@ -138,8 +138,8 @@ add_executable(check_limit_switches
         src/bin/tools/check_limit_switches.cpp
 )
 target_link_libraries(check_limit_switches
-        pendule_pi
-        pendule_cli
+        pendulum_core
+        pendulum_cli
 )
 
 # ----------------------------------------
@@ -147,6 +147,6 @@ add_executable(check_motor
         src/bin/tools/check_motor.cpp
 )
 target_link_libraries(check_motor
-        pendule_pi
-        pendule_cli
+        pendulum_core
+        pendulum_cli
 )

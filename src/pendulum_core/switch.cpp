@@ -1,9 +1,9 @@
-#include "pendule_pi/switch.hpp"
-#include "pendule_pi/pigpio.hpp"
-#include "pendule_pi/debug.hpp"
+#include "pendulum_core/switch.hpp"
+#include "pendulum_core/pigpio.hpp"
+#include "pendulum_core/debug.hpp"
 #include <pigpio.h>
 
-namespace pendule_pi {
+namespace pendulum_core {
     Switch::Switch(
         const int pin,
         const bool normally_up,
@@ -17,7 +17,7 @@ namespace pendule_pi {
           , has_triggered_(false)
           , with_interrupts_(false)
           , callback_(nullptr) {
-        PENDULE_PI_DBG(
+        PENDULUM_CORE_DBG(
             "Creating Switch on pin " << pin_ << ". Normal state: " << (normally_up?"UP":"DOWN") <<
             ". Internal resistor: " << (use_internal_pull_resistor?"YES":"NO"));
 
@@ -28,17 +28,17 @@ namespace pendule_pi {
         PIGPIO_CHECKED_CALL(gpioSetPullUpDown(pin, pull_mode));
         PIGPIO_CHECKED_CALL(gpioGlitchFilter(pin, debounce_us));
 
-        PENDULE_PI_DBG("Switch created");
+        PENDULUM_CORE_DBG("Switch created");
     }
 
 
     Switch::~Switch() {
-        PENDULE_PI_DBG("Destroying Switch on pin " << pin_);
+        PENDULUM_CORE_DBG("Destroying Switch on pin " << pin_);
         // set the pin in high impedance, just in case
         gpioSetPullUpDown(pin_, PI_PUD_OFF);
         gpioSetMode(pin_, PI_INPUT);
         disable_interrupts();
-        PENDULE_PI_DBG("Switch destroyed successfully");
+        PENDULUM_CORE_DBG("Switch destroyed successfully");
     }
 
 

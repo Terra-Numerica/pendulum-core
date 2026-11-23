@@ -6,5 +6,5 @@ commit = true
 
 [[tool.bumpversion.files]]
 filename = "CMakeLists.txt"
-search = 'project(pendule_pi VERSION {current_version} LANGUAGES CXX)'
-replace = 'project(pendule_pi VERSION {new_version} LANGUAGES CXX)'
+search = 'project(pendulum_core VERSION {current_version} LANGUAGES CXX)'
+replace = 'project(pendulum_core VERSION {new_version} LANGUAGES CXX)'

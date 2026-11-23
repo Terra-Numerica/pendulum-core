@@ -1,9 +1,9 @@
-#include <pendule_pi/pendule_cpp_server.hpp>
+#include <pendulum_core/pendulum_cpp_server.hpp>
 #include <sstream>
 
-namespace pendule_pi {
-    PenduleCppServer::PenduleCppServer()
-        : PenduleCppServer(
+namespace pendulum_core {
+    PendulumCppServer::PendulumCppServer()
+        : PendulumCppServer(
             DEFAULT_HOST,
             DEFAULT_STATE_PORT,
             DEFAULT_COMMAND_PORT
@@ -11,7 +11,7 @@ namespace pendule_pi {
     }
 
 
-    PenduleCppServer::PenduleCppServer(
+    PendulumCppServer::PendulumCppServer(
         const std::string &host,
         const int state_port,
         const int command_port
@@ -29,7 +29,7 @@ namespace pendule_pi {
     }
 
 
-    PenduleCppServer::~PenduleCppServer() {
+    PendulumCppServer::~PendulumCppServer() {
         command_poller_.reset();
         command_sub_.reset();
         state_pub_.reset();
@@ -37,7 +37,7 @@ namespace pendule_pi {
     }
 
 
-    bool PenduleCppServer::read_command(
+    bool PendulumCppServer::read_command(
         const int wait_ms
     ) {
         // Poll the socket if needed.
@@ -63,7 +63,7 @@ namespace pendule_pi {
     }
 
 
-    void PenduleCppServer::send_state(
+    void PendulumCppServer::send_state(
         double time,
         double position,
         double angle,
@@ -80,4 +80,4 @@ namespace pendule_pi {
         // Send the state.
         state_pub_->send(msg, true);
     }
-} // namespace pendule_pi
+} // namespace pendulum_core

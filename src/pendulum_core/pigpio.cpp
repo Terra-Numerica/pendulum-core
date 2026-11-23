@@ -1,5 +1,5 @@
-#include "pendule_pi/pigpio.hpp"
-#include "pendule_pi/debug.hpp"
+#include "pendulum_core/pigpio.hpp"
+#include "pendulum_core/debug.hpp"
 #include <csignal>
 
 
@@ -37,7 +37,7 @@ namespace pigpio {
 
 
     ActivationToken::ActivationToken(bool register_sigint) {
-        PENDULE_PI_DBG("ActivationToken: checking that no other token exists");
+        PENDULUM_CORE_DBG("ActivationToken: checking that no other token exists");
         // Make sure that no other active token exists
         if (active_token != nullptr) {
             throw MultipleTokensCreated(true);
@@ -45,7 +45,7 @@ namespace pigpio {
         // "register" this object as the active token
         active_token = this;
         // Initialize the pigpio library
-        PENDULE_PI_DBG("ActivationToken: initializing");
+        PENDULUM_CORE_DBG("ActivationToken: initializing");
         PIGPIO_CHECKED_CALL(gpioInitialise());
         // NOTE: it is VERY important that the signal handlers are assigned after
         // attempting to call gpioInitialise()!
@@ -56,7 +56,7 @@ namespace pigpio {
 
 
     ActivationToken::~ActivationToken() {
-        PENDULE_PI_DBG("ActivationToken: calling reset_pins() upon token destruction");
+        PENDULUM_CORE_DBG("ActivationToken: calling reset_pins() upon token destruction");
         reset_pins();
         // If there is no registered token, or another one is registered, bad things might happen!
         if (active_token != this) {
@@ -71,7 +71,7 @@ namespace pigpio {
 
 
     void ActivationToken::reset_pins() {
-        PENDULE_PI_DBG("ActivationToken: putting all pins into high impedance mode");
+        PENDULUM_CORE_DBG("ActivationToken: putting all pins into high impedance mode");
         for (int pin = 0; pin <= 26; pin++) {
             auto retval = gpioSetPullUpDown(pin, PI_PUD_OFF);
             if (retval < 0) {
@@ -91,24 +91,24 @@ namespace pigpio {
             }
         }
         // #warning "Calling gpioTerminate() while handling a signal seems to kill the process, which is NOT a good thing. Check if there is a fix for this."
-        // PENDULE_PI_DBG("ActivationToken: calling gpioTerminate()");
+        // PENDULUM_CORE_DBG("ActivationToken: calling gpioTerminate()");
         // gpioTerminate();
-        PENDULE_PI_DBG("ActivationToken: GPIO reset completed");
+        PENDULUM_CORE_DBG("ActivationToken: GPIO reset completed");
     }
 
 
     void ActivationToken::please_stop([[maybe_unused]] int s) {
-        PENDULE_PI_DBG(
+        PENDULUM_CORE_DBG(
             "ActivationToken: executing 'please_stop(" << (s==SIGINT?std::string("SIGINT"):std::to_string(s)) << ")'");
         throw PleaseStop();
     }
 
 
     void ActivationToken::abort([[maybe_unused]] int s) {
-        PENDULE_PI_DBG(
+        PENDULUM_CORE_DBG(
             "ActivationToken: executing 'abort(" << (s==SIGABRT?std::string("SIGABRT"):std::to_string(s)) << ")'");
         reset_pins();
-        PENDULE_PI_DBG("ActivationToken: calling std::_Exit(EXIT_FAILURE)");
+        PENDULUM_CORE_DBG("ActivationToken: calling std::_Exit(EXIT_FAILURE)");
         std::_Exit(EXIT_FAILURE);
     }
 

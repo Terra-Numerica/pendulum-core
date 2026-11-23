@@ -1,12 +1,12 @@
-#include "pendule_pi/encoder.hpp"
-#include "pendule_pi/pigpio.hpp"
-#include "pendule_pi/debug.hpp"
+#include "pendulum_core/encoder.hpp"
+#include "pendulum_core/pigpio.hpp"
+#include "pendulum_core/debug.hpp"
 #include <pigpio.h>
 #include <limits>
 #include <stdexcept>
 
 
-namespace pendule_pi {
+namespace pendulum_core {
     int Encoder::encode(
         const bool past_a,
         const bool past_b,
@@ -38,7 +38,7 @@ namespace pendule_pi {
         if (steps_per_turn <= 0) {
             throw std::invalid_argument("Encoder: steps_per_turn must be positive");
         }
-        PENDULE_PI_DBG("Creating Encoder on pins " << pin_a_ << " and " << pin_b_);
+        PENDULUM_CORE_DBG("Creating Encoder on pins " << pin_a_ << " and " << pin_b_);
         // Configure the pins using pigpio
         PIGPIO_CHECKED_CALL(gpioSetMode(pin_a_, PI_INPUT));
         PIGPIO_CHECKED_CALL(gpioSetMode(pin_b_, PI_INPUT));
@@ -54,12 +54,12 @@ namespace pendule_pi {
         // initialize properly the pin reading
         a_current_ = a_past_ = PIGPIO_CHECKED_CALL(gpioRead(pin_a_));
         b_current_ = b_past_ = PIGPIO_CHECKED_CALL(gpioRead(pin_b_));
-        PENDULE_PI_DBG("Encoder created successfully");
+        PENDULUM_CORE_DBG("Encoder created successfully");
     }
 
 
     Encoder::~Encoder() {
-        PENDULE_PI_DBG("Destroying Encoder on pins " << pin_a_ << " and " << pin_b_);
+        PENDULUM_CORE_DBG("Destroying Encoder on pins " << pin_a_ << " and " << pin_b_);
         // Disable interrupts
         gpioSetAlertFuncEx(pin_a_, nullptr, nullptr);
         gpioSetAlertFuncEx(pin_b_, nullptr, nullptr);
@@ -68,7 +68,7 @@ namespace pendule_pi {
         gpioSetPullUpDown(pin_b_, PI_PUD_OFF);
         gpioSetMode(pin_a_, PI_INPUT);
         gpioSetMode(pin_b_, PI_INPUT);
-        PENDULE_PI_DBG("Encoder destroyed successfully");
+        PENDULUM_CORE_DBG("Encoder destroyed successfully");
     }
 
 

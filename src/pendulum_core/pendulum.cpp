@@ -6,17 +6,17 @@
 #include <thread>
 #include <iomanip>
 
-#include "pendule_pi/pendule.hpp"
+#include "pendulum_core/pendulum.hpp"
 
-#include "pendule_pi/colors.h"
-#include "pendule_pi/debug.hpp"
-#include "pendule_pi/pigpio.hpp"
+#include "pendulum_core/colors.h"
+#include "pendulum_core/debug.hpp"
+#include "pendulum_core/pigpio.hpp"
 // clang-format on
 
 #define STEP C_BR_MAGENTA
 
-namespace pendule_pi {
-    Pendule::Pendule(
+namespace pendulum_core {
+    Pendulum::Pendulum(
         std::unique_ptr<Motor> motor,
         std::unique_ptr<Switch> left_switch,
         std::unique_ptr<Switch> right_switch,
@@ -31,22 +31,22 @@ namespace pendule_pi {
           position_encoder_(std::move(position_encoder)),
           angle_encoder_(std::move(angle_encoder)
           ) {
-        PENDULE_PI_DBG("Creating Pendule object");
+        PENDULUM_CORE_DBG("Creating Pendulum object");
         // Check that pointers are not nullptr
 #define THROW_IF_NULL(component)                                                                                       \
     {                                                                                                                  \
         if ((component) == nullptr)                                                                                      \
-            throw std::runtime_error("While creating Pendule instance: " #component " cannot be nullptr!");            \
+            throw std::runtime_error("While creating Pendulum instance: " #component " cannot be nullptr!");            \
     }
         THROW_IF_NULL(motor_);
         THROW_IF_NULL(left_switch_);
         THROW_IF_NULL(right_switch_);
         THROW_IF_NULL(position_encoder_);
         THROW_IF_NULL(angle_encoder_);
-        PENDULE_PI_DBG("Pendule object created");
+        PENDULUM_CORE_DBG("Pendulum object created");
     }
 
-    void Pendule::calibrate_angle_encoder(const bool verbose) const {
+    void Pendulum::calibrate_angle_encoder(const bool verbose) const {
         // Calibrate the angle encoder. It simply consists in checking that it is still.
         // Note: don't be too sensitive since the encoder is configured as 4096 steps
         // per turn
@@ -90,7 +90,7 @@ namespace pendule_pi {
         }
     }
 
-    void Pendule::calibrate_position_encoder(const int calibration_pwm, const bool verbose) {
+    void Pendulum::calibrate_position_encoder(const int calibration_pwm, const bool verbose) {
         // Track ends as raw encoder counts: they are only meaningful until the origin is set below.
         int min_raw_steps = 0;
         int max_raw_steps = 0;
@@ -215,8 +215,8 @@ namespace pendule_pi {
         max_position_meters_ = position_encoder_->steps_to_position(max_raw_steps);
     }
 
-    void Pendule::calibrate(const int calibration_pwm, const bool verbose) {
-        PENDULE_PI_DBG("Requested calibration via Pendule::calibrate(" << calibration_pwm << ")");
+    void Pendulum::calibrate(const int calibration_pwm, const bool verbose) {
+        PENDULUM_CORE_DBG("Requested calibration via Pendulum::calibrate(" << calibration_pwm << ")");
 
         // Reset it no matter what!
         calibrated_ = false;
@@ -292,11 +292,11 @@ namespace pendule_pi {
         }
     }
 
-    void Pendule::update(const double dt) {
+    void Pendulum::update(const double dt) {
         if (emergency_stopped_)
-            throw std::runtime_error("Pendule::update(): e_stop() has been called");
+            throw std::runtime_error("Pendulum::update(): e_stop() has been called");
         if (!calibrated_)
-            throw NotCalibrated("Pendule::update()");
+            throw NotCalibrated("Pendulum::update()");
         // Get encoder readings in the physical frame
         const double new_position = position_encoder_->position();
         const double new_angle = angle_encoder_->angle();
@@ -307,11 +307,11 @@ namespace pendule_pi {
         angle_ = new_angle;
     }
 
-    bool Pendule::set_command(int pwm) const {
+    bool Pendulum::set_command(int pwm) const {
         if (emergency_stopped_)
-            throw std::runtime_error("Pendule::set_command(): e_stop() has been called");
+            throw std::runtime_error("Pendulum::set_command(): e_stop() has been called");
         if (!calibrated_)
-            throw NotCalibrated("Pendule::set_command()");
+            throw NotCalibrated("Pendulum::set_command()");
 
         bool retval = true;
         if (pwm != 0) {
@@ -332,14 +332,14 @@ namespace pendule_pi {
         return retval;
     }
 
-    void Pendule::set_pwm_offsets(int offset_down, int offset_up) {
+    void Pendulum::set_pwm_offsets(int offset_down, int offset_up) {
         offset_up_ = std::max(0, offset_up);
         offset_down_ = std::max(0, offset_down);
     }
 
-    void Pendule::e_stop(const std::string &why) {
+    void Pendulum::e_stop(const std::string &why) {
         motor_->set_pwm(0);
         emergency_stopped_ = true;
         throw EmergencyStop(why);
     }
-} // namespace pendule_pi
+} // namespace pendulum_core

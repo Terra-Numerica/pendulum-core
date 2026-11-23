@@ -1,20 +1,19 @@
 #pragma once
-#include <pendule_pi/switch.hpp>
-#include <pendule_pi/encoder.hpp>
-#include <pendule_pi/motor.hpp>
-#include <pendule_pi/pendule.hpp>
+#include <pendulum_core/switch.hpp>
+#include <pendulum_core/encoder.hpp>
+#include <pendulum_core/motor.hpp>
 #include <memory>
 
 
-namespace pendule_pi {
+namespace pendulum_core {
     /// Class that allows to control the Pendulum.
-    class Pendule {
+    class Pendulum {
     public:
         /// Exception class to be thrown when the pendulum has not been calibrated.
         class NotCalibrated : public std::runtime_error {
         public:
             /// Fills the error message.
-            NotCalibrated() : std::runtime_error("Pendule was not calibrated yet!") {
+            NotCalibrated() : std::runtime_error("Pendulum was not calibrated yet!") {
             }
 
             /// Fills the error message.
@@ -22,7 +21,7 @@ namespace pendule_pi {
               *   called before performing the calibration.
               */
             explicit NotCalibrated(const std::string &src) : std::runtime_error(
-                src + ": Pendule was not calibrated yet!") {
+                src + ": Pendulum was not calibrated yet!") {
             }
         };
 
@@ -71,7 +70,7 @@ namespace pendule_pi {
           *   be `nullptr`. In this case, default instances will be generated and
           *   managed internally.
           */
-        Pendule(
+        Pendulum(
             std::unique_ptr<Motor> motor,
             std::unique_ptr<Switch> left_switch,
             std::unique_ptr<Switch> right_switch,
@@ -80,10 +79,10 @@ namespace pendule_pi {
             double safety_margin_meters
         );
 
-        // Prevent the user from making copies of a Pendule.
-        Pendule(const Pendule &) = delete;
+        // Prevent the user from making copies of a Pendulum.
+        Pendulum(const Pendulum &) = delete;
 
-        Pendule &operator=(const Pendule &) = delete;
+        Pendulum &operator=(const Pendulum &) = delete;
 
         /// Initialize the pendulum.
         void calibrate(int calibration_pwm, bool verbose = false);

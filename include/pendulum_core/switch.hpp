@@ -6,7 +6,7 @@
 #include <functional>
 #include <stdexcept>
 
-namespace pendule_pi {
+namespace pendulum_core {
     /// Class that handles a simple mechanical switch.
     class Switch {
     public:

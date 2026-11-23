@@ -1,8 +1,8 @@
 #include <yamlcfg/config_node.hpp>
 #include <yamlcfg/constraints.hpp>
 
-#include "pendule_pi/pendulum_config.hpp"
-#include "pendule_pi/sockets_config.hpp"
+#include "pendulum_core/pendulum_config.hpp"
+#include "pendulum_core/sockets_config.hpp"
 
 namespace {
     using yamlcfg::ConfigNode;

@@ -6,15 +6,15 @@
 #include <fstream>
 
 
-#include <pendule_cli/cli_parser.hpp>
-#include <pendule_pi/colors.h>
-#include <pendule_pi/pendulum_config.hpp>
-#include <pendule_pi/pigpio.hpp>
-#include <pendule_pi/pendule.hpp>
+#include <pendulum_cli/cli_parser.hpp>
+#include <pendulum_core/colors.h>
+#include <pendulum_core/pendulum_config.hpp>
+#include <pendulum_core/pigpio.hpp>
+#include <pendulum_core/pendulum.hpp>
 #include <digital_filters/filters_implementations/butterworth.hpp>
 
 #include "../common/utils.hpp"
-#include "pendule_pi/pendule_cpp_server.hpp"
+#include "pendulum_core/pendulum_cpp_server.hpp"
 // clang-format on
 
 // if set to 1, don't brake abruptly when reaching the evolution area limits
@@ -26,9 +26,9 @@ constexpr auto LABEL = C_BR_BLUE;
 
 constexpr auto STATUS_FILE = "/var/run/pendulum.status";
 
-static std::unique_ptr<pendule_pi::Pendule> make_pendulum(const PendulumConfig &config) {
+static std::unique_ptr<pendulum_core::Pendulum> make_pendulum(const PendulumConfig &config) {
     const auto make_switch = [](const SwitchConfig &cfg) {
-        return std::make_unique<pendule_pi::Switch>(
+        return std::make_unique<pendulum_core::Switch>(
             cfg.pin,
             cfg.normally_up,
             cfg.use_internal_pull_resistor,
@@ -37,20 +37,20 @@ static std::unique_ptr<pendule_pi::Pendule> make_pendulum(const PendulumConfig &
     };
 
     const auto make_position_encoder = [](const PositionEncoderConfig &cfg) {
-        return std::make_unique<pendule_pi::PositionEncoder>(
+        return std::make_unique<pendulum_core::PositionEncoder>(
             cfg.pin_a, cfg.pin_b, cfg.steps_per_turn,
             cfg.belt_module_mm, cfg.pulley_teeth_count
         );
     };
 
     const auto make_angle_encoder = [](const AngleEncoderConfig &cfg) {
-        return std::make_unique<pendule_pi::AngleEncoder>(
+        return std::make_unique<pendulum_core::AngleEncoder>(
             cfg.pin_a, cfg.pin_b, cfg.steps_per_turn
         );
     };
 
-    auto pendulum = std::make_unique<pendule_pi::Pendule>(
-        std::make_unique<pendule_pi::Motor>(config.motor.pwm_pin, config.motor.direction_pin),
+    auto pendulum = std::make_unique<pendulum_core::Pendulum>(
+        std::make_unique<pendulum_core::Motor>(config.motor.pwm_pin, config.motor.direction_pin),
         make_switch(config.left_switch),
         make_switch(config.right_switch),
         make_position_encoder(config.position_encoder),
@@ -127,8 +127,8 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     const double PERIOD_SEC = config.period_ms / 1000.0;
 
     // Socket connections.
-    // const auto tcp = config->get_pendule_server();
-    const auto tcp = std::make_unique<pendule_pi::PenduleCppServer>(
+    // const auto tcp = config->get_pendulum_server();
+    const auto tcp = std::make_unique<pendulum_core::PendulumCppServer>(
         config.sockets.host,
         config.sockets.state_port,
         config.sockets.command_port
@@ -143,7 +143,7 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     signal(SIGTERM, pigpio::ActivationToken::please_stop);
 
     // Create the pendulum instance and perform the calibration.
-    const auto pendule = make_pendulum(config);
+    const auto pendulum = make_pendulum(config);
 
     std::cout << std::endl << C_BR_WHITE
             << " ------------------------------------------------ " << std::endl
@@ -151,11 +151,11 @@ static int run(const Filters &filters, const PendulumConfig &config) {
             << "|    Pendulum hardware interface starting...     |" << std::endl
             << "|                                                |" << std::endl
             << " ------------------------------------------------ " << std::endl
-            << std::endl << LABEL << "Version " << PENDULE_PI_VERSION << std::endl
+            << std::endl << LABEL << "Version " << PENDULUM_CORE_VERSION << std::endl
             << C_RESET;
 
     try {
-        pendule->calibrate(config.calibration_pwm, true);
+        pendulum->calibrate(config.calibration_pwm, true);
     } catch (...) {
         // create the status file to report we failed and exit now
         std::ofstream(STATUS_FILE).put('0');
@@ -164,10 +164,10 @@ static int run(const Filters &filters, const PendulumConfig &config) {
 
     // configure the filters with the initial conditions
 
-    filters.position->init_input(pendule->position());
-    filters.position->init_output(pendule->position());
-    filters.angle->init_input(pendule->angle());
-    filters.angle->init_output(pendule->angle());
+    filters.position->init_input(pendulum->position());
+    filters.position->init_output(pendulum->position());
+    filters.angle->init_input(pendulum->angle());
+    filters.angle->init_output(pendulum->angle());
     filters.linear_velocity->init_input(0.0);
     filters.linear_velocity->init_output(0.0);
     filters.angular_velocity->init_input(0.0);
@@ -188,8 +188,8 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
     // set up the no speed-limit zone bounds
-    const auto full_speed_max_position = pendule->soft_max_position() - config.safety_thresholds.margin;
-    const auto full_speed_min_position = pendule->soft_min_position() + config.safety_thresholds.margin;
+    const auto full_speed_max_position = pendulum->soft_max_position() - config.safety_thresholds.margin;
+    const auto full_speed_min_position = pendulum->soft_min_position() + config.safety_thresholds.margin;
 
 #if PROGRESSIVE_STOP
     // braking distance must be shorter that the safety margin, otherwise the inertia
@@ -202,13 +202,13 @@ static int run(const Filters &filters, const PendulumConfig &config) {
         while (true) {
             // Sleep enough to adjust the loop rate and get the pendulum state
             const double hw_time = 1e-6 * rate->sleep();
-            pendule->update(PERIOD_SEC);
+            pendulum->update(PERIOD_SEC);
 
             // perform state filtering
-            const double filtered_position = filters.position->filter(pendule->position());
-            const double filtered_angle = filters.angle->filter(pendule->angle());
-            const double filtered_linear_vel = filters.linear_velocity->filter(pendule->linear_velocity());
-            const double filtered_angular_vel = filters.angular_velocity->filter(pendule->angular_velocity());
+            const double filtered_position = filters.position->filter(pendulum->position());
+            const double filtered_angle = filters.angle->filter(pendulum->angle());
+            const double filtered_linear_vel = filters.linear_velocity->filter(pendulum->linear_velocity());
+            const double filtered_angular_vel = filters.angular_velocity->filter(pendulum->angular_velocity());
 
             // publish the current state on the dedicated socket
             tcp->send_state(
@@ -232,18 +232,18 @@ static int run(const Filters &filters, const PendulumConfig &config) {
 
             // Don't stop brutally when reached, but slow progressively along the braking distance.
             // Note : we consider the track symmetrical, and thus use the same limits for both ends.
-            if (pwm > 0 && pendule->position() > full_speed_max_position) {
+            if (pwm > 0 && pendulum->position() > full_speed_max_position) {
 #if PROGRESSIVE_STOP
                 pwm = static_cast<int>(std::round(
-                    pwm * std::fmax(1.0 - (pendule->position() - full_speed_max_position) / braking_distance, 0)
+                    pwm * std::fmax(1.0 - (pendulum->position() - full_speed_max_position) / braking_distance, 0)
                 ));
 #else
                 pwm = 0;
 #endif
-            } else if (pwm < 0 && pendule->position() < full_speed_min_position) {
+            } else if (pwm < 0 && pendulum->position() < full_speed_min_position) {
 #if PROGRESSIVE_STOP
                 pwm = static_cast<int>(std::round(
-                    pwm * std::fmax(1.0 - (full_speed_min_position - pendule->position()) / braking_distance, 0)
+                    pwm * std::fmax(1.0 - (full_speed_min_position - pendulum->position()) / braking_distance, 0)
                 ));
 #else
                 pwm = 0;
@@ -251,9 +251,9 @@ static int run(const Filters &filters, const PendulumConfig &config) {
             }
 
             // ReSharper disable once CppExpressionWithoutSideEffects
-            pendule->set_command(pwm);
+            pendulum->set_command(pwm);
         }
-    } catch (const pendule_pi::Pendule::EmergencyStop &e) {
+    } catch (const pendulum_core::Pendulum::EmergencyStop &e) {
         std::cerr << std::endl << C_BR_RED << "ERROR: " << e.what() << C_RESET << std::endl;
         exit_status = EXIT_FAILURE;
     } catch (const pigpio::ActivationToken::PleaseStop &) {

@@ -3,23 +3,23 @@
 #include <memory>
 #include <zmqpp/zmqpp.hpp>
 
-namespace pendule_pi {
+namespace pendulum_core {
     /// Bridge to the low-level interface.
-    class PenduleCppClient {
+    class PendulumCppClient {
     public:
         static auto constexpr DEFAULT_HOST = "localhost";
         static auto constexpr DEFAULT_STATE_PORT = 10001;
         static auto constexpr DEFAULT_COMMAND_PORT = 10002;
 
-        /// Named option to be passed to PenduleCppClient::read_state.
-        /** @see PenduleCppClient::read_state */
+        /// Named option to be passed to PendulumCppClient::read_state.
+        /** @see PendulumCppClient::read_state */
         static auto constexpr BLOCKING = true;
-        /// Named option to be passed to PenduleCppClient::read_state.
-        /** @see PenduleCppClient::read_state */
+        /// Named option to be passed to PendulumCppClient::read_state.
+        /** @see PendulumCppClient::read_state */
         static auto constexpr NON_BLOCKING = false;
 
         /// Connects to a socket using some default parameters.
-        explicit PenduleCppClient(int wait = -1);
+        explicit PendulumCppClient(int wait = -1);
 
         /// Constructor, initializes socket connections.
         /** Connections are established at `tcp://[host]:[port]`. The
@@ -34,7 +34,7 @@ namespace pendule_pi {
           *   If no message is received within the allotted time, an exception will be
           *   thrown.
           */
-        PenduleCppClient(
+        PendulumCppClient(
             const std::string &host,
             const int state_port,
             const int command_port,
@@ -42,7 +42,7 @@ namespace pendule_pi {
         );
 
         /// Deallocates the memory for the sockets.
-        ~PenduleCppClient();
+        ~PendulumCppClient();
 
         /// Allows to access the current time of the pendulum.
         [[nodiscard]] const double &time() const { return time_; }
@@ -65,9 +65,9 @@ namespace pendule_pi {
           *   `NON_BLOCKING` have been defined. You are encouraged to call this
           *   method as, *e.g*.:
           *   @code{.c++}
-          *   PenduleCppClient pendulum;
-          *   pendulum.read_state(PenduleCppClient.BLOCKING);
-          *   pendulum.read_state(PenduleCppClient.NON_BLOCKING);
+          *   PendulumCppClient pendulum;
+          *   pendulum.read_state(PendulumCppClient.BLOCKING);
+          *   pendulum.read_state(PendulumCppClient.NON_BLOCKING);
           *   @endcode
           */
         bool read_state(bool blocking);
@@ -88,4 +88,4 @@ namespace pendule_pi {
         std::unique_ptr<zmqpp::socket> state_sub_; ///< Socket to read the current state of the pendulum.
         std::unique_ptr<zmqpp::socket> command_pub_; ///< Socket to send commands to the low-level interface.
     };
-} // namespace pendule_pi
+} // namespace pendulum_core

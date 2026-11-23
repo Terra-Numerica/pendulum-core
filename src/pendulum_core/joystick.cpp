@@ -1,5 +1,5 @@
-#include "pendule_pi/joystick.hpp"
-#include "pendule_pi/debug.hpp"
+#include "pendulum_core/joystick.hpp"
+#include "pendulum_core/debug.hpp"
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -8,14 +8,14 @@
 #include <stdexcept>
 
 
-namespace pendule_pi {
+namespace pendulum_core {
     Joystick::Joystick(
         const std::string &device
     )
         : joy_file_descriptor_(-1),
           joy_name_("NO-NAME"),
           joy_event_() {
-        PENDULE_PI_DBG("Creating Joystick instance connected to " << device);
+        PENDULUM_CORE_DBG("Creating Joystick instance connected to " << device);
         joy_file_descriptor_ = open(device.c_str(), O_RDONLY);
         if (joy_file_descriptor_ == -1)
             throw std::runtime_error("Failed to open " + device);
@@ -25,13 +25,13 @@ namespace pendule_pi {
         char joy_name[NUM_CHARS];
         ioctl(joy_file_descriptor_, JSIOCGNAME(NUM_CHARS), &joy_name);
         joy_name_ = joy_name;
-        PENDULE_PI_DBG("Joystick name: '" << joy_name_ << "'");
+        PENDULUM_CORE_DBG("Joystick name: '" << joy_name_ << "'");
 
         // get number of axes and buttons
         int num_axes = 0, num_buttons = 0;
         ioctl(joy_file_descriptor_, JSIOCGAXES, &num_axes);
         ioctl(joy_file_descriptor_, JSIOCGBUTTONS, &num_buttons);
-        PENDULE_PI_DBG("Detected " << num_buttons << " buttons and " << num_axes << " axes");
+        PENDULUM_CORE_DBG("Detected " << num_buttons << " buttons and " << num_axes << " axes");
 
         axes_.resize(num_axes, 0);
         buttons_.resize(num_buttons, 0);
@@ -39,17 +39,17 @@ namespace pendule_pi {
         fcntl(joy_file_descriptor_, F_SETFL, O_NONBLOCK);
 
 
-        PENDULE_PI_DBG("Joystick instance created!");
+        PENDULUM_CORE_DBG("Joystick instance created!");
     }
 
 
     Joystick::~Joystick() {
-        PENDULE_PI_DBG("Destroyng Joystick instance '" << joy_name_ << "'");
+        PENDULUM_CORE_DBG("Destroyng Joystick instance '" << joy_name_ << "'");
         if (joy_file_descriptor_ != -1) {
             close(joy_file_descriptor_);
-            PENDULE_PI_DBG("File descriptor closed");
+            PENDULUM_CORE_DBG("File descriptor closed");
         }
-        PENDULE_PI_DBG("Joystick object successfully closed");
+        PENDULUM_CORE_DBG("Joystick object successfully closed");
     }
 
 

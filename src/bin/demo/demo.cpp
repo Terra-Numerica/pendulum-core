@@ -4,10 +4,10 @@
 #include <csignal>
 #include <yaml-cpp/yaml.h>
 #include "../common/utils.hpp"
-#include <pendule_pi/colors.h>
-#include <pendule_pi/joystick.hpp>
-#include <pendule_pi/pendule_cpp_client.hpp>
-#include <pendule_cli/cli_parser.hpp>
+#include <pendulum_core/colors.h>
+#include <pendulum_core/joystick.hpp>
+#include <pendulum_core/pendulum_cpp_client.hpp>
+#include <pendulum_cli/cli_parser.hpp>
 #include "demo_config.hpp"
 // clang-format on
 
@@ -15,7 +15,7 @@ namespace {
     enum class ControlMode { Manual, LQR, Swingup };
 }
 
-namespace pp = pendule_pi;
+namespace pc = pendulum_core;
 
 static std::string to_string(const ControlMode &mode) {
     switch (mode) {
@@ -156,7 +156,7 @@ static double rad_to_deg(const double rad) {
 
 static int run(const DemoConfig &config) {
     // Connect to the low-level interface.
-    pp::PenduleCppClient pendulum(
+    pc::PendulumCppClient pendulum(
         config.sockets.host,
         config.sockets.state_port,
         config.sockets.command_port,
@@ -174,7 +174,7 @@ static int run(const DemoConfig &config) {
             << "|          Pendulum demo starting...             |" << std::endl
             << "|                                                |" << std::endl
             << " ------------------------------------------------ " << std::endl
-            << std::endl << C_MUTED << "Version " << PENDULE_PI_VERSION << std::endl
+            << std::endl << C_MUTED << "Version " << PENDULUM_CORE_VERSION << std::endl
             << std::endl << C_RESET;
 
     std::cout << C_INFO << "--- Configuration ---" << C_RESET << std::endl << std::endl;
@@ -220,7 +220,7 @@ static int run(const DemoConfig &config) {
     const auto DPAD_SMOOTHING_TAU = config.joystick.dpad_smoothing_tau_secs;
 
     const auto js_device = config.joystick.device;
-    pp::Joystick joy(js_device);
+    pc::Joystick joy(js_device);
 
     // The joystick is not polled on every iteration of the control loop.
     unsigned int JOY_UPDATE_PACE = 5;
@@ -309,7 +309,7 @@ static int run(const DemoConfig &config) {
         }
 
         // Retrieve the current state of the pendulum.
-        pendulum.read_state(pendule_pi::PenduleCppClient::BLOCKING);
+        pendulum.read_state(pendulum_core::PendulumCppClient::BLOCKING);
 
         // Since the low level sends state messages periodically, as configured by period_ms in YAML file
         // and read_state has been called in blocking mode, we are here at regular intervals.

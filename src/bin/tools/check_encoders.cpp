@@ -8,11 +8,11 @@
 #include <csignal>
 #include <cstdlib>
 
-#include <pendule_cli/cli_parser.hpp>
-#include <pendule_pi/colors.h>
-#include <pendule_pi/pendulum_config.hpp>
-#include <pendule_pi/pigpio.hpp>
-#include <pendule_pi/encoder.hpp>
+#include <pendulum_cli/cli_parser.hpp>
+#include <pendulum_core/colors.h>
+#include <pendulum_core/pendulum_config.hpp>
+#include <pendulum_core/pigpio.hpp>
+#include <pendulum_core/encoder.hpp>
 // clang-format on
 
 constexpr auto POS_COLOR = C_BR_GREEN;
@@ -39,7 +39,7 @@ static void display_value(
 }
 
 static int run(const PendulumConfig &config) {
-    namespace pp = pendule_pi;
+    namespace pc = pendulum_core;
 
     try {
         pigpio::ActivationToken token;
@@ -54,18 +54,18 @@ static int run(const PendulumConfig &config) {
                 << "|   Encoders configuration checking tool   |" << std::endl
                 << "|                                          |" << std::endl
                 << " ------------------------------------------ " << std::endl
-                << std::endl << LABEL_COLOR << "Version " << PENDULE_PI_VERSION << std::endl
+                << std::endl << LABEL_COLOR << "Version " << PENDULUM_CORE_VERSION << std::endl
                 << C_RESET << std::endl
                 << "This tool checks that the encoders are configured so that the returned values" << std::endl
                 << "progress according to the conventions used in the control laws." << std::endl << std::endl;
 
         const auto &position_cfg = config.position_encoder;
         const auto &angle_cfg = config.angle_encoder;
-        const auto position_encoder = std::make_unique<pp::PositionEncoder>(
+        const auto position_encoder = std::make_unique<pc::PositionEncoder>(
             position_cfg.pin_a, position_cfg.pin_b, position_cfg.steps_per_turn,
             position_cfg.belt_module_mm, position_cfg.pulley_teeth_count
         );
-        const auto angle_encoder = std::make_unique<pp::AngleEncoder>(
+        const auto angle_encoder = std::make_unique<pc::AngleEncoder>(
             angle_cfg.pin_a, angle_cfg.pin_b, angle_cfg.steps_per_turn
         );
         constexpr auto POLLING_PERIOD_MS = 100;

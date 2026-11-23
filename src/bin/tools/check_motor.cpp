@@ -8,11 +8,11 @@
 #include <csignal>
 #include <cstdlib>
 
-#include <pendule_cli/cli_parser.hpp>
-#include <pendule_pi/colors.h>
-#include <pendule_pi/pendulum_config.hpp>
-#include <pendule_pi/pigpio.hpp>
-#include <pendule_pi/motor.hpp>
+#include <pendulum_cli/cli_parser.hpp>
+#include <pendulum_core/colors.h>
+#include <pendulum_core/pendulum_config.hpp>
+#include <pendulum_core/pigpio.hpp>
+#include <pendulum_core/motor.hpp>
 // clang-format on
 
 
@@ -22,7 +22,7 @@ constexpr auto LABEL_COLOR = C_BR_BLUE;
 
 
 static int run(const PendulumConfig &config) {
-    namespace pp = pendule_pi;
+    namespace pc = pendulum_core;
 
     pigpio::ActivationToken token;
 
@@ -33,12 +33,12 @@ static int run(const PendulumConfig &config) {
             << "|       Motor control checking tool       |" << std::endl
             << "|                                         |" << std::endl
             << " ----------------------------------------- " << std::endl
-            << std::endl << LABEL_COLOR << "Version " << PENDULE_PI_VERSION << std::endl
+            << std::endl << LABEL_COLOR << "Version " << PENDULUM_CORE_VERSION << std::endl
             << C_RESET << std::endl
             << "This tool checks that the motor is working and wired the right way." << std::endl
             << std::endl;
 
-    const auto motor = std::make_unique<pp::Motor>(config.motor.pwm_pin, config.motor.direction_pin);
+    const auto motor = std::make_unique<pc::Motor>(config.motor.pwm_pin, config.motor.direction_pin);
 
     std::cout << C_HEADER << "Configuration :" << C_RESET << std::endl;
     std::cout << LABEL_COLOR << "- direction GPIO : " << C_RESET << motor->direction_pin() << std::endl;

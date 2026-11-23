@@ -1,12 +1,12 @@
-#include <pendule_pi/pendule_cpp_client.hpp>
+#include <pendulum_core/pendulum_cpp_client.hpp>
 #include <sstream>
 #include <thread>
 
-namespace pendule_pi {
-    PenduleCppClient::PenduleCppClient(
+namespace pendulum_core {
+    PendulumCppClient::PendulumCppClient(
         const int wait
     )
-        : PenduleCppClient(
+        : PendulumCppClient(
             DEFAULT_HOST,
             DEFAULT_STATE_PORT,
             DEFAULT_COMMAND_PORT,
@@ -15,7 +15,7 @@ namespace pendule_pi {
     }
 
 
-    PenduleCppClient::PenduleCppClient(
+    PendulumCppClient::PendulumCppClient(
         const std::string &host,
         const int state_port,
         const int command_port,
@@ -48,7 +48,7 @@ namespace pendule_pi {
                 elapsed += 1;
                 // Did we exit due to a received message? If not, throw!
                 if (elapsed >= wait) {
-                    throw std::runtime_error("PenduleCppClient: failed to establish a "
+                    throw std::runtime_error("PendulumCppClient: failed to establish a "
                         "connection with the low-level interface within the allotted time.");
                 }
             }
@@ -56,14 +56,14 @@ namespace pendule_pi {
     }
 
 
-    PenduleCppClient::~PenduleCppClient() {
+    PendulumCppClient::~PendulumCppClient() {
         state_sub_.reset();
         command_pub_.reset();
         context_.reset();
     }
 
 
-    bool PenduleCppClient::read_state(
+    bool PendulumCppClient::read_state(
         const bool blocking
     ) {
         // Message to be received.
@@ -82,11 +82,11 @@ namespace pendule_pi {
     }
 
 
-    void PenduleCppClient::send_command(const int pwm) const {
+    void PendulumCppClient::send_command(const int pwm) const {
         // Create the message to be sent.
         zmqpp::message msg;
         msg << std::to_string(pwm);
         // Send the PWM to the low-level interface.
         command_pub_->send(msg);
     }
-} // namespace pendule_pi
+} // namespace pendulum_core

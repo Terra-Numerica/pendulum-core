@@ -5,7 +5,7 @@
 
 #include <atomic>
 
-namespace pendule_pi {
+namespace pendulum_core {
     /// Class that handles a simple DC motor.
     class Motor {
     public:

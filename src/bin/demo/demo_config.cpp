@@ -2,7 +2,7 @@
 #include <yamlcfg/constraints.hpp>
 
 #include "demo_config.hpp"
-#include "pendule_pi/sockets_config.hpp"
+#include "pendulum_core/sockets_config.hpp"
 
 namespace {
     using yamlcfg::ConfigNode;

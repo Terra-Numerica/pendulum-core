@@ -3,16 +3,16 @@
 #include <memory>
 #include <zmqpp/zmqpp.hpp>
 
-namespace pendule_pi {
+namespace pendulum_core {
     /// TCP server to share the state of the pendulum and receive commands.
-    class PenduleCppServer {
+    class PendulumCppServer {
     public:
         static auto constexpr DEFAULT_HOST = "*";
         static auto constexpr DEFAULT_STATE_PORT = 10001;
         static auto constexpr DEFAULT_COMMAND_PORT = 10002;
 
         /// Creates the socket connections.
-        PenduleCppServer();
+        PendulumCppServer();
 
         /// Constructor, initializes socket connections.
         /** Connections are established at `tcp://[host]:[port]`. The
@@ -21,14 +21,14 @@ namespace pendule_pi {
           *   state of the pendulum.
           * @param command_port port of the socket that is used to receive commands.
           */
-        PenduleCppServer(
+        PendulumCppServer(
             const std::string &host,
             int state_port,
             int command_port
         );
 
         /// Deallocates the memory for the sockets.
-        ~PenduleCppServer();
+        ~PendulumCppServer();
 
         /// Allows to access the last received command.
         [[nodiscard]] const int &command() const { return pwm_; }
@@ -63,4 +63,4 @@ namespace pendule_pi {
         std::unique_ptr<zmqpp::socket> command_sub_; ///< Socket to read commands sent by clients.
         std::unique_ptr<zmqpp::poller> command_poller_; ///< Poller to check if new commands are available.
     };
-} // namespace pendule_pi
+} // namespace pendulum_core

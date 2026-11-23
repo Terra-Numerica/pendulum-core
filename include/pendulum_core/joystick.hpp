@@ -3,7 +3,7 @@
 #include <string>
 #include <linux/joystick.h>
 
-namespace pendule_pi {
+namespace pendulum_core {
     /// Simple utility class to read information from a joystick.
     class Joystick {
     public:

@@ -37,7 +37,7 @@
 ## Source Tree Organization
 
 * **Libraries:** a library has its public headers in `include/<lib>/` and its sources in `src/<lib>/`
-  (`pendule_pi`, `pendule_cli`). Header-only libraries (`yamlcfg`, `digital_filters`) live in `include/` and are
+  (`pendulum_core`, `pendulum_cli`). Header-only libraries (`yamlcfg`, `digital_filters`) live in `include/` and are
   declared as `INTERFACE` targets in `CMakeLists.txt`.
 * **Executable-specific code:** a header used by a single executable stays next to its `.cpp` and is not published in
   `include/` (ex: `src/bin/demo/demo_config.hpp`). Code shared by several executables goes in a library.

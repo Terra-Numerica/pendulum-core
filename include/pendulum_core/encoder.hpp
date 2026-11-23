@@ -8,7 +8,7 @@
 #include <functional>
 #include <atomic>
 
-namespace pendule_pi {
+namespace pendulum_core {
     /// Base class interfacing a simple two-phases rotatory encoder.
     /** It takes care of the step counting only and exposes the decoding mode (x1, x2, x4) as a provision
      * for subsequent configuration of this behavior.
@@ -285,4 +285,4 @@ namespace pendule_pi {
         const double belt_module_;
         const int pulley_teeth_count_;
     };
-} // namespace pendule_pi
+} // namespace pendulum_core

@@ -8,11 +8,11 @@
 #include <csignal>
 #include <cstdlib>
 
-#include <pendule_cli/cli_parser.hpp>
-#include <pendule_pi/colors.h>
-#include <pendule_pi/pendulum_config.hpp>
-#include <pendule_pi/pigpio.hpp>
-#include <pendule_pi/switch.hpp>
+#include <pendulum_cli/cli_parser.hpp>
+#include <pendulum_core/colors.h>
+#include <pendulum_core/pendulum_config.hpp>
+#include <pendulum_core/pigpio.hpp>
+#include <pendulum_core/switch.hpp>
 // clang-format on
 
 
@@ -33,7 +33,7 @@ static void display_state(const std::string &label, const bool active) {
 }
 
 static int run(const PendulumConfig &config) {
-    namespace pp = pendule_pi;
+    namespace pc = pendulum_core;
 
     try {
         // Let the token manage the pigpio library!
@@ -49,14 +49,14 @@ static int run(const PendulumConfig &config) {
                 << "|   Limit switches configuration checking tool   |" << std::endl
                 << "|                                                |" << std::endl
                 << " ------------------------------------------------ " << std::endl
-                << std::endl << LABEL_COLOR << "Version " << PENDULE_PI_VERSION << std::endl
+                << std::endl << LABEL_COLOR << "Version " << PENDULUM_CORE_VERSION << std::endl
                 << C_RESET << std::endl
                 << "This tool checks that the track limit switches are properly configured and working." <<
                 std::endl
                 << std::endl;
 
         const auto make_switch = [](const SwitchConfig &cfg) {
-            return std::make_unique<pp::Switch>(
+            return std::make_unique<pc::Switch>(
                 cfg.pin, cfg.normally_up, cfg.use_internal_pull_resistor, cfg.debounce_us
             );
         };
