@@ -77,13 +77,13 @@ static int run(const PendulumConfig &config) {
         std::cout << C_HEADER << "Configuration :" << C_RESET << std::endl;
         std::cout << LABEL_COLOR << "- position : " << C_RESET
                 << "A -> GPIO " << position_encoder->pin_a()
-                << " - B -> GPIO " << position_encoder->pin_b()
-                << " - glitch filter : " << glitch_filter_setting(position_cfg.glitch_filter_us)
+                << " | B -> GPIO " << position_encoder->pin_b()
+                << " | glitch filter : " << glitch_filter_setting(position_cfg.glitch_filter_us)
                 << std::endl;
         std::cout << LABEL_COLOR << "- angle    : " << C_RESET
                 << "A -> GPIO " << angle_encoder->pin_a()
-                << " - B -> GPIO " << angle_encoder->pin_b()
-                << " - glitch filter : " << glitch_filter_setting(angle_cfg.glitch_filter_us)
+                << " | B -> GPIO " << angle_encoder->pin_b()
+                << " | glitch filter : " << glitch_filter_setting(angle_cfg.glitch_filter_us)
                 << std::endl;
 
         std::cout << std::endl
