@@ -65,6 +65,23 @@ Exemple de sortie console :
 
 ![](img/demo.png)
 
+## Configurations d'exemple
+
+Les exemples affichés par l'option `--example` de `hw_interface` et de `demo` sont les fichiers
+`config/pendulum_core_config.yaml` et `config/demo.yaml`. Ils sont embarqués dans les binaires à la compilation :
+les fonctions `get_pendulum_config_example()` et `get_demo_config_example()` n'ont donc pas de définition dans les
+sources, leur code est généré par `cmake/embed_text.cmake` dans `<répertoire de build>/generated/`.
+
+Pour exécuter la génération isolément, sans configurer de build (par exemple pour examiner le code produit) :
+
+```
+$ cmake/embed_examples.sh [répertoire de sortie]
+```
+
+Les fichiers `.cpp` sont écrits dans le répertoire indiqué (`./generated` par défaut) et leurs chemins sont affichés.
+Les paramètres du script reprennent ceux des appels à `embed_text_function()` de `CMakeLists.txt` : les deux doivent
+être modifiés ensemble.
+
 ## Crédits
 
 Ce projet est basé sur les travaux menés par Franco FUSCO dans le cadre de
