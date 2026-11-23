@@ -13,6 +13,7 @@ Checks: >
   performance-noexcept-move-constructor,
   readability-redundant-member-init,
   readability-const-return-type,
+  misc-const-correctness,
   modernize-avoid-c-arrays,
   readability-identifier-naming
 
