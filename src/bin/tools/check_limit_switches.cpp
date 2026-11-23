@@ -37,7 +37,7 @@ static int run(const PendulumConfig &config) {
 
     try {
         // Let the token manage the pigpio library!
-        pigpio::ActivationToken token;
+        const pigpio::ActivationToken token;
 
         signal(SIGINT, pigpio::ActivationToken::please_stop);
         signal(SIGTERM, pigpio::ActivationToken::please_stop);

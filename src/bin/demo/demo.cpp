@@ -223,7 +223,7 @@ static int run(const DemoConfig &config) {
     pc::Joystick joy(js_device);
 
     // The joystick is not polled on every iteration of the control loop.
-    unsigned int JOY_UPDATE_PACE = 5;
+    const unsigned int JOY_UPDATE_PACE = 5;
     unsigned int iterations_to_joystick_update = JOY_UPDATE_PACE;
 
     // Mode switching button.
@@ -315,7 +315,7 @@ static int run(const DemoConfig &config) {
         // and read_state has been called in blocking mode, we are here at regular intervals.
 
         // compute errors whatever is the current mode so that the status line can be used for visual control
-        double e_theta = shift_in_circle(pendulum.angle() - target_angle);
+        const double e_theta = shift_in_circle(pendulum.angle() - target_angle);
         double e_pos = 0;
 
         in_lqr_range = std::fabs(e_theta) <= lqr_e_theta_max;
@@ -358,8 +358,8 @@ static int run(const DemoConfig &config) {
 
             if (autopilot_engaged) {
                 // the user asks us to take control => let's do the heavy lifting
-                double e_linear_velocity = pendulum.linear_velocity();
-                double e_angular_velocity = pendulum.angular_velocity();
+                const double e_linear_velocity = pendulum.linear_velocity();
+                const double e_angular_velocity = pendulum.angular_velocity();
 
                 // let the user shift the cart target position by using the gamepad
                 constexpr double POSITION_SHIFT_LIMIT = 0.2;
@@ -367,7 +367,7 @@ static int run(const DemoConfig &config) {
                 e_pos = pendulum.position() - target_pos;
 
                 // compute the LQR control law since we'll use its result whichever is the current mode
-                int pwm_lqr = static_cast<int>(
+                const int pwm_lqr = static_cast<int>(
                     -kp * e_pos
                     - kpd * e_linear_velocity
                     - kt * e_theta
@@ -376,7 +376,7 @@ static int run(const DemoConfig &config) {
 
                 if (control_mode == ControlMode::Swingup) {
                     const double cos_e_theta = std::cos(e_theta);
-                    int pwm_swing_up = static_cast<int>(
+                    const int pwm_swing_up = static_cast<int>(
                         +kswing * (1 - cos_e_theta)
                         * sign(pendulum.angular_velocity() * cos_e_theta)
                         - ksx * pendulum.position()

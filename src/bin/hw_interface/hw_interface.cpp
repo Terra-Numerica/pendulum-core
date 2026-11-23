@@ -137,7 +137,7 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     const unsigned int MAX_MISSED_MESSAGES = 1 + static_cast<int>(1. / PERIOD_SEC);
 
     // Initialize the pigpio token that takes care of housekeeping at finalization time, among others.
-    pigpio::ActivationToken token;
+    const pigpio::ActivationToken token;
 
     signal(SIGINT, pigpio::ActivationToken::please_stop);
     signal(SIGTERM, pigpio::ActivationToken::please_stop);

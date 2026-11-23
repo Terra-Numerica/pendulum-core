@@ -24,7 +24,7 @@ constexpr auto LABEL_COLOR = C_BR_BLUE;
 static int run(const PendulumConfig &config) {
     namespace pc = pendulum_core;
 
-    pigpio::ActivationToken token;
+    const pigpio::ActivationToken token;
 
     std::cout
             << C_HEADER

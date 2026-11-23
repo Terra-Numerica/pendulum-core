@@ -42,7 +42,7 @@ static int run(const PendulumConfig &config) {
     namespace pc = pendulum_core;
 
     try {
-        pigpio::ActivationToken token;
+        const pigpio::ActivationToken token;
 
         signal(SIGINT, pigpio::ActivationToken::please_stop);
         signal(SIGTERM, pigpio::ActivationToken::please_stop);
