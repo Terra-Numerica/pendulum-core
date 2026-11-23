@@ -12,6 +12,8 @@ namespace {
 
     // Constraints specific to this hardware / protocol
     constexpr InRange<int> GPIO_PIN{1, 26};
+    // Upper bound of the pigpio glitch filter delay (microseconds)
+    constexpr InRange<int> GLITCH_FILTER_US{0, 300000};
 
     SwitchConfig parse_switch(const ConfigNode &n) {
         const SwitchConfig s = {
@@ -27,6 +29,7 @@ namespace {
         e.pin_a = n.get_required<int>("pin_a", GPIO_PIN);
         e.pin_b = n.get_required<int>("pin_b", GPIO_PIN);
         e.steps_per_turn = n.get_required<int>("steps_per_turn", positive);
+        e.glitch_filter_us = n.get_or<int>("glitch_filter_us", 0, GLITCH_FILTER_US);
         n.ensure(e.pin_a != e.pin_b, "pin_b", "must be different from pin_a");
     }
 
@@ -135,6 +138,8 @@ std::string get_pendulum_config_example() {
             "  # Pins corresponding to the two phases of the encoder.\n"
             "  pin_a: 20\n"
             "  pin_b: 21\n"
+            "  # micro-second window for pigpio glitch filter (default: 0, disabled)\n"
+            "  glitch_filter_us: 0\n"
             "\n"
             "# Configuration of the angle encoder (the one that acts as\n"
             "# the pivot for the rod).\n"
@@ -142,6 +147,8 @@ std::string get_pendulum_config_example() {
             "  # Pins corresponding to the two phases of the encoder.\n"
             "  pin_a: 26\n"
             "  pin_b: 19\n"
+            "  # micro-second window for pigpio glitch filter (default: 0, disabled)\n"
+            "  glitch_filter_us: 0\n"
             "\n"
             "# Configuration of the motor.\n"
             "motor:\n"

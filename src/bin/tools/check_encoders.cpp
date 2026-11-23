@@ -63,10 +63,10 @@ static int run(const PendulumConfig &config) {
         const auto &angle_cfg = config.angle_encoder;
         const auto position_encoder = std::make_unique<pc::PositionEncoder>(
             position_cfg.pin_a, position_cfg.pin_b, position_cfg.steps_per_turn,
-            position_cfg.belt_module_mm, position_cfg.pulley_teeth_count
+            position_cfg.belt_module_mm, position_cfg.pulley_teeth_count, position_cfg.glitch_filter_us
         );
         const auto angle_encoder = std::make_unique<pc::AngleEncoder>(
-            angle_cfg.pin_a, angle_cfg.pin_b, angle_cfg.steps_per_turn
+            angle_cfg.pin_a, angle_cfg.pin_b, angle_cfg.steps_per_turn, angle_cfg.glitch_filter_us
         );
         constexpr auto POLLING_PERIOD_MS = 100;
 

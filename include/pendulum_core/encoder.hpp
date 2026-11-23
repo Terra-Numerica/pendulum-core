@@ -21,8 +21,12 @@ namespace pendulum_core {
          * @param gpio_a the pin connected to the first phase.
          * @param gpio_b the pin connected to the second phase.
          * @param steps_per_turn physical steps count per turn
+         * @param glitch_filter_us pigpio glitch filter delay (in microseconds) applied to both phases: a level
+         *   change is reported only if the signal stays stable for that duration. Zero (default) disables it.
+         * @warning The delay must stay well below the shortest interval between two phase edges at the maximum
+         *   rotation speed, otherwise real steps are lost.
          */
-        Encoder(int gpio_a, int gpio_b, int steps_per_turn);
+        Encoder(int gpio_a, int gpio_b, int steps_per_turn, unsigned int glitch_filter_us = 0);
 
         // Prevent the user from making copies of an Encoder.
         Encoder(const Encoder &) = delete;
@@ -219,8 +223,9 @@ namespace pendulum_core {
     /// A specialized encoder that returns the angular position of the pendulum.
     class AngleEncoder : public Encoder {
     public:
-        AngleEncoder(const int gpio_a, const int gpio_b, const int steps_per_turn)
-            : Encoder(gpio_a, gpio_b, steps_per_turn) {
+        AngleEncoder(const int gpio_a, const int gpio_b, const int steps_per_turn,
+                     const unsigned int glitch_filter_us = 0)
+            : Encoder(gpio_a, gpio_b, steps_per_turn, glitch_filter_us) {
         }
 
         /// Returns the absolute angle in radians
@@ -231,8 +236,9 @@ namespace pendulum_core {
     class PositionEncoder : public Encoder {
     public:
         PositionEncoder(const int gpio_a, const int gpio_b, const int steps_per_turn,
-                        const double belt_module, const int pulley_teeth_count)
-            : Encoder(gpio_a, gpio_b, steps_per_turn),
+                        const double belt_module, const int pulley_teeth_count,
+                        const unsigned int glitch_filter_us = 0)
+            : Encoder(gpio_a, gpio_b, steps_per_turn, glitch_filter_us),
               belt_module_(belt_module),
               pulley_teeth_count_(pulley_teeth_count) {
         }

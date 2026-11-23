@@ -28,7 +28,8 @@ namespace pendulum_core {
     Encoder::Encoder(
         const int gpio_a,
         const int gpio_b,
-        const int steps_per_turn
+        const int steps_per_turn,
+        const unsigned int glitch_filter_us
     )
         : pin_a_(gpio_a)
           , pin_b_(gpio_b)
@@ -65,6 +66,12 @@ namespace pendulum_core {
         a_current_ = a_past_ = PIGPIO_CHECKED_CALL(gpioRead(pin_a_));
         b_current_ = b_past_ = PIGPIO_CHECKED_CALL(gpioRead(pin_b_));
         PENDULUM_CORE_DBG("Encoder initial levels: A=" << a_current_ << " B=" << b_current_);
+
+        // Ignore the level changes shorter than the requested delay (electrical noise)
+        if (glitch_filter_us > 0) {
+            PIGPIO_CHECKED_CALL(gpioGlitchFilter(pin_a_, glitch_filter_us));
+            PIGPIO_CHECKED_CALL(gpioGlitchFilter(pin_b_, glitch_filter_us));
+        }
 
         // Setup interrupts so that we handle the rotation without polling.
         PIGPIO_CHECKED_CALL(gpioSetAlertFuncEx(pin_a_, pulse_static, this));
