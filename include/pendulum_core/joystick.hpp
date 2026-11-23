@@ -32,8 +32,8 @@ namespace pendulum_core {
 
     private:
         int joy_file_descriptor_; ///< File descriptor to read the joystick state.
-        std::vector<int> axes_; ///< Stores the state of each axis.
-        std::vector<int> buttons_; ///< Stores the state of each button.
+        std::vector<int> axes_{}; ///< Stores the state of each axis.
+        std::vector<int> buttons_{}; ///< Stores the state of each button.
         std::string joy_name_; ///< Name of the joystick.
         js_event joy_event_; ///< Used to read joystick events.
     };

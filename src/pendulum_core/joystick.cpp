@@ -81,6 +81,7 @@ namespace pendulum_core {
                 break;
             }
             // We got an event, process it!
+            // NOLINTNEXTLINE(bugprone-branch-clone): same statement shape, but different target containers
             if (joy_event_.type == JS_EVENT_AXIS) {
                 axes_.at(joy_event_.number) = joy_event_.value;
                 something_changed = true;
