@@ -70,12 +70,20 @@ static int run(const PendulumConfig &config) {
         );
         constexpr auto POLLING_PERIOD_MS = 100;
 
+        const auto glitch_filter_setting = [](const int value) {
+            return value ? std::to_string(value) + " us" : std::string("OFF");
+        };
+
         std::cout << C_HEADER << "Configuration :" << C_RESET << std::endl;
         std::cout << LABEL_COLOR << "- position : " << C_RESET
-                << "A->GPIO " << position_encoder->pin_a() << " - B->GPIO " << position_encoder->pin_b()
+                << "A -> GPIO " << position_encoder->pin_a()
+                << " - B -> GPIO " << position_encoder->pin_b()
+                << " - glitch filter : " << glitch_filter_setting(position_cfg.glitch_filter_us)
                 << std::endl;
         std::cout << LABEL_COLOR << "- angle    : " << C_RESET
-                << "A->GPIO " << angle_encoder->pin_a() << " - B->GPIO " << angle_encoder->pin_b()
+                << "A -> GPIO " << angle_encoder->pin_a()
+                << " - B -> GPIO " << angle_encoder->pin_b()
+                << " - glitch filter : " << glitch_filter_setting(angle_cfg.glitch_filter_us)
                 << std::endl;
 
         std::cout << std::endl

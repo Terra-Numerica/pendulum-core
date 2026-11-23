@@ -28,11 +28,12 @@ position_encoder:
   pin_b: 21
   # IMPORTANT: as per datasheet, not taking into account the x4 decoding method
   steps_per_turn: 600
+  # micro-second window for pigpio glitch filter (default: 0 => no filter)
+  #glitch_filter_us: 20
   # Mechanical specifications of the timing belt and pulley.
   # (for steps -> position conversion)
   belt_module_mm: 2.0
   pulley_teeth_count: 20
-
 
 # Configuration of the angle encoder (the one that acts as
 # the pivot for the rod).
@@ -42,6 +43,8 @@ angle_encoder:
   pin_b: 19
   # IMPORTANT: as per datasheet, not taking into account the x4 decoding method
   steps_per_turn: 600
+  # micro-second window for pigpio glitch filter (default: 0 => no filter)
+  #glitch_filter_us: 20
 
 # Configuration of the motor.
 motor:
