@@ -4,3 +4,6 @@
 /deps/
 /doc/
 .idea/
+
+# Local session handoff notes
+/HANDOFF.md

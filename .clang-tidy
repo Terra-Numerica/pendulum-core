@@ -12,8 +12,9 @@ Checks: >
   performance-unnecessary-copy-initialization,
   performance-noexcept-move-constructor,
   readability-redundant-member-init,
-  readability-const-return-type
+  readability-const-return-type,
+  modernize-avoid-c-arrays
 
 WarningsAsErrors: ''
-HeaderFilterRegex: '.*'
+HeaderFilterRegex: '.*/(include|src)/.*'
 FormatStyle: file
