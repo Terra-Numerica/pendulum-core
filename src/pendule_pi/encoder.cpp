@@ -36,23 +36,20 @@ namespace pendule_pi {
           , upper_cb_(nullptr) {
         PENDULE_PI_DBG("Creating Encoder on pins " << pin_a_ << " and " << pin_b_);
         // Configure the pins using pigpio
-        PiGPIO_RUN_VOID(gpioSetMode, pin_a_, PI_INPUT);
-        PiGPIO_RUN_VOID(gpioSetMode, pin_b_, PI_INPUT);
+        PIGPIO_CHECKED_CALL(gpioSetMode(pin_a_, PI_INPUT));
+        PIGPIO_CHECKED_CALL(gpioSetMode(pin_b_, PI_INPUT));
 
         // This assumes that the phases are common grounded.
-        PiGPIO_RUN_VOID(gpioSetPullUpDown, pin_a_, PI_PUD_UP);
-        PiGPIO_RUN_VOID(gpioSetPullUpDown, pin_b_, PI_PUD_UP);
+        PIGPIO_CHECKED_CALL(gpioSetPullUpDown(pin_a_, PI_PUD_UP));
+        PIGPIO_CHECKED_CALL(gpioSetPullUpDown(pin_b_, PI_PUD_UP));
 
         // Setup interrupts so that we handle the rotation without polling.
-        PiGPIO_RUN_VOID(gpioSetAlertFuncEx, pin_a_, pulseStatic, this);
-        PiGPIO_RUN_VOID(gpioSetAlertFuncEx, pin_b_, pulseStatic, this);
+        PIGPIO_CHECKED_CALL(gpioSetAlertFuncEx(pin_a_, pulseStatic, this));
+        PIGPIO_CHECKED_CALL(gpioSetAlertFuncEx(pin_b_, pulseStatic, this));
 
         // initialize properly the pin reading
-        int level; // NOTE: use an int otherwise the comparison 'if(retval<0)' inside PiGPIO_RUN does not make sense!
-        PiGPIO_RUN(level, gpioRead, pin_a_);
-        a_current_ = a_past_ = level;
-        PiGPIO_RUN(level, gpioRead, pin_b_);
-        b_current_ = b_past_ = level;
+        a_current_ = a_past_ = PIGPIO_CHECKED_CALL(gpioRead(pin_a_));
+        b_current_ = b_past_ = PIGPIO_CHECKED_CALL(gpioRead(pin_b_));
         PENDULE_PI_DBG("Encoder created successfully");
     }
 

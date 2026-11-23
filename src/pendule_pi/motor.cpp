@@ -14,9 +14,9 @@ namespace pendule_pi {
           , pwm_(0) {
         PENDULE_PI_DBG("Creating Motor on pins " << pwm_pin_ << " and " << dir_pin_);
         // Set the direction pin in output mode. No need to do it with the PWM.
-        PiGPIO_RUN_VOID(gpioSetMode, dir_pin_, PI_OUTPUT);
+        PIGPIO_CHECKED_CALL(gpioSetMode(dir_pin_, PI_OUTPUT));
         // Make sure the PWM starts at zero.
-        PiGPIO_RUN_VOID(gpioPWM, pwm_pin_, 0);
+        PIGPIO_CHECKED_CALL(gpioPWM(pwm_pin_, 0));
         PENDULE_PI_DBG("Motor created successfully");
     }
 
@@ -38,11 +38,11 @@ namespace pendule_pi {
         const int pwm
     ) {
         if (pwm > 0) {
-            PiGPIO_RUN_VOID(gpioWrite, dir_pin_, PI_HIGH);
-            PiGPIO_RUN_VOID(gpioPWM, pwm_pin_, pwm);
+            PIGPIO_CHECKED_CALL(gpioWrite(dir_pin_, PI_HIGH));
+            PIGPIO_CHECKED_CALL(gpioPWM(pwm_pin_, pwm));
         } else {
-            PiGPIO_RUN_VOID(gpioWrite, dir_pin_, PI_LOW);
-            PiGPIO_RUN_VOID(gpioPWM, pwm_pin_, -pwm);
+            PIGPIO_CHECKED_CALL(gpioWrite(dir_pin_, PI_LOW));
+            PIGPIO_CHECKED_CALL(gpioPWM(pwm_pin_, -pwm));
         }
         pwm_ = pwm;
     }

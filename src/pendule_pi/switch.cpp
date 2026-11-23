@@ -22,11 +22,11 @@ namespace pendule_pi {
             ". Internal resistor: " << (use_internal_pull_resistor?"YES":"NO"));
 
         // put the pin in input mode
-        PiGPIO_RUN_VOID(gpioSetMode, pin, PI_INPUT);
+        PIGPIO_CHECKED_CALL(gpioSetMode(pin, PI_INPUT));
         // (de)activate the pull-up/pull-down resistor as requested
         const auto pull_mode = use_internal_pull_resistor ? (normally_up ? PI_PUD_UP : PI_PUD_DOWN) : PI_PUD_OFF;
-        PiGPIO_RUN_VOID(gpioSetPullUpDown, pin, pull_mode);
-        PiGPIO_RUN_VOID(gpioGlitchFilter, pin, debounce_us);
+        PIGPIO_CHECKED_CALL(gpioSetPullUpDown(pin, pull_mode));
+        PIGPIO_CHECKED_CALL(gpioGlitchFilter(pin, debounce_us));
 
         PENDULE_PI_DBG("Switch created");
     }
@@ -60,9 +60,7 @@ namespace pendule_pi {
 
 
     bool Switch::atRest() const {
-        int val;
-        PiGPIO_RUN(val, gpioRead, pin_);
-        return val == at_rest_;
+        return PIGPIO_CHECKED_CALL(gpioRead(pin_)) == at_rest_;
     }
 
 

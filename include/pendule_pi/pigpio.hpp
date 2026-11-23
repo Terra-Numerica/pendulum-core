@@ -9,38 +9,17 @@
 #include <pigpio.h>
 
 
-/// Wrapper macro that throws a PiGPIOError if the given pigpio function fails.
-/** This macro wraps over pigpio functions so that an exception is thrown upon
-  * return of a negative error code. As an example, you can write:
+/// Runs a pigpio call and throws a pigpio::Exception if it returns a negative error code.
+/** The macro evaluates to the value returned by the call, so that you can write:
   * ```
-  * int state;
-  * PiGPIO_RUN(state, gpioRead, 10);
+  * PIGPIO_CHECKED_CALL(gpioSetMode(10, PI_OUTPUT));
+  * const int level = PIGPIO_CHECKED_CALL(gpioRead(10));
   * ```
-  * Which is almost equivalent to
-  * ```
-  * int state;
-  * state = gpioRead(10);
-  * ```
-  * The difference is that in the first case if `gpioRead` returns a negative
-  * value then a PiGPIOError is thrown.
-  * @param retval an integer variable used to store the result of the function
-  *   call.
-  * @param func the pigpio function to be run.
-  * @param ... arguments to be passed to func.
+  * The text of the call is used in the message of the exception.
+  * @param call the pigpio function call, with its arguments.
+  * @see pigpio::check() for the function this macro relies on.
   */
-#define PiGPIO_RUN(retval, func, ...) { retval = func(__VA_ARGS__); if(retval < 0) throw pigpio::Exception(#func, retval); }
-
-/// Wrapper macro that throws a PiGPIOError if the given pigpio function fails.
-/** Similar to PiGPIO_RUN(retval, func, ...), but it acts as if the pigpio
-  * function to be called was void. With this macro, you can write codes like:
-  * ```
-  * PiGPIO_RUN_VOID(gpioSetMode, 10, PI_OUTPUT); // amost equal to gpioSetMode(10, PI_INPUT);
-  * PiGPIO_RUN_VOID(gpioWrite, 10, PI_HIGH); // amost equal to gpioWrite(10, PI_HIGH);
-  * ```
-  * @param func the pigpio function to be run.
-  * @param ... arguments to be passed to func.
-  */
-#define PiGPIO_RUN_VOID(func, ...) { int retval; PiGPIO_RUN(retval, func, __VA_ARGS__); }
+#define PIGPIO_CHECKED_CALL(call) pigpio::check((call), #call)
 
 
 /// Namespace grouping the "extra" pigpio functionalities.
@@ -78,6 +57,18 @@ namespace pigpio {
         /// Map from a pigpio's error code to its human-readable name.
         static const std::map<int, std::string> ERROR_CODES;
     };
+
+    /// Throws a pigpio::Exception if a pigpio function returned a negative error code.
+    /** @param return_code the value returned by the pigpio function.
+      * @param what text describing the call that returned return_code, used in the message of the exception.
+      * @return return_code, if it is not negative.
+      */
+    inline int check(const int return_code, const char *what) {
+        if (return_code < 0) {
+            throw Exception(what, return_code);
+        }
+        return return_code;
+    }
 
     /// Utility class that activates and deactivates the pigpio library.
     /** This class helps to initialize and terminate the pigpio library.

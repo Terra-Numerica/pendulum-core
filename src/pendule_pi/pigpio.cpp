@@ -46,7 +46,7 @@ namespace pigpio {
         active_token = this;
         // Initialize the pigpio library
         PENDULE_PI_DBG("ActivationToken: initializing");
-        PiGPIO_RUN_VOID(gpioInitialise);
+        PIGPIO_CHECKED_CALL(gpioInitialise());
         // NOTE: it is VERY important that the signal handlers are assigned after
         // attempting to call gpioInitialise()!
         if (register_sigint)
