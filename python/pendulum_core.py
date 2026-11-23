@@ -1,121 +1,137 @@
 #!/usr/bin/env python3
-import zmq
 import time
 
+import zmq
 
-## Python class that provides a bridge to the low-level interface.
-# This Python class allows one to communicate with the low-level interface
-# using two TCP sockets (one to receive the current state of the pendulum,
-# one to send actuation commands).
+
 class PendulumPyClient:
-  ## Number of state coordinates.
-  N_STATES = 5
+    """Bridge to the low-level interface.
 
-  ## Constructor, initializes socket connections.
-  # Connections are established at `tcp://[host]:[port]`. The
-  # @param host string that tells the host for the socket.
-  # @param state_port port of the socket that is used to read the current
-  #   state of the pendulum.
-  # @param command_port port of the socket that is used to send commands to
-  #   the low-level interface.
-  # @param wait time to wait for the interface, in seconds. If less than or
-  #   equal to zero, wait indefinitely. If positive, the constructor will check
-  #   if a message is available every second, until wait seconds have elapsed.
-  #   If no message is received within the allotted time, an exception will be
-  #   thrown.
-  def __init__(self, host="localhost", state_port="10001", command_port="10002", wait=-1):
-    # ZeroMQ entrypoint.
-    self._context = zmq.Context()
-    # Socket to send commands to the low-level interface.
-    self._command_pub = self._context.socket(zmq.PUB)
-    self._command_pub.connect(f"tcp://{host}:{command_port}")
-    # Socket to receive the current state from the low-level interface.
-    self._state_sub = self._context.socket(zmq.SUB)
-    self._state_sub.set(zmq.CONFLATE, 1)
-    self._state_sub.connect(f"tcp://{host}:{state_port}")
-    self._state_sub.subscribe("")
-    # Initialize the state
-    self._time = None
-    self._position = None
-    self._angle = None
-    self._linvel = None
-    self._angvel = None
-    # Wait for the low-level interface to be up and running.
-    if wait <= 0:
-      # Wait indefinitely for the first message.
-      self.readState(blocking=True)
-    else:
-      # Wait for the given amount of time.
-      elapsed = 0
-      while elapsed < wait:
-        # Wait one second.
-        time.sleep(1)
-        # Check if it is possible to read a message.
-        if self.readState(blocking=False):
-          # A message was received: exit!
-          break
-        elapsed += 1
-      # Did we exit due to a received message? If not, throw!
-      if elapsed >= wait:
-        raise RuntimeError("PendulumPyClient: failed to establish a connection with the low-level interface within the allotted time.")
+    Communicates with the low-level interface using two TCP sockets (one to
+    receive the current state of the pendulum, one to send actuation commands).
+    Mirrors the C++ `PendulumCppClient`.
+    """
 
-  ## Allows to access the current time of the pendulum.
-  @property
-  def time(self):
-    return self._time
+    DEFAULT_HOST = "localhost"
+    DEFAULT_STATE_PORT = 10001
+    DEFAULT_COMMAND_PORT = 10002
 
-  ## Allows to access the current position of the pendulum.
-  @property
-  def position(self):
-    return self._position
+    # Number of state coordinates.
+    N_STATES = 5
 
-  ## Allows to access the current angle of the pendulum.
-  @property
-  def angle(self):
-    return self._angle
+    def __init__(self, host=DEFAULT_HOST, state_port=DEFAULT_STATE_PORT, command_port=DEFAULT_COMMAND_PORT, wait=-1):
+        """Initializes socket connections.
 
-  ## Allows to access the current linear velocity of the pendulum.
-  @property
-  def linvel(self):
-    return self._linvel
+        Connections are established at `tcp://[host]:[port]`.
 
-  ## Allows to access the current angular velocity of the pendulum.
-  @property
-  def angvel(self):
-    return self._angvel
+        :param host: host for the sockets.
+        :param state_port: port of the socket used to read the current state of the pendulum.
+        :param command_port: port of the socket used to send commands to the low-level interface.
+        :param wait: time to wait for the interface, in seconds. If less than or equal to zero,
+            wait indefinitely. If positive, check every second if a message is available, until
+            `wait` seconds have elapsed. If no message is received within the allotted time, a
+            `RuntimeError` is raised.
+        """
+        self._context = zmq.Context()
+        # Socket to send commands to the low-level interface.
+        self._command_pub = self._context.socket(zmq.PUB)
+        self._command_pub.connect(f"tcp://{host}:{command_port}")
+        # Socket to receive the current state from the low-level interface.
+        self._state_sub = self._context.socket(zmq.SUB)
+        self._state_sub.set(zmq.CONFLATE, 1)
+        self._state_sub.connect(f"tcp://{host}:{state_port}")
+        self._state_sub.subscribe("")
 
-  ## Tries to read the state of the pendulum from the interface.
-  # @param blocking if `True`, do not exit until a message has been received from
-  #   the socket. If `False`, exit immediately if no messages are received.
-  # @return `True` if a message has been received and processed. Note that if
-  #   the call is blocking, the function should always return `True`.
-  # @note While by default the parameter `blocking` is set to `True`, we
-  #   recommend to always pass it as keyword argument, *e.g.*,
-  #   `p.readState(blocking=True)`. In this way, it is always clear whether
-  #   the call is blocking or not.
-  def readState(self, blocking=True):
-    if blocking:
-      # Wait for a string message from the socket.
-      msg = self._state_sub.recv_string()
-    else:
-      try:
-        # Read a string message from the socket - if none is available, throw!
-        msg = self._state_sub.recv_string(flags=zmq.NOBLOCK)
-      except zmq.Again:
-        # No message has been received from the socket.
-        return False
-    # Split the string message into parts. Each part should be a float.
-    parts = msg.split(" ")
-    # Check that the number of parts is correct, and throw otherwise.
-    if len(parts) != PendulumPyClient.N_STATES:
-      raise RuntimeError(f"Malformed state message received. Expected {PendulumPyClient.N_STATES} values, got {len(parts)}. Message: {msg}")
-    # Convert each part (which is still a string) into a float.
-    self._time, self._position, self._angle, self._linvel, self._angvel = map(float, parts)
-    # State read successfully.
-    return True
+        self._time = None
+        self._position = None
+        self._angle = None
+        self._linear_velocity = None
+        self._angular_velocity = None
 
-  ## Send a PWM command to the low-level interface.
-  # @param pwm the PWM signal to be sent. It should be an integer between -255
-  #   and 255. The parameter is cast to `int` before being sent.
-  def sendCommand(self, pwm):
-    self._command_pub.send_string(str(int(pwm)))
+        # Wait for the low-level interface to be up and running.
+        if wait <= 0:
+            self.read_state(blocking=True)
+        else:
+            for _ in range(int(wait)):
+                time.sleep(1)
+                if self.read_state(blocking=False):
+                    break
+            else:
+                self.close()
+                raise RuntimeError(
+                    "PendulumPyClient: failed to establish a connection with the low-level interface "
+                    "within the allotted time."
+                )
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()
+
+    def close(self):
+        """Closes the sockets and terminates the ZeroMQ context."""
+        self._context.destroy(linger=0)
+
+    @property
+    def time(self):
+        """Current time of the pendulum."""
+        return self._time
+
+    @property
+    def position(self):
+        """Current position of the pendulum."""
+        return self._position
+
+    @property
+    def angle(self):
+        """Current angle of the pendulum."""
+        return self._angle
+
+    @property
+    def linear_velocity(self):
+        """Current linear velocity of the pendulum."""
+        return self._linear_velocity
+
+    @property
+    def angular_velocity(self):
+        """Current angular velocity of the pendulum."""
+        return self._angular_velocity
+
+    def read_state(self, blocking=True):
+        """Tries to read the state of the pendulum from the interface.
+
+        While `blocking` is `True` by default, it is recommended to always pass it as a keyword
+        argument, *e.g.* `p.read_state(blocking=True)`, so that it is clear whether the call is
+        blocking or not.
+
+        :param blocking: if `True`, do not return until a message has been received. If `False`,
+            return immediately if no message is available.
+        :return: `True` if a message has been received and processed. If the call is blocking,
+            it always returns `True`.
+        """
+        if blocking:
+            msg = self._state_sub.recv_string()
+        else:
+            try:
+                msg = self._state_sub.recv_string(flags=zmq.NOBLOCK)
+            except zmq.Again:
+                return False
+
+        # Each part of the message should be a float.
+        parts = msg.split(" ")
+        if len(parts) != self.N_STATES:
+            raise RuntimeError(
+                f"Malformed state message received. Expected {self.N_STATES} values, got {len(parts)}. "
+                f"Message: {msg}"
+            )
+        self._time, self._position, self._angle, self._linear_velocity, self._angular_velocity = map(float, parts)
+        return True
+
+    def send_command(self, pwm):
+        """Sends a PWM command to the low-level interface.
+
+        :param pwm: the PWM signal to be sent, an integer between -255 and 255.
+            It is cast to `int` before being sent.
+        """
+        self._command_pub.send_string(str(int(pwm)))
