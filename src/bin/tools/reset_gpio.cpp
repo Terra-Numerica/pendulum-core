@@ -6,7 +6,7 @@
 #include <pigpio.h>
 #include <pendulum_cli/cli_parser.hpp>
 #include <pendulum_core/pendulum_config.hpp>
-#include <pendulum_core/colors.h>
+#include <pendulum_core/ansi_term.h>
 
 static int do_reset(const PendulumConfig &config) {
     // check if we are root

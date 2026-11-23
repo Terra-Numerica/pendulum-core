@@ -9,7 +9,7 @@
 #include <cstdlib>
 
 #include <pendulum_cli/cli_parser.hpp>
-#include <pendulum_core/colors.h>
+#include <pendulum_core/ansi_term.h>
 #include <pendulum_core/pendulum_config.hpp>
 #include <pendulum_core/pigpio.hpp>
 #include <pendulum_core/encoder.hpp>
@@ -104,6 +104,8 @@ static int run(const PendulumConfig &config) {
         auto last_position = position_encoder->raw_steps();
         auto last_angle = angle_encoder->raw_steps();
 
+        std::cout << CURSOR_OFF << std::flush;
+
         while (true) {
             const auto position = position_encoder->raw_steps();
             const auto angle = angle_encoder->raw_steps();
@@ -115,7 +117,7 @@ static int run(const PendulumConfig &config) {
                     << LABEL_COLOR << "(legend: "
                     << POS_COLOR << "INC" << C_RESET
                     << " "
-                    << NEG_COLOR << "DEC" << LABEL_COLOR << ")  " << C_RESET;
+                    << NEG_COLOR << "DEC" << LABEL_COLOR << ")" << C_RESET;
             std::cout.flush();
 
             last_position = position;
@@ -124,9 +126,9 @@ static int run(const PendulumConfig &config) {
             std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_PERIOD_MS));
         }
     } catch (const pigpio::ActivationToken::PleaseStop &) {
-        std::cout << std::endl << C_YELLOW << "Termination signal received, terminating..." << std::endl;
+        std::cout << HIDE_CTRL_C << std::endl << C_YELLOW << "Termination signal received, terminating..." << std::endl;
     }
-    std::cout << C_RESET;
+    std::cout << CURSOR_ON << C_RESET << std::flush;
     return EXIT_SUCCESS;
 }
 

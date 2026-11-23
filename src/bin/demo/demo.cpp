@@ -4,7 +4,7 @@
 #include <csignal>
 #include <yaml-cpp/yaml.h>
 #include "../common/utils.hpp"
-#include <pendulum_core/colors.h>
+#include <pendulum_core/ansi_term.h>
 #include <pendulum_core/joystick.hpp>
 #include <pendulum_core/pendulum_cpp_client.hpp>
 #include <pendulum_cli/cli_parser.hpp>
@@ -72,8 +72,8 @@ static void display_status_line(
     std::cout << CLEAR_LINE << "\r[ Mode: " << C_CYAN << std::setw(7) << std::left << to_string(control_mode) << C_RESET
             << " ] [ LQR range: ";
 
-    std::string msg;
-    std::string color;
+    std::string msg; // NOLINT(*-init-variables)
+    std::string color; // NOLINT(*-init-variables)
 
     const double e_theta_deg = e_theta * 180.0 / M_PI;
 
@@ -105,7 +105,7 @@ static void display_status_line(
         msg = "---";
         color = C_RESET;
     }
-    std::cout << color << std::setw(3) << msg << C_RESET << " ] " << std::flush;
+    std::cout << color << std::setw(3) << msg << C_RESET << " ]  " << std::flush;
 }
 
 namespace {
@@ -297,6 +297,8 @@ static int run(const DemoConfig &config) {
     // (used to add an hysteresis to the LQR/swing-up transition)
     bool stabilizing = false;
 
+    std::cout << CURSOR_OFF << std::flush;
+
     // Main loop!
     while (keep_running) {
         constexpr double target_angle = M_PI;
@@ -462,13 +464,13 @@ static int run(const DemoConfig &config) {
     } // end of the main loop
 
     pendulum.send_command(0);
-    std::cout << C_RESET << std::endl;
+    std::cout << CURSOR_ON << C_RESET << std::flush;
 
     return EXIT_SUCCESS;
 }
 
 int main(const int argc, char **argv) {
-    int exit_code = EXIT_SUCCESS;
+    int exit_code = EXIT_SUCCESS; // NOLINT(*-const-correctness)
     const auto cli_options = parse_cli(
         {
             .description = "Pendulum demonstrator",

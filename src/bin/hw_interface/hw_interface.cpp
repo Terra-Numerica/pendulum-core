@@ -7,7 +7,7 @@
 
 
 #include <pendulum_cli/cli_parser.hpp>
-#include <pendulum_core/colors.h>
+#include <pendulum_core/ansi_term.h>
 #include <pendulum_core/pendulum_config.hpp>
 #include <pendulum_core/pigpio.hpp>
 #include <pendulum_core/pendulum.hpp>

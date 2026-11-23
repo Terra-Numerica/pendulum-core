@@ -8,7 +8,7 @@
 
 #include "pendulum_core/pendulum.hpp"
 
-#include "pendulum_core/colors.h"
+#include "pendulum_core/ansi_term.h"
 #include "pendulum_core/debug.hpp"
 #include "pendulum_core/pigpio.hpp"
 // clang-format on

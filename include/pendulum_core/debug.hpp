@@ -1,6 +1,6 @@
 #pragma once
 #include <iostream>
-#include "colors.h"
+#include "ansi_term.h"
 
 #ifdef PENDULUM_CORE_DEBUG_ENABLED
 #define PENDULUM_CORE_DBG(x) {std::cout << C_GREEN << "[DEBUG] " << C_RESET << x << std::endl;}
