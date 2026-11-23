@@ -70,7 +70,7 @@ namespace digital_filters {
           * @param input value \f$ x^\star \f$ to be used to initialize all samples,
           *   *i.e.*, \f$ x_{k}=x^\star, x_{k-1}=x^\star, x_{k-2}=x^\star, \cdots \f$.
           */
-        void initInput(
+        void init_input(
             const DataType &input
         );
 
@@ -86,7 +86,7 @@ namespace digital_filters {
           *   that the number of required values equals the dimension of the
           *   numerator minus one.
           */
-        void initInput(
+        void init_input(
             const std::vector<DataType> &input
         );
 
@@ -98,7 +98,7 @@ namespace digital_filters {
           * @param output value \f$ y^\star \f$ to be used to initialize all samples,
           *   *i.e.*, \f$ y_{k-1}=y^\star, y_{k-2}=y^\star, \cdots \f$.
           */
-        void initOutput(
+        void init_output(
             const DataType &output
         );
 
@@ -113,7 +113,7 @@ namespace digital_filters {
           *   that the number of required values equals the dimension of the
           *   denominator minus one.
           */
-        void initOutput(
+        void init_output(
             const std::vector<DataType> &output
         );
 

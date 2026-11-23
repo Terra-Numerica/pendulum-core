@@ -164,14 +164,14 @@ static int run(const Filters &filters, const PendulumConfig &config) {
 
     // configure the filters with the initial conditions
 
-    filters.position->initInput(pendule->position());
-    filters.position->initOutput(pendule->position());
-    filters.angle->initInput(pendule->angle());
-    filters.angle->initOutput(pendule->angle());
-    filters.linear_velocity->initInput(0.0);
-    filters.linear_velocity->initOutput(0.0);
-    filters.angular_velocity->initInput(0.0);
-    filters.angular_velocity->initOutput(0.0);
+    filters.position->init_input(pendule->position());
+    filters.position->init_output(pendule->position());
+    filters.angle->init_input(pendule->angle());
+    filters.angle->init_output(pendule->angle());
+    filters.linear_velocity->init_input(0.0);
+    filters.linear_velocity->init_output(0.0);
+    filters.angular_velocity->init_input(0.0);
+    filters.angular_velocity->init_output(0.0);
 
     // ready to run now
 

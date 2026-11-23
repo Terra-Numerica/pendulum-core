@@ -33,12 +33,12 @@ namespace digital_filters {
     Filter<DataType, CoeffType> Filter<DataType, CoeffType>::operator*(
         const Filter &other
     ) const {
-        return Filter(polyProd(b_, other.b_), polyProd(a_, other.a_));
+        return Filter(poly_prod(b_, other.b_), poly_prod(a_, other.a_));
     }
 
 
     template<class DataType, class CoeffType>
-    void Filter<DataType, CoeffType>::initInput(
+    void Filter<DataType, CoeffType>::init_input(
         const DataType &input
     ) {
         for (auto &val: in_)
@@ -47,13 +47,13 @@ namespace digital_filters {
 
 
     template<class DataType, class CoeffType>
-    void Filter<DataType, CoeffType>::initInput(
+    void Filter<DataType, CoeffType>::init_input(
         const std::vector<DataType> &input
     ) {
         // check sizes
         if (input.size() != in_.size() - 1) {
             throw std::runtime_error(
-                "Filter::initInput: 'input' has " + std::to_string(input.size() - 1) +
+                "Filter::init_input: 'input' has " + std::to_string(input.size() - 1) +
                 " elements, but only " + std::to_string(in_.size() - 1) +
                 " elements are allowed"
             );
@@ -65,7 +65,7 @@ namespace digital_filters {
 
 
     template<class DataType, class CoeffType>
-    void Filter<DataType, CoeffType>::initOutput(
+    void Filter<DataType, CoeffType>::init_output(
         const DataType &output
     ) {
         for (auto &val: out_)
@@ -74,13 +74,13 @@ namespace digital_filters {
 
 
     template<class DataType, class CoeffType>
-    void Filter<DataType, CoeffType>::initOutput(
+    void Filter<DataType, CoeffType>::init_output(
         const std::vector<DataType> &output
     ) {
         // check sizes
         if (output.size() != out_.size() - 1) {
             throw std::runtime_error(
-                "Filter::initOutput: 'output' has " + std::to_string(output.size() - 1) +
+                "Filter::init_output: 'output' has " + std::to_string(output.size() - 1) +
                 " elements, but only " + std::to_string(out_.size() - 1) +
                 " elements are allowed"
             );

@@ -14,7 +14,7 @@ namespace digital_filters {
       *   `[ a0*b0, a1*b0, a0*b2, a1*b2 ]`.
       */
     template<class Scalar>
-    std::vector<Scalar> polyProd(
+    std::vector<Scalar> poly_prod(
         const std::vector<Scalar> &p1,
         const std::vector<Scalar> &p2
     );
