@@ -96,4 +96,10 @@ DemoConfig load_demo_config(const std::string &path);
 
 DemoConfig parse_demo_config(const std::string &yaml_text);
 
+/**
+ * Returns the content of config/demo.yaml, used as the example configuration.
+ *
+ * There is no definition in the sources: it is generated at build time by cmake/embed_text.cmake
+ * (see embed_text_function() in CMakeLists.txt), in <build dir>/generated/.
+ */
 std::string get_demo_config_example();

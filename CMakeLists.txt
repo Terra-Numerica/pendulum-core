@@ -20,6 +20,25 @@ find_package(Threads REQUIRED)
 # (Release = -O3 -DNDEBUG).
 add_compile_options(-Wall)
 
+# Embeds a text file (typically an example configuration kept in config/) into a target: generates a source file
+# defining `std::string <function>()`, declared in <header>, which returns the content of the file. The generated
+# file is rebuilt whenever the text file changes, so that the embedded copy cannot drift from the original.
+set(EMBED_TEXT_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/cmake/embed_text.cmake)
+
+function(embed_text_function target input function header)
+    set(generated ${CMAKE_CURRENT_BINARY_DIR}/generated/${function}.cpp)
+    add_custom_command(
+            OUTPUT ${generated}
+            COMMAND ${CMAKE_COMMAND}
+            -DINPUT=${input} -DOUTPUT=${generated} -DFUNCTION=${function} -DHEADER=${header}
+            -P ${EMBED_TEXT_SCRIPT}
+            DEPENDS ${input} ${EMBED_TEXT_SCRIPT}
+            COMMENT "Embedding ${input} as ${function}()"
+            VERBATIM
+    )
+    target_sources(${target} PRIVATE ${generated})
+endfunction()
+
 # Header-only libraries living in include/
 add_library(yamlcfg INTERFACE)
 target_include_directories(yamlcfg INTERFACE
@@ -59,6 +78,13 @@ target_link_libraries(pendulum_core PUBLIC
         zmq
         zmqpp
         yamlcfg
+)
+
+# The example configuration printed by hw_interface is the one used for the tests (config/)
+embed_text_function(pendulum_core
+        ${CMAKE_CURRENT_SOURCE_DIR}/config/pendulum_core_config.yaml
+        get_pendulum_config_example
+        pendulum_core/pendulum_config.hpp
 )
 
 target_compile_definitions(pendulum_core PUBLIC
@@ -109,6 +135,14 @@ add_executable(demo
         src/bin/demo/demo_config.hpp
         src/bin/common/utils.hpp
         include/pendulum_core/sockets_config.hpp
+)
+target_include_directories(demo PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/bin/demo
+)
+embed_text_function(demo
+        ${CMAKE_CURRENT_SOURCE_DIR}/config/demo.yaml
+        get_demo_config_example
+        demo_config.hpp
 )
 target_link_libraries(demo PRIVATE
         pendulum_core
