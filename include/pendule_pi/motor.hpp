@@ -3,6 +3,8 @@
   */
 #pragma once
 
+#include <atomic>
+
 namespace pendule_pi {
     /// Class that handles a simple DC motor.
     class Motor {
@@ -32,7 +34,7 @@ namespace pendule_pi {
         );
 
         /// Get the current PWM value.
-        [[nodiscard]] const int &pwm() const { return pwm_; }
+        [[nodiscard]] int pwm() const noexcept { return pwm_; }
 
         /// read access to pins
         [[nodiscard]] int direction_pin() const { return dir_pin_; };
@@ -41,6 +43,6 @@ namespace pendule_pi {
     private:
         int pwm_pin_; ///< Pin used to control the force of the motor via PWM.
         int dir_pin_; ///< Pin used to control the direction of the motor.
-        int pwm_; ///< Current PWM applied to pwm_pin_.
+        std::atomic<int> pwm_; ///< Current PWM applied to pwm_pin_ (read by other threads than the one setting it).
     };
 }
