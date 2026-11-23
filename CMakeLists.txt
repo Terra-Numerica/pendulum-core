@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19.4)
-project(pendulum_core VERSION 0.7.1 LANGUAGES CXX)
+project(pendulum_core VERSION 0.7.2 LANGUAGES CXX)
 
 # Build Release by default : the control loop must run with same optimizations
 # as the demonstrator (see README)
