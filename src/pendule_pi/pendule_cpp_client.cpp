@@ -33,7 +33,7 @@ namespace pendule_pi {
         // Wait for the low-level interface to be up and running.
         if (wait <= 0) {
             // Wait indefinitely for the first message.
-            readState(BLOCKING);
+            read_state(BLOCKING);
         } else {
             // Wait for the given amount of time.
             int elapsed = 0;
@@ -41,7 +41,7 @@ namespace pendule_pi {
                 // Wait one second.
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
                 // Check if it is possible to read a message.
-                if (readState(NON_BLOCKING)) {
+                if (read_state(NON_BLOCKING)) {
                     // A message was received: exit!
                     break;
                 }
@@ -63,7 +63,7 @@ namespace pendule_pi {
     }
 
 
-    bool PenduleCppClient::readState(
+    bool PenduleCppClient::read_state(
         const bool blocking
     ) {
         // Message to be received.
@@ -82,7 +82,7 @@ namespace pendule_pi {
     }
 
 
-    void PenduleCppClient::sendCommand(const int pwm) const {
+    void PenduleCppClient::send_command(const int pwm) const {
         // Create the message to be sent.
         zmqpp::message msg;
         msg << std::to_string(pwm);

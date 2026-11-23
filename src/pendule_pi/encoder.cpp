@@ -18,12 +18,12 @@ namespace pendule_pi {
 
 
     Encoder::Encoder(
-        const int gpioA,
-        const int gpioB,
+        const int gpio_a,
+        const int gpio_b,
         const int steps_per_turn
     )
-        : pin_a_(gpioA)
-          , pin_b_(gpioB)
+        : pin_a_(gpio_a)
+          , pin_b_(gpio_b)
           , a_current_(false)
           , b_current_(false)
           , a_past_(false)
@@ -48,8 +48,8 @@ namespace pendule_pi {
         PIGPIO_CHECKED_CALL(gpioSetPullUpDown(pin_b_, PI_PUD_UP));
 
         // Setup interrupts so that we handle the rotation without polling.
-        PIGPIO_CHECKED_CALL(gpioSetAlertFuncEx(pin_a_, pulseStatic, this));
-        PIGPIO_CHECKED_CALL(gpioSetAlertFuncEx(pin_b_, pulseStatic, this));
+        PIGPIO_CHECKED_CALL(gpioSetAlertFuncEx(pin_a_, pulse_static, this));
+        PIGPIO_CHECKED_CALL(gpioSetAlertFuncEx(pin_b_, pulse_static, this));
 
         // initialize properly the pin reading
         a_current_ = a_past_ = PIGPIO_CHECKED_CALL(gpioRead(pin_a_));
@@ -72,7 +72,7 @@ namespace pendule_pi {
     }
 
 
-    void Encoder::setSafetyCallbacks(
+    void Encoder::set_safety_callbacks(
         const int lower_threshold,
         const int upper_threshold,
         const std::function<void()> &lower_cb,
@@ -85,7 +85,7 @@ namespace pendule_pi {
     }
 
 
-    void Encoder::removeSafetyCallbacks() {
+    void Encoder::remove_safety_callbacks() {
         lower_cb_ = nullptr;
         upper_cb_ = nullptr;
         lower_threshold_ = std::numeric_limits<int>::min();
@@ -121,7 +121,7 @@ namespace pendule_pi {
     }
 
 
-    void Encoder::pulseStatic(
+    void Encoder::pulse_static(
         const int gpio,
         const int level,
         const unsigned int tick,

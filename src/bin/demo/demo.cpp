@@ -112,35 +112,35 @@ namespace {
     // Smoothing filter used to replace brutal control changes produced by a D-pad
     class LowPassFilter {
     public:
-        // timeConstantSec (tau): How sluggish the filter is (e.g., 0.5s or 1.0s).
-        // samplePeriodSec (dt):  Time between updates in seconds (20ms = 0.02s).
-        LowPassFilter(const double timeConstantSec, const double samplePeriodSec)
-            : smoothedValue(0.0), isInitialized(false) {
-            if (timeConstantSec <= 0.0) {
-                alpha = 1.0; // No filtering
+        // time_constant_sec (tau): How sluggish the filter is (e.g., 0.5s or 1.0s).
+        // sample_period_sec (dt):  Time between updates in seconds (20ms = 0.02s).
+        LowPassFilter(const double time_constant_sec, const double sample_period_sec)
+            : smoothed_value_(0.0), is_initialized_(false) {
+            if (time_constant_sec <= 0.0) {
+                alpha_ = 1.0; // No filtering
             } else {
-                alpha = samplePeriodSec / (timeConstantSec + samplePeriodSec);
+                alpha_ = sample_period_sec / (time_constant_sec + sample_period_sec);
             }
         }
 
-        double update(const double newReading) {
-            if (!isInitialized) {
-                smoothedValue = newReading;
-                isInitialized = true;
+        double update(const double new_reading) {
+            if (!is_initialized_) {
+                smoothed_value_ = new_reading;
+                is_initialized_ = true;
             } else {
-                smoothedValue = (alpha * newReading) + ((1.0 - alpha) * smoothedValue);
+                smoothed_value_ = (alpha_ * new_reading) + ((1.0 - alpha_) * smoothed_value_);
             }
-            return smoothedValue;
+            return smoothed_value_;
         }
 
         [[maybe_unused]] void reset() {
-            isInitialized = false;
+            is_initialized_ = false;
         }
 
     private:
-        double alpha; // Computed smoothing factor
-        double smoothedValue; // Last computed value
-        bool isInitialized; // Prevents an artificial startup from 0
+        double alpha_; // Computed smoothing factor
+        double smoothed_value_; // Last computed value
+        bool is_initialized_; // Prevents an artificial startup from 0
     };
 }
 
@@ -148,7 +148,7 @@ namespace {
 // main forever loop termination flag
 static volatile std::sig_atomic_t keep_running = 1;
 
-static void requestTermination([[maybe_unused]] int signum) { keep_running = false; }
+static void request_termination([[maybe_unused]] int signum) { keep_running = false; }
 
 static double rad_to_deg(const double rad) {
     return rad * 180. / M_PI;
@@ -275,8 +275,8 @@ static int run(const DemoConfig &config) {
     std::cout << "to exit)" << std::endl << std::endl;
 
     // Connect signals for graceful termination.
-    std::signal(SIGINT, requestTermination);
-    std::signal(SIGTERM, requestTermination);
+    std::signal(SIGINT, request_termination);
+    std::signal(SIGTERM, request_termination);
 
     // Periodic status refresh when no event triggers it
     const auto status_update_period = std::chrono::milliseconds(500);
@@ -309,13 +309,13 @@ static int run(const DemoConfig &config) {
         }
 
         // Retrieve the current state of the pendulum.
-        pendulum.readState(pendule_pi::PenduleCppClient::BLOCKING);
+        pendulum.read_state(pendule_pi::PenduleCppClient::BLOCKING);
 
         // Since the low level sends state messages periodically, as configured by period_ms in YAML file
-        // and readState has been called in blocking mode, we are here at regular intervals.
+        // and read_state has been called in blocking mode, we are here at regular intervals.
 
         // compute errors whatever is the current mode so that the status line can be used for visual control
-        double e_theta = shiftInCircle(pendulum.angle() - target_angle);
+        double e_theta = shift_in_circle(pendulum.angle() - target_angle);
         double e_pos = 0;
 
         in_lqr_range = std::fabs(e_theta) <= lqr_e_theta_max;
@@ -336,7 +336,7 @@ static int run(const DemoConfig &config) {
             // in manual mode, the PWM is directly derived from the gamepad joystick position
             constexpr double PWM_LIMIT = 250.;
 
-            double ref = robustZero(joy.axis(AXIS_PWM), JOYSTICK_DEAD_ZONE);
+            double ref = robust_zero(joy.axis(AXIS_PWM), JOYSTICK_DEAD_ZONE);
             if (USES_DPAD) {
                 // smooth the input value to avoid brutal changes of the PWW that can damage
                 // the mechanical part and make the PSU security circuit trip.
@@ -363,7 +363,7 @@ static int run(const DemoConfig &config) {
 
                 // let the user shift the cart target position by using the gamepad
                 constexpr double POSITION_SHIFT_LIMIT = 0.2;
-                target_pos = deadZoneFilter(joy.axis(AXIS_PWM), JOYSTICK_DEAD_ZONE) * POSITION_SHIFT_LIMIT / 32768.;
+                target_pos = dead_zone_filter(joy.axis(AXIS_PWM), JOYSTICK_DEAD_ZONE) * POSITION_SHIFT_LIMIT / 32768.;
                 e_pos = pendulum.position() - target_pos;
 
                 // compute the LQR control law since we'll use its result whichever is the current mode
@@ -415,7 +415,7 @@ static int run(const DemoConfig &config) {
             }
         }
 
-        pendulum.sendCommand(pwm);
+        pendulum.send_command(pwm);
 
         // take joystick into account only if it's time for it
         if (--iterations_to_joystick_update == 0) {
@@ -461,7 +461,7 @@ static int run(const DemoConfig &config) {
         last_time_is_set = true;
     } // end of the main loop
 
-    pendulum.sendCommand(0);
+    pendulum.send_command(0);
     std::cout << C_RESET << std::endl;
 
     return EXIT_SUCCESS;

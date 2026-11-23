@@ -41,8 +41,8 @@ static int run(const PendulumConfig &config) {
     const auto motor = std::make_unique<pp::Motor>(config.motor.pwm_pin, config.motor.direction_pin);
 
     std::cout << C_HEADER << "Configuration :" << C_RESET << std::endl;
-    std::cout << LABEL_COLOR << "- direction GPIO : " << C_RESET << motor->getDirectionPin() << std::endl;
-    std::cout << LABEL_COLOR << "- PWM GPIO       : " << C_RESET << motor->getPWMPin() << std::endl;
+    std::cout << LABEL_COLOR << "- direction GPIO : " << C_RESET << motor->direction_pin() << std::endl;
+    std::cout << LABEL_COLOR << "- PWM GPIO       : " << C_RESET << motor->pwm_pin() << std::endl;
 
     std::cout << std::endl
             << "The motor will be moved in both directions to check its configuration." << std::endl << std::endl
@@ -57,21 +57,21 @@ static int run(const PendulumConfig &config) {
 
     std::cout << LABEL_COLOR << "-> cart moving rightwards for " << MOTION_DURATION_SECS << " seconds..."
             << C_RESET << std::endl;
-    motor->setPWM(TEST_PWM);
+    motor->set_pwm(TEST_PWM);
     std::this_thread::sleep_for(std::chrono::milliseconds(MOTION_DURATION_SECS * 1000));
-    motor->setPWM(0);
+    motor->set_pwm(0);
 
     std::cout << LABEL_COLOR << "-> cart moving leftwards for " << 2 * MOTION_DURATION_SECS << " seconds..."
             << C_RESET << std::endl;
-    motor->setPWM(-TEST_PWM);
+    motor->set_pwm(-TEST_PWM);
     std::this_thread::sleep_for(std::chrono::milliseconds(2 * MOTION_DURATION_SECS * 1000));
-    motor->setPWM(0);
+    motor->set_pwm(0);
 
 
     std::cout << LABEL_COLOR << "-> cart going back to start position..." << C_RESET << std::endl;
-    motor->setPWM(TEST_PWM);
+    motor->set_pwm(TEST_PWM);
     std::this_thread::sleep_for(std::chrono::milliseconds(MOTION_DURATION_SECS * 1000));
-    motor->setPWM(0);
+    motor->set_pwm(0);
 
     std::cout << std::endl
             << "The sequence should have been : right, left, back to center." << std::endl << std::endl

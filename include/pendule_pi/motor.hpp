@@ -27,16 +27,16 @@ namespace pendule_pi {
         /// Sets the pwm of the motor.
         /** @param pwm the (signed) pwm, between -255 and 255 (both included).
           */
-        void setPWM(
+        void set_pwm(
             int pwm
         );
 
         /// Get the current PWM value.
-        [[nodiscard]] const int &getPWM() const { return pwm_; }
+        [[nodiscard]] const int &pwm() const { return pwm_; }
 
         /// read access to pins
-        [[nodiscard]] int getDirectionPin() const { return dir_pin_; };
-        [[nodiscard]] int getPWMPin() const { return pwm_pin_; };
+        [[nodiscard]] int direction_pin() const { return dir_pin_; };
+        [[nodiscard]] int pwm_pin() const { return pwm_pin_; };
 
     private:
         int pwm_pin_; ///< Pin used to control the force of the motor via PWM.

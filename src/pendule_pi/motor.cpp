@@ -34,7 +34,7 @@ namespace pendule_pi {
     }
 
 
-    void Motor::setPWM(
+    void Motor::set_pwm(
         const int pwm
     ) {
         if (pwm > 0) {

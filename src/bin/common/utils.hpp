@@ -5,7 +5,7 @@
 /** Simple function that returns 0 if the value is inside [-threshold, +threshold],
  * or the value itself otherwise.
  */
-inline int robustZero(const int val, const int threshold) {
+inline int robust_zero(const int val, const int threshold) {
     return abs(val) <= abs(threshold) ? 0 : val;
 }
 
@@ -14,7 +14,7 @@ inline int robustZero(const int val, const int threshold) {
  * Returns 0 of the input value is inside [-threshold, +threshold],
  * otherwise shift it towards zero by the threshold value.
  */
-inline int deadZoneFilter(const int val, const int threshold) {
+inline int dead_zone_filter(const int val, const int threshold) {
     // ensure threshold is positive for the applied logic to be correct
     const int abs_threshold = abs(threshold);
     if (val > abs_threshold)
@@ -40,7 +40,7 @@ inline double sign(const double x) { return x >= 0 ? 1.0 : -1.0; }
  * will be shifted by \f$2 k \pi\f$ (\f$ k \in \mathbb{Z} \f$) so that they lie
  * within \f$\mathbb{C}\f$.
  */
-inline double shiftInCircle(const double x) {
+inline double shift_in_circle(const double x) {
     double v = std::fmod(x, 2 * M_PI);
     if (v >= M_PI)
         v -= 2 * M_PI;

@@ -22,9 +22,9 @@ namespace pendule_pi {
         bool update(bool process_all = true);
 
         /// Get the number of buttons on the Joystick.
-        [[nodiscard]] std::size_t nButtons() const { return buttons_.size(); }
+        [[nodiscard]] std::size_t n_buttons() const { return buttons_.size(); }
         /// Get the number of axes on the Joystick.
-        [[nodiscard]] std::size_t nAxes() const { return axes_.size(); }
+        [[nodiscard]] std::size_t n_axes() const { return axes_.size(); }
         /// Get the state of the given button.
         [[nodiscard]] const int &button(int i) const { return buttons_.at(i); }
         /// Get the state of the given axis.

@@ -13,7 +13,24 @@ Checks: >
   performance-noexcept-move-constructor,
   readability-redundant-member-init,
   readability-const-return-type,
-  modernize-avoid-c-arrays
+  modernize-avoid-c-arrays,
+  readability-identifier-naming
+
+CheckOptions:
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.FunctionCase: lower_case
+  readability-identifier-naming.MethodCase: lower_case
+  readability-identifier-naming.VariableCase: lower_case
+  readability-identifier-naming.ParameterCase: lower_case
+  readability-identifier-naming.ParameterIgnoredRegexp: '^THIS$'
+  readability-identifier-naming.VariableIgnoredRegexp: '^[A-Z][A-Z0-9_]*$'
+  readability-identifier-naming.GlobalConstantCase: UPPER_CASE
+  readability-identifier-naming.StaticConstantCase: UPPER_CASE
+  readability-identifier-naming.ClassConstantCase: UPPER_CASE
+  readability-identifier-naming.PrivateMemberSuffix: _
+  readability-identifier-naming.ProtectedMemberSuffix: _
 
 WarningsAsErrors: ''
 HeaderFilterRegex: '.*/(include|src)/.*'

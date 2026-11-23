@@ -11,16 +11,16 @@ namespace {
     using yamlcfg::not_zero;
     using yamlcfg::positive;
 
-    constexpr InRange<int> button{0, 6};
-    constexpr InRange<int> axis{0, 3};
+    constexpr InRange<int> BUTTON{0, 6};
+    constexpr InRange<int> AXIS{0, 3};
 
     Joystick parse_joystick(const ConfigNode &n) {
         Joystick j;
         j.device = n.get_or<std::string>("device", "/dev/input/js0");
-        j.axis_pwm = n.get_required<int>("axis_pwm", axis);
-        j.btn_switch = n.get_required<int>("btn_switch", button);
-        j.btn_autopilot = n.get_required<int>("btn_autopilot", button);
-        j.btn_exit = n.get_or<int>("btn_exit", -1, button);
+        j.axis_pwm = n.get_required<int>("axis_pwm", AXIS);
+        j.btn_switch = n.get_required<int>("btn_switch", BUTTON);
+        j.btn_autopilot = n.get_required<int>("btn_autopilot", BUTTON);
+        j.btn_exit = n.get_or<int>("btn_exit", -1, BUTTON);
         j.uses_dpad = n.get_or<bool>("uses_dpad", false);
         j.dpad_smoothing_tau_secs = n.get_or<double>("dpad_smoothing_tau_secs", 0.02);
         n.ensure(j.btn_switch != j.btn_autopilot, "btn_autopilot", "all buttons must be different");

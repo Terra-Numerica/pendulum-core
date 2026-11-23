@@ -18,11 +18,11 @@ namespace pendule_pi {
         /// Constructor, performs the setup of the gpio.
         /** This class allows to handle a rotatory encoder, assuming that it uses two
          * phases in phase quadrature.
-         * @param gpioA the pin connected to the first phase.
-         * @param gpioB the pin connected to the second phase.
+         * @param gpio_a the pin connected to the first phase.
+         * @param gpio_b the pin connected to the second phase.
          * @param steps_per_turn physical steps count per turn
          */
-        Encoder(int gpioA, int gpioB, int steps_per_turn);
+        Encoder(int gpio_a, int gpio_b, int steps_per_turn);
 
         // Prevent the user from making copies of an Encoder.
         Encoder(const Encoder &) = delete;
@@ -66,14 +66,14 @@ namespace pendule_pi {
          *   threshold to be smaller than the upper one. But be careful: with great
          *   power comes great responsibility!
          */
-        void setSafetyCallbacks(
+        void set_safety_callbacks(
             int lower_threshold, int upper_threshold, const std::function<void()> &lower_cb,
             const std::function<void()> &upper_cb
         );
 
         /// Add callbacks to be executed when reaching safety thresholds.
         /** Like
-         * setSafetyCallbacks(int,int,std::function<void(void)>,std::function<void(void)>)
+         * set_safety_callbacks(int,int,std::function<void(void)>,std::function<void(void)>)
          * but using the same callback for both the lower and the upper thresholds.
          * @param lower_threshold lower safety threshold below which cb should be
          *   called.
@@ -83,18 +83,18 @@ namespace pendule_pi {
          *   (or equal) to lower_threshold or  greater (or equal) to upper_threshold.
          *   It can be nullptr, in which case no callback is executed.
          */
-        void setSafetyCallbacks(const int lower_threshold,
+        void set_safety_callbacks(const int lower_threshold,
                                 const int upper_threshold,
                                 const std::function<void()> &cb) {
-            setSafetyCallbacks(lower_threshold, upper_threshold, cb, cb);
+            set_safety_callbacks(lower_threshold, upper_threshold, cb, cb);
         }
 
         /// Remove previously assigned callbacks.
-        void removeSafetyCallbacks();
+        void remove_safety_callbacks();
 
         /// read access to pins
-        [[nodiscard]] int getPinA() const { return pin_a_; }
-        [[nodiscard]] int getPinB() const { return pin_b_; }
+        [[nodiscard]] int pin_a() const { return pin_a_; }
+        [[nodiscard]] int pin_b() const { return pin_b_; }
 
     private:
         /// "Table" that allows to tell the direction of rotation.
@@ -198,7 +198,7 @@ namespace pendule_pi {
          * @param THIS a pointer to an Encoder. Named `THIS` simply because it
          *   tries to mimic the `this` pointer.
          */
-        static void pulseStatic(int gpio, int level, unsigned int tick, void *THIS);
+        static void pulse_static(int gpio, int level, unsigned int tick, void *THIS);
 
     protected:
         /// Number of steps counted per revolution: datasheet resolution times decoding multiplier.
@@ -219,8 +219,8 @@ namespace pendule_pi {
     /// A specialized encoder that returns the angular position of the pendulum.
     class AngleEncoder : public Encoder {
     public:
-        AngleEncoder(const int gpioA, const int gpioB, const int steps_per_turn)
-            : Encoder(gpioA, gpioB, steps_per_turn) {
+        AngleEncoder(const int gpio_a, const int gpio_b, const int steps_per_turn)
+            : Encoder(gpio_a, gpio_b, steps_per_turn) {
         }
 
         /// Returns the absolute angle in radians
@@ -230,9 +230,9 @@ namespace pendule_pi {
     /// A specialized encoder that returns the linear position of the pendulum cart.
     class PositionEncoder : public Encoder {
     public:
-        PositionEncoder(const int gpioA, const int gpioB, const int steps_per_turn,
+        PositionEncoder(const int gpio_a, const int gpio_b, const int steps_per_turn,
                         const double belt_module, const int pulley_teeth_count)
-            : Encoder(gpioA, gpioB, steps_per_turn),
+            : Encoder(gpio_a, gpio_b, steps_per_turn),
               belt_module_(belt_module),
               pulley_teeth_count_(pulley_teeth_count) {
         }
@@ -266,7 +266,7 @@ namespace pendule_pi {
          */
         void set_position_limits(const double min_position, const double max_position,
                                  const std::function<void()> &lower_cb, const std::function<void()> &upper_cb) {
-            setSafetyCallbacks(
+            set_safety_callbacks(
                 static_cast<int>(std::ceil(position_to_raw_steps(min_position))),
                 static_cast<int>(std::floor(position_to_raw_steps(max_position))),
                 lower_cb, upper_cb

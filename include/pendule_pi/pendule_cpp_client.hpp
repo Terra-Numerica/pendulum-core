@@ -11,11 +11,11 @@ namespace pendule_pi {
         static auto constexpr DEFAULT_STATE_PORT = 10001;
         static auto constexpr DEFAULT_COMMAND_PORT = 10002;
 
-        /// Named option to be passed to PenduleCppClient::readState.
-        /** @see PenduleCppClient::readState */
+        /// Named option to be passed to PenduleCppClient::read_state.
+        /** @see PenduleCppClient::read_state */
         static auto constexpr BLOCKING = true;
-        /// Named option to be passed to PenduleCppClient::readState.
-        /** @see PenduleCppClient::readState */
+        /// Named option to be passed to PenduleCppClient::read_state.
+        /** @see PenduleCppClient::read_state */
         static auto constexpr NON_BLOCKING = false;
 
         /// Connects to a socket using some default parameters.
@@ -66,17 +66,17 @@ namespace pendule_pi {
           *   method as, *e.g*.:
           *   @code{.c++}
           *   PenduleCppClient pendulum;
-          *   pendulum.readState(PenduleCppClient.BLOCKING);
-          *   pendulum.readState(PenduleCppClient.NON_BLOCKING);
+          *   pendulum.read_state(PenduleCppClient.BLOCKING);
+          *   pendulum.read_state(PenduleCppClient.NON_BLOCKING);
           *   @endcode
           */
-        bool readState(bool blocking);
+        bool read_state(bool blocking);
 
         /// Send a PWM command to the low-level interface.
         /** @param pwm the PWM signal to be sent. It should be an integer between
           *   -255 and 255.
           */
-        void sendCommand(int pwm) const;
+        void send_command(int pwm) const;
 
     private:
         double time_{0}; ///< Current time of the pendulum.

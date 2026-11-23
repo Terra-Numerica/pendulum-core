@@ -44,7 +44,7 @@ namespace pendule_pi {
             /** @param why reason to stop.
               */
             explicit EmergencyStop(const std::string &why) : std::runtime_error(
-                "Pendulum::eStop has been called! Reason: " + why) {
+                "Pendulum::e_stop has been called! Reason: " + why) {
             }
         };
 
@@ -89,7 +89,7 @@ namespace pendule_pi {
         void calibrate(int calibration_pwm, bool verbose = false);
 
         /// Tells if the pendulum has been calibrated successfully.
-        [[nodiscard]] const bool &isCalibrated() const { return calibrated_; }
+        [[nodiscard]] const bool &is_calibrated() const { return calibrated_; }
 
         /// Perform state estimation.
         /** @param dt time (in seconds) that elapsed since the last call to update().
@@ -101,49 +101,49 @@ namespace pendule_pi {
           * @param pwm the desired command.
           * @return false if the command exceeded the maximum/minimum values and thus
           *   had to be saturated. Note that the saturation is applied after adding
-          *   the offsets specified via setPwmOffsets().
+          *   the offsets specified via set_pwm_offsets().
           */
-        bool setCommand(int pwm) const; // NOLINT(*-use-nodiscard)
+        bool set_command(int pwm) const; // NOLINT(*-use-nodiscard)
 
         /// Get the current filtered position (in meters) of the base.
         [[nodiscard]] const double &position() const { return position_; }
         /// Get the current filtered angle (in radians) of the pendulum.
         [[nodiscard]] const double &angle() const { return angle_; }
         /// Get the current filtered velocity (in meters per second) of the base.
-        [[nodiscard]] const double &linearVelocity() const { return linear_velocity_; }
+        [[nodiscard]] const double &linear_velocity() const { return linear_velocity_; }
         /// Get the current filtered velocity (in radians per second) of the pendulum.
-        [[nodiscard]] const double &angularVelocity() const { return angular_velocity_; }
+        [[nodiscard]] const double &angular_velocity() const { return angular_velocity_; }
 
         /// Read the value of the soft position limits (in meters).
-        [[nodiscard]] double softMinPosition() const noexcept { return soft_min_position_meters_; }
-        [[nodiscard]] double softMaxPosition() const noexcept { return soft_max_position_meters_; }
+        [[nodiscard]] double soft_min_position() const noexcept { return soft_min_position_meters_; }
+        [[nodiscard]] double soft_max_position() const noexcept { return soft_max_position_meters_; }
 
         // Get the safety margin setting for track ends limits (in meters)
-        [[nodiscard]] double hardStopMarginMeters() const noexcept { return hard_stop_margin_meters_; }
+        [[nodiscard]] double hard_stop_margin_meters() const noexcept { return hard_stop_margin_meters_; }
 
         /// Set offsets to compensate for friction.
         /** This function sets internal offsets that should be applied to the pwm
-          * passed to setCommand(). This should allow to compensate for static
+          * passed to set_command(). This should allow to compensate for static
           * friction. Different offsets are to be given depending on the direction.
           * Of course, a null pwm signal will not be altered.
           * @param offset_down value to be subtracted from a negative pwm passed to
-          *   setCommand(pwm). If the desired pwm is negative, then the actual value
+          *   set_command(pwm). If the desired pwm is negative, then the actual value
           *   sent to the motor will be pwm-offset_down.
           * @param offset_up value to be added to a positive pwm passed to
-          *   setCommand(pwm). If the desired pwm is positive, then the actual value
+          *   set_command(pwm). If the desired pwm is positive, then the actual value
           *   sent to the motor will be pwm+offset_up.
           * @note This reduces the range of "feasible" pwm from `[-255,255]` to
           *   [-255+offset_down,255-offset_up].
           * @warning Both input parameters should be non-negative. If you provide a
           *   negative value, 0 will be used instead.
           */
-        void setPwmOffsets(
+        void set_pwm_offsets(
             int offset_down,
             int offset_up
         );
 
         /// Emergency stop.
-        void eStop(const std::string &why);
+        void e_stop(const std::string &why);
 
     private:
         bool calibrated_{}; ///< Variable that is set to true once the pendulum calibration has been completed.

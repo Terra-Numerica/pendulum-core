@@ -37,41 +37,41 @@ namespace pendule_pi {
         // set the pin in high impedance, just in case
         gpioSetPullUpDown(pin_, PI_PUD_OFF);
         gpioSetMode(pin_, PI_INPUT);
-        disableInterrupts();
+        disable_interrupts();
         PENDULE_PI_DBG("Switch destroyed successfully");
     }
 
 
-    void Switch::enableInterrupts(
+    void Switch::enable_interrupts(
         const std::function<void()> &user_callback
     ) {
         // set the callback to change the state of the Switch.
-        gpioSetAlertFuncEx(pin_, onChangeStatic, this);
+        gpioSetAlertFuncEx(pin_, on_change_static, this);
         callback_ = user_callback;
         with_interrupts_ = true;
     }
 
 
-    void Switch::disableInterrupts() {
+    void Switch::disable_interrupts() {
         gpioSetAlertFuncEx(pin_, nullptr, nullptr);
         callback_ = nullptr;
         with_interrupts_ = false;
     }
 
 
-    bool Switch::atRest() const {
+    bool Switch::at_rest() const {
         return PIGPIO_CHECKED_CALL(gpioRead(pin_)) == at_rest_;
     }
 
 
-    bool Switch::atRestCached() const {
+    bool Switch::at_rest_cached() const {
         if (!with_interrupts_)
             throw InterruptsAreDisabled();
         return at_rest_now_;
     }
 
 
-    void Switch::onChange(
+    void Switch::on_change(
         [[maybe_unused]] const int gpio,
         const int level,
         const unsigned int tick
@@ -86,12 +86,12 @@ namespace pendule_pi {
     }
 
 
-    void Switch::onChangeStatic(
+    void Switch::on_change_static(
         const int gpio,
         const int level,
         const unsigned int tick,
         void *THIS
     ) {
-        static_cast<Switch *>(THIS)->onChange(gpio, level, tick);
+        static_cast<Switch *>(THIS)->on_change(gpio, level, tick);
     }
 }

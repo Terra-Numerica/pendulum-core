@@ -56,42 +56,42 @@ namespace pendule_pi {
           * @param user_callback optional callback to be executed whenever the switch
           *   becomes active.
           */
-        void enableInterrupts(
+        void enable_interrupts(
             const std::function<void()> &user_callback = nullptr
         );
 
         /// Disables GPIO interrupts on the connected pin.
         /** This method also resets to `nullptr` eventual user callbacks previously
-          * passed to enableInterrupts().
+          * passed to enable_interrupts().
           */
-        void disableInterrupts();
+        void disable_interrupts();
 
         /// Get the current state of the switch.
         /** This method performs a "direct" GPIO read, *i.e.*, it does not use the
           * "cached" state (obtained using interrupts).
           * @return true if the switch is at rest and false otherwise.
           */
-        [[nodiscard]] bool atRest() const;
+        [[nodiscard]] bool at_rest() const;
 
         /// Get the current state of the switch.
         /** This method returns the "cached" state of the pin, which should have been
           * updated using GPIO interrupts.
           * @return true if the switch is at rest and false otherwise.
-          * @note You must have called enableInterrupts() to ensure that the cached
+          * @note You must have called enable_interrupts() to ensure that the cached
           *   state is updated. An exception will be thrown if interrupts are not
           *   enabled.
           */
-        [[nodiscard]] bool atRestCached() const;
+        [[nodiscard]] bool at_rest_cached() const;
 
         /// read access to pin
-        [[nodiscard]] int getPin() const { return pin_; };
+        [[nodiscard]] int pin() const { return pin_; };
 
         /// Auxiliary exception class to be thrown when reading the cached state with disabled interrupts.
         class InterruptsAreDisabled : public std::runtime_error {
         public:
             /// Fill-in the exception message.
             InterruptsAreDisabled() : std::runtime_error(
-                "A call to Switch::atRestCached() was performed, but interrupts are disabled.") {
+                "A call to Switch::at_rest_cached() was performed, but interrupts are disabled.") {
             }
         };
 
@@ -113,13 +113,13 @@ namespace pendule_pi {
           *   elapsed times doing `tick_now-tick_previous` even if `tick_now`
           *   overflowed.
           */
-        void onChange(
+        void on_change(
             int gpio,
             int level,
             unsigned int tick
         );
 
-        /// Static wrapper to call onChange.
+        /// Static wrapper to call on_change.
         /** This method is required since the GPIO library allows to execute a
           * callback when pin levels change, but such a callback must be provided
           * as a function pointer.
@@ -133,7 +133,7 @@ namespace pendule_pi {
           * @param THIS a pointer to an Encoder. Named `THIS` simply because it
           *   tries to mimic the `this` pointer.
           */
-        static void onChangeStatic(
+        static void on_change_static(
             int gpio,
             int level,
             unsigned int tick,

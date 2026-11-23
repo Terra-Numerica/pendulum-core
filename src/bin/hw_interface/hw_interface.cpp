@@ -58,7 +58,7 @@ static std::unique_ptr<pendule_pi::Pendule> make_pendulum(const PendulumConfig &
         config.safety_thresholds.hard
     );
 
-    pendulum->setPwmOffsets(config.pwm_offsets.low, config.pwm_offsets.high);
+    pendulum->set_pwm_offsets(config.pwm_offsets.low, config.pwm_offsets.high);
 
     return pendulum;
 }
@@ -127,7 +127,7 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     const double PERIOD_SEC = config.period_ms / 1000.0;
 
     // Socket connections.
-    // const auto tcp = config->getPenduleServer();
+    // const auto tcp = config->get_pendule_server();
     const auto tcp = std::make_unique<pendule_pi::PenduleCppServer>(
         config.sockets.host,
         config.sockets.state_port,
@@ -139,8 +139,8 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     // Initialize the pigpio token that takes care of housekeeping at finalization time, among others.
     pigpio::ActivationToken token;
 
-    signal(SIGINT, pigpio::ActivationToken::pleaseStop);
-    signal(SIGTERM, pigpio::ActivationToken::pleaseStop);
+    signal(SIGINT, pigpio::ActivationToken::please_stop);
+    signal(SIGTERM, pigpio::ActivationToken::please_stop);
 
     // Create the pendulum instance and perform the calibration.
     const auto pendule = make_pendulum(config);
@@ -188,8 +188,8 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
     // set up the no speed-limit zone bounds
-    const auto full_speed_max_position = pendule->softMaxPosition() - config.safety_thresholds.margin;
-    const auto full_speed_min_position = pendule->softMinPosition() + config.safety_thresholds.margin;
+    const auto full_speed_max_position = pendule->soft_max_position() - config.safety_thresholds.margin;
+    const auto full_speed_min_position = pendule->soft_min_position() + config.safety_thresholds.margin;
 
 #if PROGRESSIVE_STOP
     // braking distance must be shorter that the safety margin, otherwise the inertia
@@ -207,11 +207,11 @@ static int run(const Filters &filters, const PendulumConfig &config) {
             // perform state filtering
             const double filtered_position = filters.position->filter(pendule->position());
             const double filtered_angle = filters.angle->filter(pendule->angle());
-            const double filtered_linear_vel = filters.linear_velocity->filter(pendule->linearVelocity());
-            const double filtered_angular_vel = filters.angular_velocity->filter(pendule->angularVelocity());
+            const double filtered_linear_vel = filters.linear_velocity->filter(pendule->linear_velocity());
+            const double filtered_angular_vel = filters.angular_velocity->filter(pendule->angular_velocity());
 
             // publish the current state on the dedicated socket
-            tcp->sendState(
+            tcp->send_state(
                 hw_time,
                 filtered_position,
                 filtered_angle,
@@ -221,9 +221,9 @@ static int run(const Filters &filters, const PendulumConfig &config) {
 
             // read the command (i.e. PWM to be applied to the motor) from the dedicated socket
             const int max_wait_time = static_cast<int>(std::max(rate->residual() / 1000, 2u) - 2);
-            if (tcp->readCommand(max_wait_time)) {
+            if (tcp->read_command(max_wait_time)) {
                 pwm = tcp->command();
-            } else if (tcp->missedCommands() > MAX_MISSED_MESSAGES) {
+            } else if (tcp->missed_commands() > MAX_MISSED_MESSAGES) {
                 // we lost too many messages: override the command!
                 pwm = 0;
             }
@@ -251,7 +251,7 @@ static int run(const Filters &filters, const PendulumConfig &config) {
             }
 
             // ReSharper disable once CppExpressionWithoutSideEffects
-            pendule->setCommand(pwm);
+            pendule->set_command(pwm);
         }
     } catch (const pendule_pi::Pendule::EmergencyStop &e) {
         std::cerr << std::endl << C_BR_RED << "ERROR: " << e.what() << C_RESET << std::endl;

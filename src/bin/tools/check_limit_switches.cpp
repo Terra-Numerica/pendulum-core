@@ -39,8 +39,8 @@ static int run(const PendulumConfig &config) {
         // Let the token manage the pigpio library!
         pigpio::ActivationToken token;
 
-        signal(SIGINT, pigpio::ActivationToken::pleaseStop);
-        signal(SIGTERM, pigpio::ActivationToken::pleaseStop);
+        signal(SIGINT, pigpio::ActivationToken::please_stop);
+        signal(SIGTERM, pigpio::ActivationToken::please_stop);
 
         std::cout
                 << HI
@@ -64,8 +64,8 @@ static int run(const PendulumConfig &config) {
         const auto right_switch = make_switch(config.right_switch);
 
         std::cout << HI << "Configuration :" << C_RESET << std::endl;
-        std::cout << LABEL_COLOR << "- left switch  : " << C_RESET << "GPIO " << left_switch->getPin() << std::endl;
-        std::cout << LABEL_COLOR << "- right switch : " << C_RESET << "GPIO " << right_switch->getPin() << std::endl;
+        std::cout << LABEL_COLOR << "- left switch  : " << C_RESET << "GPIO " << left_switch->pin() << std::endl;
+        std::cout << LABEL_COLOR << "- right switch : " << C_RESET << "GPIO " << right_switch->pin() << std::endl;
 
         std::cout << std::endl
                 << "If the wiring and configuration are OK, the switches must be shown as active" << std::endl
@@ -75,8 +75,8 @@ static int run(const PendulumConfig &config) {
         while (true) {
             constexpr auto POLLING_PERIOD_MS = 100;
             std::cout << '\r';
-            display_state("left", !left_switch->atRest());
-            display_state("right", !right_switch->atRest());
+            display_state("left", !left_switch->at_rest());
+            display_state("right", !right_switch->at_rest());
             std::cout.flush();
 
             std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_PERIOD_MS));

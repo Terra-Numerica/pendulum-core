@@ -44,8 +44,8 @@ static int run(const PendulumConfig &config) {
     try {
         pigpio::ActivationToken token;
 
-        signal(SIGINT, pigpio::ActivationToken::pleaseStop);
-        signal(SIGTERM, pigpio::ActivationToken::pleaseStop);
+        signal(SIGINT, pigpio::ActivationToken::please_stop);
+        signal(SIGTERM, pigpio::ActivationToken::please_stop);
 
         std::cout
                 << C_HEADER
@@ -72,10 +72,10 @@ static int run(const PendulumConfig &config) {
 
         std::cout << C_HEADER << "Configuration :" << C_RESET << std::endl;
         std::cout << LABEL_COLOR << "- position : " << C_RESET
-                << "A->GPIO " << position_encoder->getPinA() << " - B->GPIO " << position_encoder->getPinB()
+                << "A->GPIO " << position_encoder->pin_a() << " - B->GPIO " << position_encoder->pin_b()
                 << std::endl;
         std::cout << LABEL_COLOR << "- angle    : " << C_RESET
-                << "A->GPIO " << angle_encoder->getPinA() << " - B->GPIO " << angle_encoder->getPinB()
+                << "A->GPIO " << angle_encoder->pin_a() << " - B->GPIO " << angle_encoder->pin_b()
                 << std::endl;
 
         std::cout << std::endl

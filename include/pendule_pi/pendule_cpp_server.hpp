@@ -34,12 +34,12 @@ namespace pendule_pi {
         [[nodiscard]] const int &command() const { return pwm_; }
 
         /// Tells how many times we failed to read commands.
-        [[nodiscard]] const unsigned int &missedCommands() const { return missed_messages_; }
+        [[nodiscard]] const unsigned int &missed_commands() const { return missed_messages_; }
 
         /// Send the current state of the pendulum to clients.
         /**
           */
-        void sendState(
+        void send_state(
             double time,
             double position,
             double angle,
@@ -53,7 +53,7 @@ namespace pendule_pi {
           *   without polling.
           * @return true if a command was received.
           */
-        bool readCommand(int wait_ms);
+        bool read_command(int wait_ms);
 
     private:
         int pwm_{0}; ///< Last received command.

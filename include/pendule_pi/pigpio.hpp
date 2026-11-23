@@ -49,7 +49,7 @@ namespace pigpio {
           *   its name as defined in
           *   <a href="https://github.com/joan2937/pigpio/blob/db1fd9cf6c3431314b04edc486d900151a0dfd78/pigpio.h#L6389">pigpio's header.</a>
           */
-        static std::string makeMessage(
+        static std::string make_message(
             const std::string &caller,
             int return_code
         );
@@ -93,7 +93,7 @@ namespace pigpio {
     public:
         /// Forwards a call to gpioInitialise().
         /** The constructor also registers the following signal handlers:
-          * - pleaseStop() as handler for SIGINT (the one sent when CTRL+C is
+          * - please_stop() as handler for SIGINT (the one sent when CTRL+C is
           *   pressed on the keyboard).
           * - abort() as a handler for SIGABRT (to be executed upon "catastrophic
           *   failure").
@@ -139,7 +139,7 @@ namespace pigpio {
           * @param sig signal to be handled. Ignored in this method, but required
           *   by the syntax of std::signal.
           */
-        static void pleaseStop(int sig = SIGINT);
+        static void please_stop(int sig = SIGINT);
 
     private:
         static ActivationToken *active_token; ///< Pointer to the currently active token.
@@ -150,7 +150,7 @@ namespace pigpio {
           * Additionally, this method calls `gpioTerminate()` so that further
           * GPIO operations will not happen.
           */
-        static void resetPins();
+        static void reset_pins();
 
         /// Static method that can be registered as handler for SIGABRT.
         /** This method calls .
@@ -222,7 +222,7 @@ namespace pigpio {
         /// Get the last "wake up" time.
         /** @return The last value returned by a call to sleep().
           */
-        [[nodiscard]] const unsigned int &lastTick() const { return time_past_; }
+        [[nodiscard]] const unsigned int &last_tick() const { return time_past_; }
 
         /// Get the period of this Rate object.
         /** @return Period in microseconds as passed to the constructor.

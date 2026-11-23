@@ -8,12 +8,12 @@ namespace pigpio {
         const std::string &caller,
         int return_code
     )
-        : std::runtime_error(makeMessage(caller, return_code)) {
+        : std::runtime_error(make_message(caller, return_code)) {
         // nothing else to do here!
     }
 
 
-    std::string Exception::makeMessage(
+    std::string Exception::make_message(
         const std::string &caller,
         int return_code
     ) {
@@ -50,14 +50,14 @@ namespace pigpio {
         // NOTE: it is VERY important that the signal handlers are assigned after
         // attempting to call gpioInitialise()!
         if (register_sigint)
-            std::signal(SIGINT, pleaseStop);
+            std::signal(SIGINT, please_stop);
         std::signal(SIGABRT, abort);
     }
 
 
     ActivationToken::~ActivationToken() {
-        PENDULE_PI_DBG("ActivationToken: calling resetPins() upon token destruction");
-        resetPins();
+        PENDULE_PI_DBG("ActivationToken: calling reset_pins() upon token destruction");
+        reset_pins();
         // If there is no registered token, or another one is registered, bad things might happen!
         if (active_token != this) {
             WARNING_BEGIN
@@ -70,7 +70,7 @@ namespace pigpio {
     }
 
 
-    void ActivationToken::resetPins() {
+    void ActivationToken::reset_pins() {
         PENDULE_PI_DBG("ActivationToken: putting all pins into high impedance mode");
         for (int pin = 0; pin <= 26; pin++) {
             auto retval = gpioSetPullUpDown(pin, PI_PUD_OFF);
@@ -97,9 +97,9 @@ namespace pigpio {
     }
 
 
-    void ActivationToken::pleaseStop([[maybe_unused]] int s) {
+    void ActivationToken::please_stop([[maybe_unused]] int s) {
         PENDULE_PI_DBG(
-            "ActivationToken: executing 'pleaseStop(" << (s==SIGINT?std::string("SIGINT"):std::to_string(s)) << ")'");
+            "ActivationToken: executing 'please_stop(" << (s==SIGINT?std::string("SIGINT"):std::to_string(s)) << ")'");
         throw PleaseStop();
     }
 
@@ -107,7 +107,7 @@ namespace pigpio {
     void ActivationToken::abort([[maybe_unused]] int s) {
         PENDULE_PI_DBG(
             "ActivationToken: executing 'abort(" << (s==SIGABRT?std::string("SIGABRT"):std::to_string(s)) << ")'");
-        resetPins();
+        reset_pins();
         PENDULE_PI_DBG("ActivationToken: calling std::_Exit(EXIT_FAILURE)");
         std::_Exit(EXIT_FAILURE);
     }

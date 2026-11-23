@@ -51,7 +51,7 @@ namespace pendule_pi {
         // Note: don't be too sensitive since the encoder is configured as 4096 steps
         // per turn
         const int angle_steps = angle_encoder_->raw_steps();
-        constexpr int encoder_tolerance = 4;
+        constexpr int ENCODER_TOLERANCE = 4;
         bool moving = false;
 
         // Reset the encoder to start from a known state.
@@ -60,9 +60,9 @@ namespace pendule_pi {
         angle_encoder_->set_origin_here();
 
         // clang-format on
-        angle_encoder_->setSafetyCallbacks(
-            angle_steps - encoder_tolerance,
-            angle_steps + encoder_tolerance,
+        angle_encoder_->set_safety_callbacks(
+            angle_steps - ENCODER_TOLERANCE,
+            angle_steps + ENCODER_TOLERANCE,
             [&] {
                 moving = true;
             }
@@ -83,7 +83,7 @@ namespace pendule_pi {
         }
 
         // Cleanup motion detection callback
-        angle_encoder_->removeSafetyCallbacks();
+        angle_encoder_->remove_safety_callbacks();
 
         if (verbose) {
             std::cout << C_SUCCESS << "-> angle encoder initialized." << C_RESET << std::endl << std::endl;
@@ -102,26 +102,26 @@ namespace pendule_pi {
         // if we are already at the rightmost end of the track, back off a bit before
         // starting the calibration process (we don't care if we are at the leftmost
         // end, since we're going to move rightwards first anyway)
-        if (!right_switch_->atRest()) {
+        if (!right_switch_->at_rest()) {
             std::cout << C_WARNING
                     << "-> carriage already at the right end of the track => backing off..." <<
                     C_RESET << std::endl;
             // move leftwards enough to clear the switch
-            motor_->setPWM(-calibration_pwm);
+            motor_->set_pwm(-calibration_pwm);
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            motor_->setPWM(0);
+            motor_->set_pwm(0);
 
             // check if the switch is still active. If so, we have a real problem
-            if (!right_switch_->atRest()) {
+            if (!right_switch_->at_rest()) {
                 throw CalibrationFailed("right limit switch stuck in active state");
             }
         }
 
         // prepare some auxiliary callbacks used to reach the switches
         bool wrong_switch = false;
-        auto switch_cb = [&] { motor_->setPWM(0); };
+        auto switch_cb = [&] { motor_->set_pwm(0); };
         auto wrong_switch_cb = [&] {
-            motor_->setPWM(0);
+            motor_->set_pwm(0);
             wrong_switch = true;
         };
 
@@ -129,10 +129,10 @@ namespace pendule_pi {
         if (verbose) {
             std::cout << "... seeking for the right end limit switch..." << std::endl;
         }
-        right_switch_->enableInterrupts(switch_cb);
-        left_switch_->enableInterrupts(wrong_switch_cb);
-        motor_->setPWM(calibration_pwm);
-        while (motor_->getPWM() != 0) {
+        right_switch_->enable_interrupts(switch_cb);
+        left_switch_->enable_interrupts(wrong_switch_cb);
+        motor_->set_pwm(calibration_pwm);
+        while (motor_->pwm() != 0) {
             if (wrong_switch) {
                 if (verbose) {
                     std::cerr << C_ERROR
@@ -146,21 +146,21 @@ namespace pendule_pi {
         max_raw_steps = position_encoder_->raw_steps();
 
         // Release the right switch
-        right_switch_->enableInterrupts(nullptr);
-        motor_->setPWM(-calibration_pwm);
-        while (!right_switch_->atRestCached())
+        right_switch_->enable_interrupts(nullptr);
+        motor_->set_pwm(-calibration_pwm);
+        while (!right_switch_->at_rest_cached())
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        motor_->setPWM(0);
+        motor_->set_pwm(0);
 
         // Go towards the left switch
         if (verbose) {
             std::cout << "... seeking for the left end limit switch..." << std::endl;
         }
 
-        right_switch_->enableInterrupts(wrong_switch_cb);
-        left_switch_->enableInterrupts(switch_cb);
-        motor_->setPWM(-calibration_pwm);
-        while (motor_->getPWM() != 0) {
+        right_switch_->enable_interrupts(wrong_switch_cb);
+        left_switch_->enable_interrupts(switch_cb);
+        motor_->set_pwm(-calibration_pwm);
+        while (motor_->pwm() != 0) {
             if (wrong_switch) {
                 if (verbose) {
                     std::cerr << C_ERROR
@@ -174,12 +174,12 @@ namespace pendule_pi {
         min_raw_steps = position_encoder_->raw_steps();
 
         // Release the left switch
-        left_switch_->enableInterrupts(nullptr);
-        motor_->setPWM(calibration_pwm);
-        while (!left_switch_->atRestCached()) {
+        left_switch_->enable_interrupts(nullptr);
+        motor_->set_pwm(calibration_pwm);
+        while (!left_switch_->at_rest_cached()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-        motor_->setPWM(0);
+        motor_->set_pwm(0);
 
         // Check that min and max are coherent
         if (min_raw_steps > max_raw_steps) {
@@ -223,13 +223,13 @@ namespace pendule_pi {
 
         // Ensure that we are not in emergency stop
         if (emergency_stopped_)
-            throw CalibrationFailed("eStop has been called");
+            throw CalibrationFailed("e_stop has been called");
 
         // Reset all callbacks
-        position_encoder_->removeSafetyCallbacks();
-        angle_encoder_->removeSafetyCallbacks();
-        left_switch_->disableInterrupts();
-        right_switch_->disableInterrupts();
+        position_encoder_->remove_safety_callbacks();
+        angle_encoder_->remove_safety_callbacks();
+        left_switch_->disable_interrupts();
+        right_switch_->disable_interrupts();
 
         calibrate_angle_encoder(verbose);
 
@@ -239,11 +239,11 @@ namespace pendule_pi {
         if (verbose) {
             std::cout << "... homing to center..." << std::endl;
         }
-        motor_->setPWM(calibration_pwm);
+        motor_->set_pwm(calibration_pwm);
         while (position_encoder_->position() < 0.) {
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
-        motor_->setPWM(0);
+        motor_->set_pwm(0);
 
         if (verbose) {
             std::cout << C_SUCCESS << "-> position encoder calibrated." << C_RESET << std::endl << std::endl;
@@ -253,8 +253,8 @@ namespace pendule_pi {
         // IMPORTANT :
         //  When using mechanical switches, this can lead to violent collision if the carriage is
         //  traveling full speed. Better use magnetic switches that trigger before the physical contact.
-        left_switch_->enableInterrupts([&] { eStop("left limit-switch activated"); });
-        right_switch_->enableInterrupts([&] { eStop("right limit-switch activated"); });
+        left_switch_->enable_interrupts([&] { e_stop("left limit-switch activated"); });
+        right_switch_->enable_interrupts([&] { e_stop("right limit-switch activated"); });
 
         // Configure encoder based travel limitation as an additional precaution. Emergency stop is
         // triggered at a safety distance from the physical switch.
@@ -265,8 +265,8 @@ namespace pendule_pi {
         position_encoder_->set_position_limits(
             soft_min_position_meters_,
             soft_max_position_meters_,
-            [&] { eStop("position lower limit reached"); },
-            [&] { eStop("position upper limit reached"); }
+            [&] { e_stop("position lower limit reached"); },
+            [&] { e_stop("position upper limit reached"); }
         );
 
         calibrated_ = true;
@@ -294,7 +294,7 @@ namespace pendule_pi {
 
     void Pendule::update(const double dt) {
         if (emergency_stopped_)
-            throw std::runtime_error("Pendule::update(): eStop() has been called");
+            throw std::runtime_error("Pendule::update(): e_stop() has been called");
         if (!calibrated_)
             throw NotCalibrated("Pendule::update()");
         // Get encoder readings in the physical frame
@@ -307,11 +307,11 @@ namespace pendule_pi {
         angle_ = new_angle;
     }
 
-    bool Pendule::setCommand(int pwm) const {
+    bool Pendule::set_command(int pwm) const {
         if (emergency_stopped_)
-            throw std::runtime_error("Pendule::setCommand(): eStop() has been called");
+            throw std::runtime_error("Pendule::set_command(): e_stop() has been called");
         if (!calibrated_)
-            throw NotCalibrated("Pendule::setCommand()");
+            throw NotCalibrated("Pendule::set_command()");
 
         bool retval = true;
         if (pwm != 0) {
@@ -328,17 +328,17 @@ namespace pendule_pi {
                 retval = false;
             }
         }
-        motor_->setPWM(pwm);
+        motor_->set_pwm(pwm);
         return retval;
     }
 
-    void Pendule::setPwmOffsets(int offset_down, int offset_up) {
+    void Pendule::set_pwm_offsets(int offset_down, int offset_up) {
         offset_up_ = std::max(0, offset_up);
         offset_down_ = std::max(0, offset_down);
     }
 
-    void Pendule::eStop(const std::string &why) {
-        motor_->setPWM(0);
+    void Pendule::e_stop(const std::string &why) {
+        motor_->set_pwm(0);
         emergency_stopped_ = true;
         throw EmergencyStop(why);
     }

@@ -11,11 +11,11 @@ namespace {
     using yamlcfg::positive;
 
     // Constraints specific to this hardware / protocol
-    constexpr InRange<int> gpio_pin{1, 26};
+    constexpr InRange<int> GPIO_PIN{1, 26};
 
     SwitchConfig parse_switch(const ConfigNode &n) {
         const SwitchConfig s = {
-            .pin = n.get_required<int>("pin", gpio_pin),
+            .pin = n.get_required<int>("pin", GPIO_PIN),
             .normally_up = n.get_or<bool>("normally_up", true),
             .use_internal_pull_resistor = n.get_or<bool>("use_internal_pull_resistor", true),
             .debounce_us = n.get_or<int>("debounce_us", 500, positive)
@@ -23,23 +23,23 @@ namespace {
         return s;
     }
 
-    void _parse_encoder_shared_fields(const ConfigNode &n, EncoderConfig &e) {
-        e.pin_a = n.get_required<int>("pin_a", gpio_pin);
-        e.pin_b = n.get_required<int>("pin_b", gpio_pin);
+    void parse_encoder_shared_fields(const ConfigNode &n, EncoderConfig &e) {
+        e.pin_a = n.get_required<int>("pin_a", GPIO_PIN);
+        e.pin_b = n.get_required<int>("pin_b", GPIO_PIN);
         e.steps_per_turn = n.get_required<int>("steps_per_turn", positive);
         n.ensure(e.pin_a != e.pin_b, "pin_b", "must be different from pin_a");
     }
 
     AngleEncoderConfig parse_angle_encoder(const ConfigNode &n) {
         AngleEncoderConfig e{};
-        _parse_encoder_shared_fields(n, e);
+        parse_encoder_shared_fields(n, e);
         // no additional field
         return e;
     }
 
     PositionEncoderConfig parse_position_encoder(const ConfigNode &n) {
         PositionEncoderConfig e{};
-        _parse_encoder_shared_fields(n, e);
+        parse_encoder_shared_fields(n, e);
         e.belt_module_mm = n.get_required<double>("belt_module_mm", positive);
         e.pulley_teeth_count = n.get_required<int>("pulley_teeth_count", positive);
         return e;
@@ -47,8 +47,8 @@ namespace {
 
     MotorConfig parse_motor(const ConfigNode &n) {
         const MotorConfig m = {
-            .direction_pin = n.get_required<int>("direction_pin", gpio_pin),
-            .pwm_pin = n.get_required<int>("pwm_pin", gpio_pin)
+            .direction_pin = n.get_required<int>("direction_pin", GPIO_PIN),
+            .pwm_pin = n.get_required<int>("pwm_pin", GPIO_PIN)
         };
         n.ensure(m.direction_pin != m.pwm_pin, "pwm_pin", "must be different from direction_pin");
         return m;

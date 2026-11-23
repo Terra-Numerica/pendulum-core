@@ -37,7 +37,7 @@ namespace pendule_pi {
     }
 
 
-    bool PenduleCppServer::readCommand(
+    bool PenduleCppServer::read_command(
         const int wait_ms
     ) {
         // Poll the socket if needed.
@@ -63,7 +63,7 @@ namespace pendule_pi {
     }
 
 
-    void PenduleCppServer::sendState(
+    void PenduleCppServer::send_state(
         double time,
         double position,
         double angle,
