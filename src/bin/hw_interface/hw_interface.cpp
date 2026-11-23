@@ -39,13 +39,13 @@ static std::unique_ptr<pendulum_core::Pendulum> make_pendulum(const PendulumConf
     const auto make_position_encoder = [](const PositionEncoderConfig &cfg) {
         return std::make_unique<pendulum_core::PositionEncoder>(
             cfg.pin_a, cfg.pin_b, cfg.steps_per_turn,
-            cfg.belt_module_mm, cfg.pulley_teeth_count
+            cfg.belt_module_mm, cfg.pulley_teeth_count, cfg.glitch_filter_us
         );
     };
 
     const auto make_angle_encoder = [](const AngleEncoderConfig &cfg) {
         return std::make_unique<pendulum_core::AngleEncoder>(
-            cfg.pin_a, cfg.pin_b, cfg.steps_per_turn
+            cfg.pin_a, cfg.pin_b, cfg.steps_per_turn, cfg.glitch_filter_us
         );
     };
 

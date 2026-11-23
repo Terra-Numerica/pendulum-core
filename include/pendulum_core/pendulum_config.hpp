@@ -30,6 +30,7 @@ struct EncoderConfig {
     int pin_a;
     int pin_b;
     int steps_per_turn;
+    int glitch_filter_us;
 };
 
 struct AngleEncoderConfig : EncoderConfig {
@@ -40,7 +41,8 @@ constexpr auto fields(const AngleEncoderConfig *) {
     return std::make_tuple(
         YAMLCFG_FIELD(EncoderConfig, pin_a),
         YAMLCFG_FIELD(EncoderConfig, pin_b),
-        YAMLCFG_FIELD(EncoderConfig, steps_per_turn)
+        YAMLCFG_FIELD(EncoderConfig, steps_per_turn),
+        YAMLCFG_FIELD(EncoderConfig, glitch_filter_us)
     );
 }
 
@@ -54,6 +56,7 @@ constexpr auto fields(const PositionEncoderConfig *) {
         YAMLCFG_FIELD(EncoderConfig, pin_a),
         YAMLCFG_FIELD(EncoderConfig, pin_b),
         YAMLCFG_FIELD(EncoderConfig, steps_per_turn),
+        YAMLCFG_FIELD(EncoderConfig, glitch_filter_us),
         YAMLCFG_FIELD(PositionEncoderConfig, belt_module_mm),
         YAMLCFG_FIELD(PositionEncoderConfig, pulley_teeth_count)
     );
