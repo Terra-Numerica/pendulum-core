@@ -4,8 +4,6 @@
 #include "pendule_pi/pendulum_config.hpp"
 #include "pendule_pi/sockets_config.hpp"
 
-#include <sstream>
-
 namespace {
     using yamlcfg::ConfigNode;
     using yamlcfg::InRange;
@@ -14,56 +12,73 @@ namespace {
 
     // Constraints specific to this hardware / protocol
     constexpr InRange<int> gpio_pin{1, 26};
-    constexpr InRange<int> tcp_port{1, 65535};
 
     SwitchConfig parse_switch(const ConfigNode &n) {
-        SwitchConfig s{};
-        s.pin = n.get_required<int>("pin", gpio_pin);
-        s.normally_up = n.get_or<bool>("normally_up", true);
-        s.use_internal_pull_resistor = n.get_or<bool>("use_internal_pull_resistor", true);
-        s.debounce_us = n.get_or<int>("debounce_us", 500, positive);
+        const SwitchConfig s = {
+            .pin = n.get_required<int>("pin", gpio_pin),
+            .normally_up = n.get_or<bool>("normally_up", true),
+            .use_internal_pull_resistor = n.get_or<bool>("use_internal_pull_resistor", true),
+            .debounce_us = n.get_or<int>("debounce_us", 500, positive)
+        };
         return s;
     }
 
-    EncoderConfig parse_encoder(const ConfigNode &n) {
-        EncoderConfig e{};
+    void _parse_encoder_shared_fields(const ConfigNode &n, EncoderConfig &e) {
         e.pin_a = n.get_required<int>("pin_a", gpio_pin);
         e.pin_b = n.get_required<int>("pin_b", gpio_pin);
+        e.steps_per_turn = n.get_required<int>("steps_per_turn", positive);
         n.ensure(e.pin_a != e.pin_b, "pin_b", "must be different from pin_a");
+    }
+
+    AngleEncoderConfig parse_angle_encoder(const ConfigNode &n) {
+        AngleEncoderConfig e{};
+        _parse_encoder_shared_fields(n, e);
+        // no additional field
+        return e;
+    }
+
+    PositionEncoderConfig parse_position_encoder(const ConfigNode &n) {
+        PositionEncoderConfig e{};
+        _parse_encoder_shared_fields(n, e);
+        e.belt_module_mm = n.get_required<double>("belt_module_mm", positive);
+        e.pulley_teeth_count = n.get_required<int>("pulley_teeth_count", positive);
         return e;
     }
 
     MotorConfig parse_motor(const ConfigNode &n) {
-        MotorConfig m{};
-        m.direction_pin = n.get_required<int>("direction_pin", gpio_pin);
-        m.pwm_pin = n.get_required<int>("pwm_pin", gpio_pin);
+        const MotorConfig m = {
+            .direction_pin = n.get_required<int>("direction_pin", gpio_pin),
+            .pwm_pin = n.get_required<int>("pwm_pin", gpio_pin)
+        };
         n.ensure(m.direction_pin != m.pwm_pin, "pwm_pin", "must be different from direction_pin");
         return m;
     }
 
     SafetyThresholds parse_safety_thresholds(const ConfigNode &n) {
-        SafetyThresholds t{};
-        t.hard = n.get_required<double>("hard", positive);
-        t.margin = n.get_required<double>("margin", positive);
+        const SafetyThresholds t = {
+            .hard = n.get_required<double>("hard", positive),
+            .margin = n.get_required<double>("margin", positive)
+        };
         n.ensure(t.margin > t.hard, "margin", "must be greater than 'hard'");
         return t;
     }
 
     PwmOffsets parse_pwm_offsets(const ConfigNode &n) {
-        PwmOffsets o{};
-        o.low = n.get_required<int>("low", InRange<int>{0, 255});
-        o.high = n.get_required<int>("high");
+        const PwmOffsets o = {
+            .low = n.get_required<int>("low", InRange<int>{0, 255}),
+            .high = n.get_required<int>("high")
+        };
         n.ensure(o.high >= o.low, "high", "must be greater than or equal to 'low'");
         return o;
     }
 
-    HardwareSpecs parse_hardware_specs(const ConfigNode &n) {
-        HardwareSpecs h{};
-        h.encoders_step_per_turn = n.get_required<int>("encoders_step_per_turn", positive);
-        h.timing_belt_module = n.get_required<double>("timing_belt_module", positive);
-        h.pulley_teeth_count = n.get_required<int>("pulley_teeth_count", positive);
-        return h;
-    }
+    // HardwareSpecs parse_hardware_specs(const ConfigNode &n) {
+    //     const HardwareSpecs h = {
+    //         .timing_belt_module = n.get_required<double>("timing_belt_module", positive),
+    //         .pulley_teeth_count = n.get_required<int>("pulley_teeth_count", positive)
+    //     };
+    //     return h;
+    // }
 
     PendulumConfig build_config(const ConfigNode &root) {
         PendulumConfig c{};
@@ -73,9 +88,9 @@ namespace {
         c.right_switch = parse_switch(root.child("right_switch"));
         c.left_switch = parse_switch(root.child("left_switch"));
         c.motor = parse_motor(root.child("motor"));
-        c.hardware_specs = parse_hardware_specs(root.child("hardware_specs"));
-        c.position_encoder = parse_encoder(root.child("position_encoder"));
-        c.angle_encoder = parse_encoder(root.child("angle_encoder"));
+        // c.hardware_specs = parse_hardware_specs(root.child("hardware_specs"));
+        c.position_encoder = parse_position_encoder(root.child("position_encoder"));
+        c.angle_encoder = parse_angle_encoder(root.child("angle_encoder"));
         c.safety_thresholds = parse_safety_thresholds(root.child("safety_thresholds"));
         c.pwm_offsets = parse_pwm_offsets(root.child("pwm_offsets"));
         c.sockets = parse_sockets(root.child("sockets"));

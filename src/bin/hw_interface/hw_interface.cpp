@@ -27,18 +27,6 @@ constexpr auto LABEL = C_BR_BLUE;
 constexpr auto STATUS_FILE = "/var/run/pendulum.status";
 
 static std::unique_ptr<pendule_pi::Pendule> make_pendulum(const PendulumConfig &config) {
-    const auto [
-        encoders_step_per_turn,
-        timing_belt_module,
-        pulley_teeth_count
-    ] = config.hardware_specs;
-
-    // remember that the encoder logic uses all phase edges for counting => 4 times the hw step count
-    const auto sw_steps_per_turn = encoders_step_per_turn * 4;
-
-    const double meters_per_step = pulley_teeth_count * timing_belt_module / sw_steps_per_turn / 1000.;
-    const double radian_per_step = 2 * M_PI / sw_steps_per_turn;
-
     const auto make_switch = [](const SwitchConfig &cfg) {
         return std::make_unique<pendule_pi::Switch>(
             cfg.pin,
@@ -48,19 +36,26 @@ static std::unique_ptr<pendule_pi::Pendule> make_pendulum(const PendulumConfig &
         );
     };
 
-    const auto make_encoder = [](const EncoderConfig &cfg) {
-        return std::make_unique<pendule_pi::Encoder>(cfg.pin_a, cfg.pin_b);
+    const auto make_position_encoder = [](const PositionEncoderConfig &cfg) {
+        return std::make_unique<pendule_pi::PositionEncoder>(
+            cfg.pin_a, cfg.pin_b, cfg.steps_per_turn,
+            cfg.belt_module_mm, cfg.pulley_teeth_count
+        );
+    };
+
+    const auto make_angle_encoder = [](const AngleEncoderConfig &cfg) {
+        return std::make_unique<pendule_pi::AngleEncoder>(
+            cfg.pin_a, cfg.pin_b, cfg.steps_per_turn
+        );
     };
 
     auto pendulum = std::make_unique<pendule_pi::Pendule>(
-        meters_per_step,
-        radian_per_step,
-        config.safety_thresholds.hard,
         std::make_unique<pendule_pi::Motor>(config.motor.pwm_pin, config.motor.direction_pin),
         make_switch(config.left_switch),
         make_switch(config.right_switch),
-        make_encoder(config.position_encoder),
-        make_encoder(config.angle_encoder)
+        make_position_encoder(config.position_encoder),
+        make_angle_encoder(config.angle_encoder),
+        config.safety_thresholds.hard
     );
 
     pendulum->setPwmOffsets(config.pwm_offsets.low, config.pwm_offsets.high);

@@ -20,16 +20,22 @@ constexpr auto NEG_COLOR = C_BR_RED;
 constexpr auto LABEL_COLOR = C_BR_BLUE;
 
 
-static void display_value(const std::string &label, const int value, const int last_value) {
+/// Displays the raw step count (colored according to its evolution) and the corresponding physical value.
+static void display_value(
+    const std::string &label, const int raw_steps, const int last_raw_steps,
+    const double physical_value, const std::string &unit
+) {
     constexpr auto STATIC_COLOR = C_RESET;
     std::cout << STATIC_COLOR << "[ " << label << " : " << C_RESET;
-    if (value > last_value)
+    if (raw_steps > last_raw_steps)
         std::cout << POS_COLOR;
-    else if (value < last_value)
+    else if (raw_steps < last_raw_steps)
         std::cout << NEG_COLOR;
     else
         std::cout << C_RESET;
-    std::cout << std::setw(6) << std::right << value << STATIC_COLOR << " ]  " << C_RESET;
+    std::cout << std::setw(6) << std::right << raw_steps << " steps" << STATIC_COLOR
+            << " | " << std::fixed << std::setprecision(3) << std::setw(8) << physical_value << " " << unit
+            << " ]  " << C_RESET;
 }
 
 static int run(const PendulumConfig &config) {
@@ -53,11 +59,14 @@ static int run(const PendulumConfig &config) {
                 << "This tool checks that the encoders are configured so that the returned values" << std::endl
                 << "progress according to the conventions used in the control laws." << std::endl << std::endl;
 
-        const auto position_encoder = std::make_unique<pp::Encoder>(
-            config.position_encoder.pin_a, config.position_encoder.pin_b
+        const auto &position_cfg = config.position_encoder;
+        const auto &angle_cfg = config.angle_encoder;
+        const auto position_encoder = std::make_unique<pp::PositionEncoder>(
+            position_cfg.pin_a, position_cfg.pin_b, position_cfg.steps_per_turn,
+            position_cfg.belt_module_mm, position_cfg.pulley_teeth_count
         );
-        const auto angle_encoder = std::make_unique<pp::Encoder>(
-            config.angle_encoder.pin_a, config.angle_encoder.pin_b
+        const auto angle_encoder = std::make_unique<pp::AngleEncoder>(
+            angle_cfg.pin_a, angle_cfg.pin_b, angle_cfg.steps_per_turn
         );
         constexpr auto POLLING_PERIOD_MS = 100;
 
@@ -83,16 +92,17 @@ static int run(const PendulumConfig &config) {
                 << LABEL_COLOR << "(Ctrl-C to end)" << C_RESET << std::endl
                 << std::endl;
 
-        auto last_position = position_encoder->steps();
-        auto last_angle = angle_encoder->steps();
+        // values are relative to the encoders position at startup
+        auto last_position = position_encoder->raw_steps();
+        auto last_angle = angle_encoder->raw_steps();
 
         while (true) {
-            const auto position = position_encoder->steps();
-            const auto angle = angle_encoder->steps();
+            const auto position = position_encoder->raw_steps();
+            const auto angle = angle_encoder->raw_steps();
 
             std::cout << '\r';
-            display_value("position", position, last_position);
-            display_value("angle", angle, last_angle);
+            display_value("position", position, last_position, position_encoder->position(), "m");
+            display_value("angle", angle, last_angle, angle_encoder->angle(), "rad");
             std::cout
                     << LABEL_COLOR << "(legend: "
                     << POS_COLOR << "INC" << C_RESET

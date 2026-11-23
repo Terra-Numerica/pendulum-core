@@ -49,25 +49,7 @@ namespace pendule_pi {
         };
 
         /// Creates the pendulum, using the given components.
-        /** @param meters_per_step distance covered by the base when the associated
-          *   encoder registers a single step. As an example, say that the rotatory
-          *   encoder features 100 steps per revolution and that it is connected to
-          *   the base using a belt and a pully of diameter 10mm. Due to the pully,
-          *   the transmission factor is thus
-          *   \f$ 2 \pi 10 \text{mm} / \text{rotation} \f$.
-          *   Since the encoder features 100 steps per rotation, the final factor is:
-          *   \f$ \frac{2 \pi 10}{100} \text{mm} / \text{step}
-          *       = 2 \pi 10^{-4} \text{m} / \text{step} \f$.
-          * @param radians_per_step angle spanned by the pendulum when the associated
-          *   encoder registers a single step. As an example, say that the rotatory
-          *   encoder features 100 steps per revolution and that it is directly
-          *   connected to the pendulum. The transmission factor is thus
-          *   \f$ \frac{2 \pi}{100} \text{rad} / \text{step} \f$.
-          * @param safety_margin_meters distance from the switches at which the
-          *   pendulum should request an emergency stop. This margin allows to add
-          *   a software-based level of safety, since the system should shut down
-          *   before actually experiencing collisions.
-          * @param motor the Motor that allows to actuate the base. It should be
+        /** @param motor the Motor that allows to actuate the base. It should be
           *   wired in such a way that a positive command moves the base to the right.
           * @param left_switch the Switch that should be reached when the base moves
           *   in the negative direction.
@@ -77,13 +59,11 @@ namespace pendule_pi {
           *   the base.
           * @param angle_encoder rotary encoder used to measure the angle of the
           *   pendulum.
-          * @note As mentioned in the Encoder class, the number of steps per
-          *   revolution that an Encoder instance can register is actually 4 times
-          *   the one declared by the constructor. As an example, with a 600 steps
-          *   encoder, the corresponding Encoder object will count 2400 steps per
-          *   full rotation. This factor is added internally here, and therefore
-          *   **you should not take it into account when calculating the parameters
-          *   meters_per_step and radians_per_step**.
+          * @param safety_margin_meters distance from the switches at which the
+          *   pendulum should request an emergency stop. This margin allows to add
+          *   a software-based level of safety, since the system should shut down
+          *   before actually experiencing collisions.
+          *
           * @warning Ownership of the objects contained in the pointers passed to this
           *   constructor is claimed. You should not keep any copy of these objects,
           *   and in particular you should let this class manage their memory.
@@ -92,14 +72,12 @@ namespace pendule_pi {
           *   managed internally.
           */
         Pendule(
-            double meters_per_step,
-            double radians_per_step,
-            double safety_margin_meters,
             std::unique_ptr<Motor> motor,
             std::unique_ptr<Switch> left_switch,
             std::unique_ptr<Switch> right_switch,
-            std::unique_ptr<Encoder> position_encoder,
-            std::unique_ptr<Encoder> angle_encoder
+            std::unique_ptr<PositionEncoder> position_encoder,
+            std::unique_ptr<AngleEncoder> angle_encoder,
+            double safety_margin_meters
         );
 
         // Prevent the user from making copies of a Pendule.
@@ -135,27 +113,6 @@ namespace pendule_pi {
         [[nodiscard]] const double &linearVelocity() const { return linear_velocity_; }
         /// Get the current filtered velocity (in radians per second) of the pendulum.
         [[nodiscard]] const double &angularVelocity() const { return angular_velocity_; }
-
-        /// Allow to access min_position_steps_.
-        /** If the pendulum has not been calibrated, this method will throw an
-          * exception.
-          * @return the value of min_position_steps_.
-          */
-        [[nodiscard]] const int &minPositionSteps() const;
-
-        /// Allow to access max_position_steps_.
-        /** If the pendulum has not been calibrated, this method will throw an
-          * exception.
-          * @return the value of max_position_steps_.
-          */
-        [[nodiscard]] const int &maxPositionSteps() const;
-
-        /// Allow to access mid_position_steps_.
-        /** If the pendulum has not been calibrated, this method will throw an
-          * exception.
-          * @return the value of mid_position_steps_.
-          */
-        [[nodiscard]] const int &midPositionSteps() const;
 
         /// Read the value of the soft position limits (in meters).
         [[nodiscard]] double softMinPosition() const noexcept { return soft_min_position_meters_; }
@@ -197,15 +154,12 @@ namespace pendule_pi {
         double linear_velocity_{}; ///< Current velocity of the moving base.
         double angular_velocity_{}; ///< Current velocity of the pendulum.
         // Calibration values
-        int min_position_steps_{}; ///< Encoder reading at the left limit switch.
-        int max_position_steps_{}; ///< Encoder reading at the right limit switch.
-        int mid_position_steps_{}; ///< Encoder reading at mid-distance from limit switches.
+        double min_position_meters_{}; ///< Position of the left limit switch, relative to the track center.
+        double max_position_meters_{}; ///< Position of the right limit switch, relative to the track center.
         double hard_stop_margin_meters_{}; ///< Safety distance from the switches at which emergency stop is triggered.
         // double soft_minmax_position_meters_{}; ///< Position (in meters) at which emergency stop is requested.
         double soft_min_position_meters_{}; ///< Soft stop on left side, hard_stop_margin_meters_ from min position.
         double soft_max_position_meters_{}; ///< Soft stop on right side, hard_stop_margin_meters_ from max position.
-        const double meters_per_step_{}; ///< Steps to meters conversion ratio (derived from the hardware specs).
-        const double radians_per_step_{}; ///< Steps to radians conversion ratio (derived from the hardware specs).
         int offset_up_{}; ///< Offset to be applied to positive pwm commands.
         int offset_down_{}; ///< Offset to be applied to negative pwm commands.
         int offset_static_{}; ///< Static offset to be applied to the command.
@@ -213,23 +167,8 @@ namespace pendule_pi {
         std::unique_ptr<Motor> motor_; ///< Actuator to move the base of the pendulum.
         std::unique_ptr<Switch> left_switch_; ///< Track left limit switch.
         std::unique_ptr<Switch> right_switch_; ///< Track right limit switch.
-        std::unique_ptr<Encoder> position_encoder_; ///< Encoder to read the current position of the base.
-        std::unique_ptr<Encoder> angle_encoder_; ///< Encoder to read the current angle of the pendulum.
-
-        /// Auxiliary method that converts steps into a position in meters.
-        [[nodiscard]] double steps2meters(const int &steps) const {
-            return meters_per_step_ * (steps - mid_position_steps_);
-        }
-
-        /// Auxiliary method that converts steps into a distance in meters.
-        [[nodiscard]] double steps2dist(const int &steps) const {
-            return meters_per_step_ * steps;
-        }
-
-        /// Auxiliary method that converts steps into radians.
-        [[nodiscard]] double steps2radians(const int &steps) const {
-            return radians_per_step_ * steps;
-        }
+        std::unique_ptr<PositionEncoder> position_encoder_; ///< Encoder to read the current position of the base.
+        std::unique_ptr<AngleEncoder> angle_encoder_; ///< Encoder to read the current angle of the pendulum.
 
         /// Angle encoder calibration step
         void calibrate_angle_encoder(bool verbose) const;

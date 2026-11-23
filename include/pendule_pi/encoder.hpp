@@ -3,11 +3,16 @@
  */
 #pragma once
 
-#include <vector>
+#include <array>
+#include <cmath>
 #include <functional>
+#include <atomic>
 
 namespace pendule_pi {
-    /// Class that handles a simple two-phases rotatory encoder.
+    /// Base class interfacing a simple two-phases rotatory encoder.
+    /** It takes care of the step counting only and exposes the decoding mode (x1, x2, x4) as a provision
+     * for subsequent configuration of this behavior.
+     */
     class Encoder {
     public:
         /// Constructor, performs the setup of the gpio.
@@ -15,8 +20,9 @@ namespace pendule_pi {
          * phases in phase quadrature.
          * @param gpioA the pin connected to the first phase.
          * @param gpioB the pin connected to the second phase.
+         * @param steps_per_turn physical steps count per turn
          */
-        Encoder(int gpioA, int gpioB);
+        Encoder(int gpioA, int gpioB, int steps_per_turn);
 
         // Prevent the user from making copies of an Encoder.
         Encoder(const Encoder &) = delete;
@@ -27,17 +33,22 @@ namespace pendule_pi {
         virtual ~Encoder();
 
         /// Access the current step counter.
-        /** @note To provide the highest possible resolution, this class counts the
-         * times **any** phase changes state. This means that the number of steps
-         * per revolution will correspond to **four times** those reported on the
-         * datasheet.
+        /** @note The steps are counted according to the decoding mode. By default, **any** phase edge is counted
+         * (x4 decoding), which provides the highest possible resolution. This means that the number of steps
+         * per revolution is **four times** the one reported on the datasheet (see counted_steps_per_turn()).
          */
-        [[nodiscard]] const int &steps() const { return steps_; }
-        /// Reset the step counter to zero.
-        void reset() { steps_ = 0; }
+        [[nodiscard]] int raw_steps() const noexcept { return steps_; }
+
+        /// Sets the public step count origin to the current position
+        /** The raw counter is left untouched: only the offset used to compute the public values changes. */
+        void set_origin_here() noexcept { origin_steps_ = steps_.load(); }
+
+        /// Sets the public step count origin to the given raw step count.
+        void set_origin(const int raw_steps) noexcept { origin_steps_ = raw_steps; }
 
         /// Access the current motor direction.
-        [[nodiscard]] const int &direction() const { return direction_; }
+        [[nodiscard]]
+        const int &direction() const { return direction_; }
 
         /// Add callbacks to be executed when reaching safety thresholds.
         /** @param lower_threshold lower safety threshold below which lower_cb should
@@ -82,8 +93,8 @@ namespace pendule_pi {
         void removeSafetyCallbacks();
 
         /// read access to pins
-        [[nodiscard]] int getPinA() const { return pin_a_; };
-        [[nodiscard]] int getPinB() const { return pin_b_; };
+        [[nodiscard]] int getPinA() const { return pin_a_; }
+        [[nodiscard]] int getPinB() const { return pin_b_; }
 
     private:
         /// "Table" that allows to tell the direction of rotation.
@@ -119,15 +130,18 @@ namespace pendule_pi {
          * positive direction. Impossible transitions (such as `(0,0)->(1,1)`) are
          * given a null value so that they do not produce any effect.
          *
-         * The lookup table above is stored in this variable, in the form of a
-         * vector. To read it, it is sufficient to pass as index the number obtained
+         * The lookup table above is stored in this variable, in the form of an
+         * array. To read it, it is sufficient to pass as index the number obtained
          * by reading the quadruple of pin values as a binary number. As an example,
          * consider the case in which the encoder transitions from `(0,1)` to
          * `(0,0)`. The four digits altogether form the binary number `0100`,
          * corresponding to 4. The direction corresponding to this transition is
          * thus available at `ENCODER_TABLE[4]`.
          */
-        static const std::vector<int> ENCODER_TABLE;
+        static constexpr std::array<int, 16> ENCODER_TABLE = {0, 1, -1, 0, -1, 0, 0, 1, 1, 0, 0, -1, 0, -1, 1, 0};
+
+        /// Decoding mode used by default: all the phase edges are counted (x4).
+        static constexpr int DEFAULT_COUNTING_MULTIPLIER = 4;
 
         /// Convert pin levels into the correct index to be passed to ENCODER_TABLE.
         /** @param a current level of the first phase.
@@ -141,18 +155,22 @@ namespace pendule_pi {
 
         int pin_a_; ///< Pin the first wire of the encoder is connected to.
         int pin_b_; ///< Pin the second wire of the encoder is connected to.
+
+        std::atomic<int> origin_steps_{0}; ///< Raw step count taken as the origin of the public values.
         bool a_current_; ///< Current voltage level on pin_a_.
         bool b_current_; ///< Current voltage level on pin_b_.
         bool a_past_; ///< Past voltage level on pin_a_.
         bool b_past_; ///< Past voltage level on pin_b_.
-        int steps_; ///< Current number of encoder steps.
+        std::atomic<int> steps_; ///< Current number of encoder steps (raw count, written only by the ISR)
         int direction_{}; ///< Current rotation direction.
         int lower_threshold_; ///< Lower threshold below which lower_cb_ should be executed.
         int upper_threshold_; ///< Upper threshold beyond which upper_cb_ should be executed.
-        std::function<void()>
-        lower_cb_; ///< Callback to be executed whenever the position becomes less than lower_threshold_.
-        std::function<void()>
-        upper_cb_; ///< Callback to be executed whenever the position becomes more than upper_threshold_.
+        std::function<void()> lower_cb_;
+        ///< Callback to be executed whenever the position becomes less than lower_threshold_.
+        std::function<void()> upper_cb_;
+        ///< Callback to be executed whenever the position becomes more than upper_threshold_.
+        const int steps_per_turn_; ///< Number of steps per revolution reported on the datasheet.
+        const int counting_multiplier_; ///< Number of phase edges counted per datasheet step (x1, x2 or x4 decoding).
 
         /// Function called whenever one of the pins changes level.
         /** @param gpio the pin that just changed its level.
@@ -163,7 +181,6 @@ namespace pendule_pi {
          *   elapsed times doing `tick_now-tick_previous` even if `tick_now`
          *   overflowed.
          * @todo Perhaps remove the internal pin check that throws an exception?
-         * @todo Perhaps change ENCODER_TABLE.at(i) for ENCODER_TABLE[i]?
          */
         void pulse(int gpio, int level, unsigned int tick);
 
@@ -182,5 +199,90 @@ namespace pendule_pi {
          *   tries to mimic the `this` pointer.
          */
         static void pulseStatic(int gpio, int level, unsigned int tick, void *THIS);
+
+    protected:
+        /// Number of steps counted per revolution: datasheet resolution times decoding multiplier.
+        [[nodiscard]] int counted_steps_per_turn() const noexcept { return steps_per_turn_ * counting_multiplier_; }
+
+        /// Raw step count taken as the origin.
+        [[nodiscard]] int origin_steps() const noexcept { return origin_steps_; }
+
+        /// Number of revolutions made since the origin.
+        [[nodiscard]] double turns() const noexcept { return turns_between_origin_and(steps_); }
+
+        /// Number of revolutions between the origin and the given raw step count.
+        [[nodiscard]] double turns_between_origin_and(const int raw_steps) const noexcept {
+            return static_cast<double>(raw_steps - origin_steps_) / counted_steps_per_turn();
+        }
+    };
+
+    /// A specialized encoder that returns the angular position of the pendulum.
+    class AngleEncoder : public Encoder {
+    public:
+        AngleEncoder(const int gpioA, const int gpioB, const int steps_per_turn)
+            : Encoder(gpioA, gpioB, steps_per_turn) {
+        }
+
+        /// Returns the absolute angle in radians
+        [[nodiscard]] double angle() const noexcept { return 2 * M_PI * turns(); }
+    };
+
+    /// A specialized encoder that returns the linear position of the pendulum cart.
+    class PositionEncoder : public Encoder {
+    public:
+        PositionEncoder(const int gpioA, const int gpioB, const int steps_per_turn,
+                        const double belt_module, const int pulley_teeth_count)
+            : Encoder(gpioA, gpioB, steps_per_turn),
+              belt_module_(belt_module),
+              pulley_teeth_count_(pulley_teeth_count) {
+        }
+
+        /// Returns the current position in meters, relative to the origin.
+        [[nodiscard]] double position() const noexcept { return steps_to_position(raw_steps()); }
+
+        /// Returns the position in meters, relative to the origin, corresponding to a raw step count.
+        [[nodiscard]] double steps_to_position(const int raw_steps) const noexcept {
+            return turns_between_origin_and(raw_steps) * meters_per_turn();
+        }
+
+        /// Returns the length in meters covered by a number of steps (no origin involved).
+        [[nodiscard]] double steps_to_distance(const int step_count) const noexcept {
+            return static_cast<double>(step_count) / counted_steps_per_turn() * meters_per_turn();
+        }
+
+        /// Returns the raw step count (rounded to the nearest one) corresponding to a position in meters.
+        [[nodiscard]] int position_to_steps(const double position) const noexcept {
+            return static_cast<int>(std::lround(position_to_raw_steps(position)));
+        }
+
+        /// Sets the safety thresholds, given as positions in meters relative to the origin.
+        /** The thresholds are converted to raw steps rounded towards the inside of the allowed range, so that
+         * the requested margin is never reduced.
+         * @param min_position lower position at or below which lower_cb is called.
+         * @param max_position upper position at or beyond which upper_cb is called.
+         * @param lower_cb callback for the lower limit (can be nullptr).
+         * @param upper_cb callback for the upper limit (can be nullptr).
+         * @note The origin must be set before calling this method.
+         */
+        void set_position_limits(const double min_position, const double max_position,
+                                 const std::function<void()> &lower_cb, const std::function<void()> &upper_cb) {
+            setSafetyCallbacks(
+                static_cast<int>(std::ceil(position_to_raw_steps(min_position))),
+                static_cast<int>(std::floor(position_to_raw_steps(max_position))),
+                lower_cb, upper_cb
+            );
+        }
+
+    private:
+        /// Length in meters of one revolution of the pulley.
+        [[nodiscard]] double meters_per_turn() const noexcept { return belt_module_ * pulley_teeth_count_ / 1000.; }
+
+        /// Unrounded raw step count corresponding to a position in meters.
+        [[nodiscard]] double position_to_raw_steps(const double position) const noexcept {
+            return origin_steps() + position / meters_per_turn() * counted_steps_per_turn();
+        }
+
+        const double belt_module_;
+        const int pulley_teeth_count_;
     };
 } // namespace pendule_pi

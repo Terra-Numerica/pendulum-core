@@ -26,6 +26,13 @@ position_encoder:
   # Pins corresponding to the two phases of the encoder.
   pin_a: 20
   pin_b: 21
+  # IMPORTANT: as per datasheet, not taking into account the x4 decoding method
+  steps_per_turn: 600
+  # Mechanical specifications of the timing belt and pulley.
+  # (for steps -> position conversion)
+  belt_module_mm: 2.0
+  pulley_teeth_count: 20
+
 
 # Configuration of the angle encoder (the one that acts as
 # the pivot for the rod).
@@ -33,6 +40,8 @@ angle_encoder:
   # Pins corresponding to the two phases of the encoder.
   pin_a: 26
   pin_b: 19
+  # IMPORTANT: as per datasheet, not taking into account the x4 decoding method
+  steps_per_turn: 600
 
 # Configuration of the motor.
 motor:
@@ -40,17 +49,6 @@ motor:
   pwm_pin: 24
   # Pin used to invert the rotation direction of the motor.
   direction_pin: 16
-
-hardware_specs:
-  # Encoders specifications
-  # IMPORTANT :
-  #   Provide the physical value, as indicated in the maker's datasheet,
-  #   NOT the one used in internal computations.
-  encoders_step_per_turn: 600
-
-  # Mechanical specifications of the timing belt and pulley.
-  timing_belt_module: 2.0         # mm
-  pulley_teeth_count: 20
 
 # Safety distances to stop the pendulum, in meters.
 safety_thresholds:

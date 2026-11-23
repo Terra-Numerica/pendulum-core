@@ -29,12 +29,33 @@ constexpr auto fields(const SwitchConfig *) {
 struct EncoderConfig {
     int pin_a;
     int pin_b;
+    int steps_per_turn;
 };
 
-constexpr auto fields(const EncoderConfig *) {
+struct AngleEncoderConfig : EncoderConfig {
+    // nothing to be added
+};
+
+constexpr auto fields(const AngleEncoderConfig *) {
     return std::make_tuple(
         YAMLCFG_FIELD(EncoderConfig, pin_a),
-        YAMLCFG_FIELD(EncoderConfig, pin_b)
+        YAMLCFG_FIELD(EncoderConfig, pin_b),
+        YAMLCFG_FIELD(EncoderConfig, steps_per_turn)
+    );
+}
+
+struct PositionEncoderConfig : EncoderConfig {
+    double belt_module_mm;
+    int pulley_teeth_count;
+};
+
+constexpr auto fields(const PositionEncoderConfig *) {
+    return std::make_tuple(
+        YAMLCFG_FIELD(EncoderConfig, pin_a),
+        YAMLCFG_FIELD(EncoderConfig, pin_b),
+        YAMLCFG_FIELD(EncoderConfig, steps_per_turn),
+        YAMLCFG_FIELD(PositionEncoderConfig, belt_module_mm),
+        YAMLCFG_FIELD(PositionEncoderConfig, pulley_teeth_count)
     );
 }
 
@@ -74,19 +95,17 @@ constexpr auto fields(const PwmOffsets *) {
     );
 }
 
-struct HardwareSpecs {
-    int encoders_step_per_turn{};
-    double timing_belt_module{};
-    int pulley_teeth_count{};
-};
+// struct HardwareSpecs {
+//     double timing_belt_module{};
+//     int pulley_teeth_count{};
+// };
 
-constexpr auto fields(const HardwareSpecs *) {
-    return std::make_tuple(
-        YAMLCFG_FIELD(HardwareSpecs, encoders_step_per_turn),
-        YAMLCFG_FIELD(HardwareSpecs, timing_belt_module),
-        YAMLCFG_FIELD(HardwareSpecs, pulley_teeth_count)
-    );
-}
+// constexpr auto fields(const HardwareSpecs *) {
+//     return std::make_tuple(
+//         YAMLCFG_FIELD(HardwareSpecs, timing_belt_module),
+//         YAMLCFG_FIELD(HardwareSpecs, pulley_teeth_count)
+//     );
+// }
 
 struct PendulumConfig {
     int period_ms{};
@@ -95,12 +114,12 @@ struct PendulumConfig {
     SwitchConfig right_switch{};
     SwitchConfig left_switch{};
     MotorConfig motor{};
-    HardwareSpecs hardware_specs{};
-    EncoderConfig position_encoder{};
-    EncoderConfig angle_encoder{};
+    // HardwareSpecs hardware_specs{};
+    PositionEncoderConfig position_encoder{};
+    AngleEncoderConfig angle_encoder{};
     SafetyThresholds safety_thresholds{};
     PwmOffsets pwm_offsets{};
-    SocketsConfig sockets;
+    SocketsConfig sockets{};
 };
 
 constexpr auto fields(const PendulumConfig *) {
@@ -111,7 +130,7 @@ constexpr auto fields(const PendulumConfig *) {
         YAMLCFG_FIELD(PendulumConfig, right_switch),
         YAMLCFG_FIELD(PendulumConfig, left_switch),
         YAMLCFG_FIELD(PendulumConfig, motor),
-        YAMLCFG_FIELD(PendulumConfig, hardware_specs),
+        // YAMLCFG_FIELD(PendulumConfig, hardware_specs),
         YAMLCFG_FIELD(PendulumConfig, position_encoder),
         YAMLCFG_FIELD(PendulumConfig, angle_encoder),
         YAMLCFG_FIELD(PendulumConfig, safety_thresholds),

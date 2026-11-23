@@ -3,12 +3,10 @@
 #include "pendule_pi/debug.hpp"
 #include <pigpio.h>
 #include <limits>
+#include <stdexcept>
 
 
 namespace pendule_pi {
-    const std::vector<int> Encoder::ENCODER_TABLE = {0, 1, -1, 0, -1, 0, 0, 1, 1, 0, 0, -1, 0, -1, 1, 0};
-
-
     int Encoder::encode(
         const bool past_a,
         const bool past_b,
@@ -21,7 +19,8 @@ namespace pendule_pi {
 
     Encoder::Encoder(
         const int gpioA,
-        const int gpioB
+        const int gpioB,
+        const int steps_per_turn
     )
         : pin_a_(gpioA)
           , pin_b_(gpioB)
@@ -33,7 +32,12 @@ namespace pendule_pi {
           , lower_threshold_(0)
           , upper_threshold_(0)
           , lower_cb_(nullptr)
-          , upper_cb_(nullptr) {
+          , upper_cb_(nullptr)
+          , steps_per_turn_(steps_per_turn)
+          , counting_multiplier_(DEFAULT_COUNTING_MULTIPLIER) {
+        if (steps_per_turn <= 0) {
+            throw std::invalid_argument("Encoder: steps_per_turn must be positive");
+        }
         PENDULE_PI_DBG("Creating Encoder on pins " << pin_a_ << " and " << pin_b_);
         // Configure the pins using pigpio
         PIGPIO_CHECKED_CALL(gpioSetMode(pin_a_, PI_INPUT));
@@ -106,7 +110,7 @@ namespace pendule_pi {
         (gpio == pin_a_ ? a_current_ : b_current_) = level;
 
         // Update the current step count
-        direction_ = ENCODER_TABLE.at(encode(a_past_, b_past_, a_current_, b_current_));
+        direction_ = ENCODER_TABLE[encode(a_past_, b_past_, a_current_, b_current_)];
         steps_ += direction_;
 
         // execute safety callbacks if needed
