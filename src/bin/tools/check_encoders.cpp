@@ -92,7 +92,7 @@ static int run(const PendulumConfig &config) {
                 << LABEL_COLOR << "(Ctrl-C to end)" << C_RESET << std::endl
                 << std::endl;
 
-        // values are relative to the encoders position at startup
+        // raw step counts, starting from zero at startup (the origin offset is not applied)
         auto last_position = position_encoder->raw_steps();
         auto last_angle = angle_encoder->raw_steps();
 

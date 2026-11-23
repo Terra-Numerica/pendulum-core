@@ -2,11 +2,19 @@
 #include "pendulum_core/pigpio.hpp"
 #include "pendulum_core/debug.hpp"
 #include <pigpio.h>
+#include <chrono>
 #include <limits>
 #include <stdexcept>
+#include <thread>
 
 
 namespace pendulum_core {
+    namespace {
+        /// Time given to the lines to reach their level after the pull-up resistors are enabled.
+        constexpr auto PULL_UP_SETTLING_TIME = std::chrono::milliseconds(10);
+    }
+
+
     int Encoder::encode(
         const bool past_a,
         const bool past_b,
@@ -47,13 +55,20 @@ namespace pendulum_core {
         PIGPIO_CHECKED_CALL(gpioSetPullUpDown(pin_a_, PI_PUD_UP));
         PIGPIO_CHECKED_CALL(gpioSetPullUpDown(pin_b_, PI_PUD_UP));
 
+        // With open-collector outputs, the internal pull-up resistor is the only thing raising the lines, and it
+        // does so slowly (resistance combined with the cable capacitance). Reading the levels too early would give
+        // a wrong initial state, and the lines reaching their actual level afterwards would be counted as steps.
+        std::this_thread::sleep_for(PULL_UP_SETTLING_TIME);
+
+        // Initialize properly the pin reading, before the interrupts are enabled so that the initial levels are
+        // known when the first one is handled.
+        a_current_ = a_past_ = PIGPIO_CHECKED_CALL(gpioRead(pin_a_));
+        b_current_ = b_past_ = PIGPIO_CHECKED_CALL(gpioRead(pin_b_));
+        PENDULUM_CORE_DBG("Encoder initial levels: A=" << a_current_ << " B=" << b_current_);
+
         // Setup interrupts so that we handle the rotation without polling.
         PIGPIO_CHECKED_CALL(gpioSetAlertFuncEx(pin_a_, pulse_static, this));
         PIGPIO_CHECKED_CALL(gpioSetAlertFuncEx(pin_b_, pulse_static, this));
-
-        // initialize properly the pin reading
-        a_current_ = a_past_ = PIGPIO_CHECKED_CALL(gpioRead(pin_a_));
-        b_current_ = b_past_ = PIGPIO_CHECKED_CALL(gpioRead(pin_b_));
         PENDULUM_CORE_DBG("Encoder created successfully");
     }
 
@@ -101,6 +116,12 @@ namespace pendulum_core {
                 + std::to_string(pin_b_) + ", however an interrupt was fired for pin "
                 + std::to_string(gpio)
             );
+        }
+
+        // pigpio may report the initial level of a pin when the interrupt is enabled: this is not an edge, and
+        // counting it would shift the step count depending on the initial state of the phases.
+        if (static_cast<bool>(level) == (gpio == pin_a_ ? a_current_ : b_current_)) {
+            return;
         }
 
         // "Shift in time" the pin states
