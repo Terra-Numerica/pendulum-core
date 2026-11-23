@@ -84,8 +84,8 @@ namespace pendulum_core {
          *   It can be nullptr, in which case no callback is executed.
          */
         void set_safety_callbacks(const int lower_threshold,
-                                const int upper_threshold,
-                                const std::function<void()> &cb) {
+                                  const int upper_threshold,
+                                  const std::function<void()> &cb) {
             set_safety_callbacks(lower_threshold, upper_threshold, cb, cb);
         }
 
@@ -144,14 +144,14 @@ namespace pendulum_core {
         static constexpr int DEFAULT_COUNTING_MULTIPLIER = 4;
 
         /// Convert pin levels into the correct index to be passed to ENCODER_TABLE.
-        /** @param a current level of the first phase.
-         * @param b current level of the second phase.
-         * @param past_a past level of the first phase.
+        /** @param past_a past level of the first phase.
          * @param past_b past level of the second phase.
+         * @param a current level of the first phase.
+         * @param b current level of the second phase.
          * @return an index to be used inside ENCODER_TABLE which tells in which
          *   direction the encoder is rotating.
          */
-        static int encode(bool a, bool b, bool past_a, bool past_b);
+        static int encode(bool past_a, bool past_b, bool a, bool b);
 
         int pin_a_; ///< Pin the first wire of the encoder is connected to.
         int pin_b_; ///< Pin the second wire of the encoder is connected to.
