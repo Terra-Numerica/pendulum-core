@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <array>
 #include <cerrno>
 #include <cstring>
 #include <stdexcept>
@@ -22,9 +23,9 @@ namespace pendulum_core {
 
         // get name of the joystick
         constexpr int NUM_CHARS = 80;
-        char joy_name[NUM_CHARS];
-        ioctl(joy_file_descriptor_, JSIOCGNAME(NUM_CHARS), &joy_name);
-        joy_name_ = joy_name;
+        std::array<char, NUM_CHARS> joy_name{};
+        ioctl(joy_file_descriptor_, JSIOCGNAME(NUM_CHARS), joy_name.data());
+        joy_name_ = joy_name.data();
         PENDULUM_CORE_DBG("Joystick name: '" << joy_name_ << "'");
 
         // get number of axes and buttons
