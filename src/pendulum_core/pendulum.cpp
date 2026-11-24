@@ -48,8 +48,6 @@ namespace pendulum_core {
 
     void Pendulum::calibrate_angle_encoder(const bool verbose) const {
         // Calibrate the angle encoder. It simply consists in checking that it is still.
-        // Note: don't be too sensitive since the encoder is configured as 4096 steps
-        // per turn
         const int angle_steps = angle_encoder_->raw_steps();
         constexpr int ENCODER_TOLERANCE = 4;
         bool moving = false;
