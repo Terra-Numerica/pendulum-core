@@ -26,6 +26,11 @@ constexpr auto LABEL = C_BR_BLUE;
 
 constexpr auto STATUS_FILE = "/var/run/pendulum.status";
 
+// Contents of the status file, read by the launcher script to tell what happened during the initialization
+constexpr auto STATUS_READY = "1";
+constexpr auto STATUS_FAILED = "0";
+constexpr auto STATUS_INTERRUPTED = "-1"; // the user asked for a termination (CTRL+C) while initializing
+
 static std::unique_ptr<pendulum_core::Pendulum> make_pendulum(const PendulumConfig &config) {
     const auto make_switch = [](const SwitchConfig &cfg) {
         return std::make_unique<pendulum_core::Switch>(
@@ -155,8 +160,8 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     try {
         pendulum->calibrate(config.calibration_pwm, true);
     } catch (...) {
-        // create the status file to report we failed and exit now
-        std::ofstream(STATUS_FILE).put('0');
+        // create the status file to report why we leave and exit now
+        std::ofstream(STATUS_FILE) << (pendulum_core::termination::requested() ? STATUS_INTERRUPTED : STATUS_FAILED);
         return EXIT_FAILURE;
     }
 
@@ -180,7 +185,7 @@ static int run(const Filters &filters, const PendulumConfig &config) {
             << std::endl;
 
     // create the status file to report that we are up and running
-    std::ofstream(STATUS_FILE).put('1');
+    std::ofstream(STATUS_FILE) << STATUS_READY;
 
     // sleep a little bit before starting with the main loop
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
