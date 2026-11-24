@@ -77,50 +77,50 @@ namespace pigpio {
       * ```
       * int main() {
       *   // code that does not need pigpio
-      *   const pigpio::ActivationToken token;
+      *   const pigpio::Session session;
       *   // execute your pigpio-based instructions here!
       *   return 0;
       * }
       * ```
       * Termination requests (SIGINT, SIGTERM) are not handled by this class, see pendulum_core::termination.
       */
-    class ActivationToken {
+    class Session {
     public:
         /// Forwards a call to gpioInitialise().
         /** The constructor also registers abort() as a handler for SIGABRT (to be executed upon "catastrophic
           * failure").
           */
-        ActivationToken();
+        Session();
 
         /// Ensures that all GPIO pins are changed to high impedance mode.
-        ~ActivationToken();
+        ~Session();
 
-        ActivationToken(const ActivationToken &) = delete;
-        ActivationToken &operator=(const ActivationToken &) = delete;
+        Session(const Session &) = delete;
+        Session &operator=(const Session &) = delete;
 
-        /// Auxiliary exception class to be thrown when multiple tokens are generated.
-        class MultipleTokensCreated : public std::runtime_error {
+        /// Auxiliary exception class to be thrown when multiple sessions are created.
+        class MultipleSessionsCreated : public std::runtime_error {
         public:
             /// Fill-in the exception message.
             /** @param during_ctor If true, it means that this exception is being
-              *   thrown from the constructor of ActivationToken. If false, it is
+              *   thrown from the constructor of Session. If false, it is
               *   being thrown from the destructor instead. It is merely used to
               *   properly fill the exception message.
               */
-            explicit MultipleTokensCreated(
+            explicit MultipleSessionsCreated(
                 const bool during_ctor
             )
                 : std::runtime_error(
                     during_ctor
-                        ? "Attempting to create multiple ActivationToken instances. This is forbidden, sorry."
-                        : "While destroying an ActivationToken, another registered token was found. "
+                        ? "Attempting to create multiple Session instances. This is forbidden, sorry."
+                        : "While destroying a Session, another registered session was found. "
                         "This is a bug, please contact the maintainer."
                 ) {
             }
         };
 
     private:
-        static ActivationToken *active_token; ///< Pointer to the currently active token.
+        static Session *active_session; ///< Pointer to the currently active session.
 
         /// Puts all GPIO pins in high impedance mode.
         /** This method allows to "disconnect" all GPIO pins, by putting them into

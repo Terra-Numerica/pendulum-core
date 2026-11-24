@@ -41,7 +41,7 @@ static void display_value(
 static int run(const PendulumConfig &config) {
     namespace pc = pendulum_core;
 
-    const pigpio::ActivationToken token;
+    const pigpio::Session session;
 
     pc::termination::install_handlers();
 

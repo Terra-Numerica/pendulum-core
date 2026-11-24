@@ -35,8 +35,8 @@ static void display_state(const std::string &label, const bool active) {
 static int run(const PendulumConfig &config) {
     namespace pc = pendulum_core;
 
-    // Let the token manage the pigpio library!
-    const pigpio::ActivationToken token;
+    // Let the session manage the pigpio library!
+    const pigpio::Session session;
 
     pc::termination::install_handlers();
 

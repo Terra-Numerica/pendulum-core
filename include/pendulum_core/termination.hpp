@@ -15,7 +15,7 @@
   *   // do the periodic work here
   * }
   * ```
-  * Objects going out of scope on the normal exit path release their resources (see pigpio::ActivationToken).
+  * Objects going out of scope on the normal exit path release their resources (see pigpio::Session).
   */
 namespace pendulum_core::termination {
     namespace detail {
@@ -27,7 +27,7 @@ namespace pendulum_core::termination {
     }
 
     /// Installs the handler asking for a termination when SIGINT (CTRL+C) or SIGTERM is received.
-    /** It must be called after pigpio::ActivationToken creation, since gpioInitialise() installs its own handlers.
+    /** It must be called after pigpio::Session creation, since gpioInitialise() installs its own handlers.
       */
     inline void install_handlers() {
         std::signal(SIGINT, detail::handler);

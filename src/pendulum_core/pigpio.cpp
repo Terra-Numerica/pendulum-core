@@ -33,19 +33,19 @@ namespace pigpio {
     }
 
 
-    ActivationToken *ActivationToken::active_token = nullptr;
+    Session *Session::active_session = nullptr;
 
 
-    ActivationToken::ActivationToken() {
-        PENDULUM_CORE_DBG("ActivationToken: checking that no other token exists");
-        // Make sure that no other active token exists
-        if (active_token != nullptr) {
-            throw MultipleTokensCreated(true);
+    Session::Session() {
+        PENDULUM_CORE_DBG("Session: checking that no other session exists");
+        // Make sure that no other active session exists
+        if (active_session != nullptr) {
+            throw MultipleSessionsCreated(true);
         }
-        // "register" this object as the active token
-        active_token = this;
+        // "register" this object as the active session
+        active_session = this;
         // Initialize the pigpio library
-        PENDULUM_CORE_DBG("ActivationToken: initializing");
+        PENDULUM_CORE_DBG("Session: initializing");
         PIGPIO_CHECKED_CALL(gpioInitialise());
         // NOTE: it is VERY important that the signal handlers are assigned after
         // attempting to call gpioInitialise()!
@@ -53,29 +53,29 @@ namespace pigpio {
     }
 
 
-    ActivationToken::~ActivationToken() {
-        PENDULUM_CORE_DBG("ActivationToken: calling reset_pins() upon token destruction");
+    Session::~Session() {
+        PENDULUM_CORE_DBG("Session: calling reset_pins() upon session destruction");
         reset_pins();
-        // If there is no registered token, or another one is registered, bad things might happen!
-        if (active_token != this) {
+        // If there is no registered session, or another one is registered, bad things might happen!
+        if (active_session != this) {
             WARNING_BEGIN
-            std::cout << "ActivationToken: during destruction another active token was found";
+            std::cout << "Session: during destruction another active session was found";
             WARNING_END
         } else {
-            // "unregister" this token.
-            active_token = nullptr;
+            // "unregister" this session.
+            active_session = nullptr;
         }
     }
 
 
-    void ActivationToken::reset_pins() {
-        PENDULUM_CORE_DBG("ActivationToken: putting all pins into high impedance mode");
+    void Session::reset_pins() {
+        PENDULUM_CORE_DBG("Session: putting all pins into high impedance mode");
         for (int pin = 0; pin <= 26; pin++) {
             auto retval = gpioSetPullUpDown(pin, PI_PUD_OFF);
             if (retval < 0) {
                 WARNING_BEGIN
                 std::cout
-                        << "ActivationToken: while disabling resistors on pin " << pin
+                        << "Session: while disabling resistors on pin " << pin
                         << ", gpioSetPullUpDown() returned " << Exception::error2msg(retval);
                 WARNING_END
             }
@@ -83,23 +83,23 @@ namespace pigpio {
             if (retval < 0) {
                 WARNING_BEGIN
                 std::cout
-                        << "ActivationToken: while setting pin " << pin
+                        << "Session: while setting pin " << pin
                         << " as " << "input, gpioSetMode() returned " << Exception::error2msg(retval);
                 WARNING_END
             }
         }
         // #warning "Calling gpioTerminate() while handling a signal seems to kill the process, which is NOT a good thing. Check if there is a fix for this."
-        // PENDULUM_CORE_DBG("ActivationToken: calling gpioTerminate()");
+        // PENDULUM_CORE_DBG("Session: calling gpioTerminate()");
         // gpioTerminate();
-        PENDULUM_CORE_DBG("ActivationToken: GPIO reset completed");
+        PENDULUM_CORE_DBG("Session: GPIO reset completed");
     }
 
 
-    void ActivationToken::abort([[maybe_unused]] int s) {
+    void Session::abort([[maybe_unused]] int s) {
         PENDULUM_CORE_DBG(
-            "ActivationToken: executing 'abort(" << (s==SIGABRT?std::string("SIGABRT"):std::to_string(s)) << ")'");
+            "Session: executing 'abort(" << (s==SIGABRT?std::string("SIGABRT"):std::to_string(s)) << ")'");
         reset_pins();
-        PENDULUM_CORE_DBG("ActivationToken: calling std::_Exit(EXIT_FAILURE)");
+        PENDULUM_CORE_DBG("Session: calling std::_Exit(EXIT_FAILURE)");
         std::_Exit(EXIT_FAILURE);
     }
 
