@@ -51,7 +51,7 @@ namespace pendulum_core {
         const int angle_steps = angle_encoder_->raw_steps();
         // Number of steps the encoder may drift from its initial value without being considered as moving.
         constexpr int ENCODER_TOLERANCE = 1;
-        bool moving = false;
+        std::atomic<bool> moving{false};
 
         // Reset the encoder to start from a known state.
         // There's no risk doing it just now because if it's not presently still, the motion detection will abort
