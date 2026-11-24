@@ -49,7 +49,8 @@ namespace pendulum_core {
     void Pendulum::calibrate_angle_encoder(const bool verbose) const {
         // Calibrate the angle encoder. It simply consists in checking that it is still.
         const int angle_steps = angle_encoder_->raw_steps();
-        constexpr int ENCODER_TOLERANCE = 4;
+        // Number of steps the encoder may drift from its initial value without being considered as moving.
+        constexpr int ENCODER_TOLERANCE = 1;
         bool moving = false;
 
         // Reset the encoder to start from a known state.
@@ -58,9 +59,10 @@ namespace pendulum_core {
         angle_encoder_->set_origin_here();
 
         // clang-format on
+        // The thresholds are inclusive: the callbacks fire on the step following the tolerated ones
         angle_encoder_->set_safety_callbacks(
-            angle_steps - ENCODER_TOLERANCE,
-            angle_steps + ENCODER_TOLERANCE,
+            angle_steps - (ENCODER_TOLERANCE + 1),
+            angle_steps + (ENCODER_TOLERANCE + 1),
             [&] {
                 moving = true;
             }
