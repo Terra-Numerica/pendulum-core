@@ -4,7 +4,6 @@
 #pragma once
 
 #include <stdexcept>
-#include <csignal>
 #include <map>
 #include <pigpio.h>
 
@@ -71,47 +70,33 @@ namespace pigpio {
     }
 
     /// Utility class that activates and deactivates the pigpio library.
-    /** This class helps to initialize and terminate the pigpio library.
-      * Upon construction, this class calls gpioInitialise(), while upon destruction
-      * it calls gpioTerminate(). This allows to write codes such as the following,
-      * which should ensure that the library is "closed" even if an exception
-      * happens:
+    /** This class follows the RAII idiom (the C++ counterpart of a Python context manager): the library is
+      * initialized by the constructor, which calls gpioInitialise(), and the destructor puts all the GPIO pins in
+      * high impedance mode when the object goes out of scope, even if an exception is thrown in the meantime.
+      * Only one instance can exist at a time. Usage:
       * ```
       * int main() {
       *   // code that does not need pigpio
-      *   try {
-      *     pigpio::ActivationToken token;
-      *     // execute your pigpio-based instructions here!
-      *   }
-      *   catch(const pigpio::ActivationToken::PleaseStop&) {  }
-      *   catch(...) { throw; }
+      *   const pigpio::ActivationToken token;
+      *   // execute your pigpio-based instructions here!
       *   return 0;
       * }
       * ```
+      * Termination requests (SIGINT, SIGTERM) are not handled by this class, see pendulum_core::termination.
       */
     class ActivationToken {
     public:
         /// Forwards a call to gpioInitialise().
-        /** The constructor also registers the following signal handlers:
-          * - please_stop() as handler for SIGINT (the one sent when CTRL+C is
-          *   pressed on the keyboard).
-          * - abort() as a handler for SIGABRT (to be executed upon "catastrophic
-          *   failure").
+        /** The constructor also registers abort() as a handler for SIGABRT (to be executed upon "catastrophic
+          * failure").
           */
-        explicit ActivationToken(bool register_sigint = true);
+        ActivationToken();
 
         /// Ensures that all GPIO pins are changed to high impedance mode.
         ~ActivationToken();
 
-        /// Auxiliary exception class to be thrown when a SIGINT is received.
-        class PleaseStop : public std::runtime_error {
-        public:
-            /// Fill-in the exception message.
-            PleaseStop() : std::runtime_error(
-                "SIGINT received, throwing this exception to stop execution"
-            ) {
-            }
-        };
+        ActivationToken(const ActivationToken &) = delete;
+        ActivationToken &operator=(const ActivationToken &) = delete;
 
         /// Auxiliary exception class to be thrown when multiple tokens are generated.
         class MultipleTokensCreated : public std::runtime_error {
@@ -134,21 +119,13 @@ namespace pigpio {
             }
         };
 
-        /// Static method that can be registered as handler for SIGINT (CTRL+C).
-        /** This method simply throws a PleaseStop exception to halt execution.
-          * @param sig signal to be handled. Ignored in this method, but required
-          *   by the syntax of std::signal.
-          */
-        static void please_stop(int sig = SIGINT);
-
     private:
         static ActivationToken *active_token; ///< Pointer to the currently active token.
 
         /// Puts all GPIO pins in high impedance mode.
         /** This method allows to "disconnect" all GPIO pins, by putting them into
           * high impedance mode (inputs with no pull-up/pull-down resistors).
-          * Additionally, this method calls `gpioTerminate()` so that further
-          * GPIO operations will not happen.
+          * @note `gpioTerminate()` is not called, since doing it while handling a signal seems to kill the process.
           */
         static void reset_pins();
 

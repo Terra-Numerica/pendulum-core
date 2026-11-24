@@ -1,12 +1,12 @@
 // clang-format off
 #include <iomanip>
 #include <iostream>
-#include <csignal>
 #include <yaml-cpp/yaml.h>
 #include "../common/utils.hpp"
 #include <pendulum_core/ansi_term.h>
 #include <pendulum_core/joystick.hpp>
 #include <pendulum_core/pendulum_cpp_client.hpp>
+#include <pendulum_core/termination.hpp>
 #include <pendulum_cli/cli_parser.hpp>
 #include "demo_config.hpp"
 // clang-format on
@@ -145,11 +145,6 @@ namespace {
 }
 
 
-// main forever loop termination flag
-static volatile std::sig_atomic_t keep_running = 1;
-
-static void request_termination([[maybe_unused]] int signum) { keep_running = false; }
-
 static double rad_to_deg(const double rad) {
     return rad * 180. / M_PI;
 }
@@ -275,8 +270,7 @@ static int run(const DemoConfig &config) {
     std::cout << "to exit)" << std::endl << std::endl;
 
     // Connect signals for graceful termination.
-    std::signal(SIGINT, request_termination);
-    std::signal(SIGTERM, request_termination);
+    pc::termination::install_handlers();
 
     // Periodic status refresh when no event triggers it
     const auto status_update_period = std::chrono::milliseconds(500);
@@ -300,7 +294,7 @@ static int run(const DemoConfig &config) {
     std::cout << CURSOR_OFF << std::flush;
 
     // Main loop!
-    while (keep_running) {
+    while (!pc::termination::requested()) {
         constexpr double target_angle = M_PI;
 
         auto now = std::chrono::steady_clock::now();

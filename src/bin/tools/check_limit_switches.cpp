@@ -5,7 +5,6 @@
 #include <string>
 #include <chrono>
 #include <thread>
-#include <csignal>
 #include <cstdlib>
 
 #include <pendulum_cli/cli_parser.hpp>
@@ -13,6 +12,7 @@
 #include <pendulum_core/pendulum_config.hpp>
 #include <pendulum_core/pigpio.hpp>
 #include <pendulum_core/switch.hpp>
+#include <pendulum_core/termination.hpp>
 // clang-format on
 
 
@@ -35,56 +35,52 @@ static void display_state(const std::string &label, const bool active) {
 static int run(const PendulumConfig &config) {
     namespace pc = pendulum_core;
 
-    try {
-        // Let the token manage the pigpio library!
-        const pigpio::ActivationToken token;
+    // Let the token manage the pigpio library!
+    const pigpio::ActivationToken token;
 
-        signal(SIGINT, pigpio::ActivationToken::please_stop);
-        signal(SIGTERM, pigpio::ActivationToken::please_stop);
+    pc::termination::install_handlers();
 
-        std::cout
-                << HI
-                << " ------------------------------------------------ " << std::endl
-                << "|                                                |" << std::endl
-                << "|   Limit switches configuration checking tool   |" << std::endl
-                << "|                                                |" << std::endl
-                << " ------------------------------------------------ " << std::endl
-                << std::endl << LABEL_COLOR << "Version " << PENDULUM_CORE_VERSION << std::endl
-                << C_RESET << std::endl
-                << "This tool checks that the track limit switches are properly configured and working." <<
-                std::endl
-                << std::endl;
+    std::cout
+            << HI
+            << " ------------------------------------------------ " << std::endl
+            << "|                                                |" << std::endl
+            << "|   Limit switches configuration checking tool   |" << std::endl
+            << "|                                                |" << std::endl
+            << " ------------------------------------------------ " << std::endl
+            << std::endl << LABEL_COLOR << "Version " << PENDULUM_CORE_VERSION << std::endl
+            << C_RESET << std::endl
+            << "This tool checks that the track limit switches are properly configured and working." <<
+            std::endl
+            << std::endl;
 
-        const auto make_switch = [](const SwitchConfig &cfg) {
-            return std::make_unique<pc::Switch>(
-                cfg.pin, cfg.normally_up, cfg.use_internal_pull_resistor, cfg.debounce_us
-            );
-        };
-        const auto left_switch = make_switch(config.left_switch);
-        const auto right_switch = make_switch(config.right_switch);
+    const auto make_switch = [](const SwitchConfig &cfg) {
+        return std::make_unique<pc::Switch>(
+            cfg.pin, cfg.normally_up, cfg.use_internal_pull_resistor, cfg.debounce_us
+        );
+    };
+    const auto left_switch = make_switch(config.left_switch);
+    const auto right_switch = make_switch(config.right_switch);
 
-        std::cout << HI << "Configuration :" << C_RESET << std::endl;
-        std::cout << LABEL_COLOR << "- left switch  : " << C_RESET << "GPIO " << left_switch->pin() << std::endl;
-        std::cout << LABEL_COLOR << "- right switch : " << C_RESET << "GPIO " << right_switch->pin() << std::endl;
+    std::cout << HI << "Configuration :" << C_RESET << std::endl;
+    std::cout << LABEL_COLOR << "- left switch  : " << C_RESET << "GPIO " << left_switch->pin() << std::endl;
+    std::cout << LABEL_COLOR << "- right switch : " << C_RESET << "GPIO " << right_switch->pin() << std::endl;
 
-        std::cout << std::endl
-                << "If the wiring and configuration are OK, the switches must be shown as active" << std::endl
-                << "when a magnet is moved close to them." << std::endl
-                << std::endl;
+    std::cout << std::endl
+            << "If the wiring and configuration are OK, the switches must be shown as active" << std::endl
+            << "when a magnet is moved close to them." << std::endl
+            << std::endl;
 
-        while (true) {
-            constexpr auto POLLING_PERIOD_MS = 100;
-            std::cout << '\r';
-            display_state("left", !left_switch->at_rest());
-            display_state("right", !right_switch->at_rest());
-            std::cout.flush();
+    while (!pc::termination::requested()) {
+        constexpr auto POLLING_PERIOD_MS = 100;
+        std::cout << '\r';
+        display_state("left", !left_switch->at_rest());
+        display_state("right", !right_switch->at_rest());
+        std::cout.flush();
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_PERIOD_MS));
-        }
-    } catch (const pigpio::ActivationToken::PleaseStop &) {
-        std::cout << std::endl << C_YELLOW << "Termination signal received, terminating..." << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_PERIOD_MS));
     }
 
+    std::cout << std::endl << C_YELLOW << "Termination signal received, terminating..." << std::endl;
     std::cout << C_RESET;
     return EXIT_SUCCESS;
 }

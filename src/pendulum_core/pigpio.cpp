@@ -36,7 +36,7 @@ namespace pigpio {
     ActivationToken *ActivationToken::active_token = nullptr;
 
 
-    ActivationToken::ActivationToken(const bool register_sigint) {
+    ActivationToken::ActivationToken() {
         PENDULUM_CORE_DBG("ActivationToken: checking that no other token exists");
         // Make sure that no other active token exists
         if (active_token != nullptr) {
@@ -49,8 +49,6 @@ namespace pigpio {
         PIGPIO_CHECKED_CALL(gpioInitialise());
         // NOTE: it is VERY important that the signal handlers are assigned after
         // attempting to call gpioInitialise()!
-        if (register_sigint)
-            std::signal(SIGINT, please_stop);
         std::signal(SIGABRT, abort);
     }
 
@@ -94,13 +92,6 @@ namespace pigpio {
         // PENDULUM_CORE_DBG("ActivationToken: calling gpioTerminate()");
         // gpioTerminate();
         PENDULUM_CORE_DBG("ActivationToken: GPIO reset completed");
-    }
-
-
-    void ActivationToken::please_stop([[maybe_unused]] int s) {
-        PENDULUM_CORE_DBG(
-            "ActivationToken: executing 'please_stop(" << (s==SIGINT?std::string("SIGINT"):std::to_string(s)) << ")'");
-        throw PleaseStop();
     }
 
 

@@ -11,11 +11,22 @@
 #include "pendulum_core/ansi_term.h"
 #include "pendulum_core/debug.hpp"
 #include "pendulum_core/pigpio.hpp"
+#include "pendulum_core/termination.hpp"
 // clang-format on
 
 #define STEP C_BR_MAGENTA
 
 namespace pendulum_core {
+    namespace {
+        /// Stops the motor and aborts the calibration if a termination has been requested.
+        void abort_if_termination_requested(Motor &motor) {
+            if (termination::requested()) {
+                motor.set_pwm(0);
+                throw Pendulum::CalibrationFailed("termination requested");
+            }
+        }
+    }
+
     Pendulum::Pendulum(
         std::unique_ptr<Motor> motor,
         std::unique_ptr<Switch> left_switch,
@@ -93,6 +104,8 @@ namespace pendulum_core {
         int min_raw_steps = 0; // NOLINT
         int max_raw_steps = 0; // NOLINT
 
+        abort_if_termination_requested(*motor_);
+
         if (verbose) {
             std::cout << STEP << "- calibrating position encoder now..." << C_RESET << std::endl;
         }
@@ -131,6 +144,7 @@ namespace pendulum_core {
         left_switch_->enable_interrupts(wrong_switch_cb);
         motor_->set_pwm(calibration_pwm);
         while (motor_->pwm() != 0) {
+            abort_if_termination_requested(*motor_);
             if (wrong_switch) {
                 if (verbose) {
                     std::cerr << C_ERROR
@@ -146,8 +160,10 @@ namespace pendulum_core {
         // Release the right switch
         right_switch_->enable_interrupts(nullptr);
         motor_->set_pwm(-calibration_pwm);
-        while (!right_switch_->at_rest_cached())
+        while (!right_switch_->at_rest_cached()) {
+            abort_if_termination_requested(*motor_);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
         motor_->set_pwm(0);
 
         // Go towards the left switch
@@ -159,6 +175,7 @@ namespace pendulum_core {
         left_switch_->enable_interrupts(switch_cb);
         motor_->set_pwm(-calibration_pwm);
         while (motor_->pwm() != 0) {
+            abort_if_termination_requested(*motor_);
             if (wrong_switch) {
                 if (verbose) {
                     std::cerr << C_ERROR
@@ -175,6 +192,7 @@ namespace pendulum_core {
         left_switch_->enable_interrupts(nullptr);
         motor_->set_pwm(calibration_pwm);
         while (!left_switch_->at_rest_cached()) {
+            abort_if_termination_requested(*motor_);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
         motor_->set_pwm(0);
@@ -239,6 +257,7 @@ namespace pendulum_core {
         }
         motor_->set_pwm(calibration_pwm);
         while (position_encoder_->position() < 0.) {
+            abort_if_termination_requested(*motor_);
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
         motor_->set_pwm(0);

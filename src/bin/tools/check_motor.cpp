@@ -12,6 +12,7 @@
 #include <pendulum_core/pendulum_config.hpp>
 #include <pendulum_core/pigpio.hpp>
 #include <pendulum_core/motor.hpp>
+#include <pendulum_core/termination.hpp>
 // clang-format on
 
 
@@ -24,6 +25,8 @@ static int run(const PendulumConfig &config) {
     namespace pc = pendulum_core;
 
     const pigpio::ActivationToken token;
+
+    pc::termination::install_handlers();
 
     std::cout
             << C_HEADER
@@ -50,27 +53,47 @@ static int run(const PendulumConfig &config) {
 
     std::string line;
     std::getline(std::cin, line);
+    // Ctrl-C only sets the flag, and does not interrupt the (restarted) read above
+    if (pc::termination::requested()) {
+        std::cout << std::endl << C_YELLOW << "Termination signal received, the motor has not been moved." << C_RESET
+                << std::endl;
+        return EXIT_SUCCESS;
+    }
 
     constexpr auto TEST_PWM = 50;
     constexpr auto MOTION_DURATION_SECS = 2;
 
+    // Moves the motor for the given duration, then stops it. Returns false if interrupted by a termination request.
+    const auto move = [&motor](const int pwm, const int duration_secs) {
+        constexpr auto POLLING_PERIOD_MS = 50;
+        motor->set_pwm(pwm);
+        for (auto elapsed_ms = 0; elapsed_ms < duration_secs * 1000 && !pc::termination::requested();
+             elapsed_ms += POLLING_PERIOD_MS) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_PERIOD_MS));
+        }
+        motor->set_pwm(0);
+        return !pc::termination::requested();
+    };
+
     std::cout << LABEL_COLOR << "-> cart moving rightwards for " << MOTION_DURATION_SECS << " seconds..."
             << C_RESET << std::endl;
-    motor->set_pwm(TEST_PWM);
-    std::this_thread::sleep_for(std::chrono::milliseconds(MOTION_DURATION_SECS * 1000));
-    motor->set_pwm(0);
+    bool completed = move(TEST_PWM, MOTION_DURATION_SECS);
 
-    std::cout << LABEL_COLOR << "-> cart moving leftwards for " << 2 * MOTION_DURATION_SECS << " seconds..."
-            << C_RESET << std::endl;
-    motor->set_pwm(-TEST_PWM);
-    std::this_thread::sleep_for(std::chrono::milliseconds(2 * MOTION_DURATION_SECS * 1000));
-    motor->set_pwm(0);
+    if (completed) {
+        std::cout << LABEL_COLOR << "-> cart moving leftwards for " << 2 * MOTION_DURATION_SECS << " seconds..."
+                << C_RESET << std::endl;
+        completed = move(-TEST_PWM, 2 * MOTION_DURATION_SECS);
+    }
 
+    if (completed) {
+        std::cout << LABEL_COLOR << "-> cart going back to start position..." << C_RESET << std::endl;
+        completed = move(TEST_PWM, MOTION_DURATION_SECS);
+    }
 
-    std::cout << LABEL_COLOR << "-> cart going back to start position..." << C_RESET << std::endl;
-    motor->set_pwm(TEST_PWM);
-    std::this_thread::sleep_for(std::chrono::milliseconds(MOTION_DURATION_SECS * 1000));
-    motor->set_pwm(0);
+    if (!completed) {
+        std::cout << std::endl << C_YELLOW << "Termination signal received, motor stopped." << C_RESET << std::endl;
+        return EXIT_SUCCESS;
+    }
 
     std::cout << std::endl
             << "The sequence should have been : right, left, back to center." << std::endl << std::endl

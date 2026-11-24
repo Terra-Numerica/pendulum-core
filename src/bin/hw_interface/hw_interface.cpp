@@ -1,6 +1,5 @@
 // clang-format off
 #include <chrono>
-#include <csignal>
 #include <thread>
 #include <unistd.h>
 #include <fstream>
@@ -11,6 +10,7 @@
 #include <pendulum_core/pendulum_config.hpp>
 #include <pendulum_core/pigpio.hpp>
 #include <pendulum_core/pendulum.hpp>
+#include <pendulum_core/termination.hpp>
 #include <digital_filters/filters_implementations/butterworth.hpp>
 
 #include "../common/utils.hpp"
@@ -138,8 +138,7 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     // Initialize the pigpio token that takes care of housekeeping at finalization time, among others.
     const pigpio::ActivationToken token;
 
-    signal(SIGINT, pigpio::ActivationToken::please_stop);
-    signal(SIGTERM, pigpio::ActivationToken::please_stop);
+    pendulum_core::termination::install_handlers();
 
     // Create the pendulum instance and perform the calibration.
     const auto pendulum = make_pendulum(config);
@@ -198,7 +197,7 @@ static int run(const Filters &filters, const PendulumConfig &config) {
 
     try {
         int pwm = 0;
-        while (true) {
+        while (!pendulum_core::termination::requested()) {
             // Sleep enough to adjust the loop rate and get the pendulum state
             const double hw_time = 1e-6 * rate->sleep();
             pendulum->update(PERIOD_SEC);
@@ -255,11 +254,10 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     } catch (const pendulum_core::Pendulum::EmergencyStop &e) {
         std::cerr << std::endl << C_BR_RED << "ERROR: " << e.what() << C_RESET << std::endl;
         exit_status = EXIT_FAILURE;
-    } catch (const pigpio::ActivationToken::PleaseStop &) {
-        std::cout << std::endl << C_BR_YELLOW << "PleaseStop token received, terminating..." << C_RESET <<
-                std::endl;
-        // ensure we leave with a happy status
-        exit_status = EXIT_SUCCESS;
+    }
+
+    if (pendulum_core::termination::requested()) {
+        std::cout << std::endl << C_BR_YELLOW << "Termination requested, terminating..." << C_RESET << std::endl;
     }
 
     // clear the status file before leaving, whatever is the exit status

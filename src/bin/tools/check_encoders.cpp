@@ -5,7 +5,6 @@
 #include <string>
 #include <chrono>
 #include <thread>
-#include <csignal>
 #include <cstdlib>
 
 #include <pendulum_cli/cli_parser.hpp>
@@ -13,6 +12,7 @@
 #include <pendulum_core/pendulum_config.hpp>
 #include <pendulum_core/pigpio.hpp>
 #include <pendulum_core/encoder.hpp>
+#include <pendulum_core/termination.hpp>
 // clang-format on
 
 constexpr auto POS_COLOR = C_BR_GREEN;
@@ -41,93 +41,89 @@ static void display_value(
 static int run(const PendulumConfig &config) {
     namespace pc = pendulum_core;
 
-    try {
-        const pigpio::ActivationToken token;
+    const pigpio::ActivationToken token;
 
-        signal(SIGINT, pigpio::ActivationToken::please_stop);
-        signal(SIGTERM, pigpio::ActivationToken::please_stop);
+    pc::termination::install_handlers();
 
+    std::cout
+            << C_HEADER
+            << " ------------------------------------------ " << std::endl
+            << "|                                          |" << std::endl
+            << "|   Encoders configuration checking tool   |" << std::endl
+            << "|                                          |" << std::endl
+            << " ------------------------------------------ " << std::endl
+            << std::endl << LABEL_COLOR << "Version " << PENDULUM_CORE_VERSION << std::endl
+            << C_RESET << std::endl
+            << "This tool checks that the encoders are configured so that the returned values" << std::endl
+            << "progress according to the conventions used in the control laws." << std::endl << std::endl;
+
+    const auto &position_cfg = config.position_encoder;
+    const auto &angle_cfg = config.angle_encoder;
+    const auto position_encoder = std::make_unique<pc::PositionEncoder>(
+        position_cfg.pin_a, position_cfg.pin_b, position_cfg.steps_per_turn,
+        position_cfg.belt_module_mm, position_cfg.pulley_teeth_count, position_cfg.glitch_filter_us
+    );
+    const auto angle_encoder = std::make_unique<pc::AngleEncoder>(
+        angle_cfg.pin_a, angle_cfg.pin_b, angle_cfg.steps_per_turn, angle_cfg.glitch_filter_us
+    );
+    constexpr auto POLLING_PERIOD_MS = 100;
+
+    const auto glitch_filter_setting = [](const int value) {
+        return value ? std::to_string(value) + " us" : std::string("OFF");
+    };
+
+    std::cout << C_HEADER << "Configuration :" << C_RESET << std::endl;
+    std::cout << LABEL_COLOR << "- position : " << C_RESET
+            << "A -> GPIO " << position_encoder->pin_a()
+            << " | B -> GPIO " << position_encoder->pin_b()
+            << " | glitch filter : " << glitch_filter_setting(position_cfg.glitch_filter_us)
+            << std::endl;
+    std::cout << LABEL_COLOR << "- angle    : " << C_RESET
+            << "A -> GPIO " << angle_encoder->pin_a()
+            << " | B -> GPIO " << angle_encoder->pin_b()
+            << " | glitch filter : " << glitch_filter_setting(angle_cfg.glitch_filter_us)
+            << std::endl;
+
+    std::cout << std::endl
+            << "If the wiring and configuration are OK, the following behaviours are expected :" << std::endl
+            << "- position values " << C_HEADER << "increase" << C_RESET << " when the cart moves " << C_HEADER <<
+            "rightwards" <<
+            LABEL_COLOR << " (positive X)" << C_RESET << std::endl
+            << "- angle values " << C_HEADER << "increase" << C_RESET << " when the arm is rotated " << C_HEADER <<
+            "CCW"
+            <<
+            LABEL_COLOR << " (trigonometric convention)" << C_RESET << std::endl
+            << std::endl
+            << "Reading encoders every " << POLLING_PERIOD_MS << " ms... "
+            << LABEL_COLOR << "(Ctrl-C to end)" << C_RESET << std::endl
+            << std::endl;
+
+    // raw step counts, starting from zero at startup (the origin offset is not applied)
+    auto last_position = position_encoder->raw_steps();
+    auto last_angle = angle_encoder->raw_steps();
+
+    std::cout << CURSOR_OFF << std::flush;
+
+    while (!pc::termination::requested()) {
+        const auto position = position_encoder->raw_steps();
+        const auto angle = angle_encoder->raw_steps();
+
+        std::cout << '\r';
+        display_value("position", position, last_position, position_encoder->position(), "m");
+        display_value("angle", angle, last_angle, angle_encoder->angle(), "rad");
         std::cout
-                << C_HEADER
-                << " ------------------------------------------ " << std::endl
-                << "|                                          |" << std::endl
-                << "|   Encoders configuration checking tool   |" << std::endl
-                << "|                                          |" << std::endl
-                << " ------------------------------------------ " << std::endl
-                << std::endl << LABEL_COLOR << "Version " << PENDULUM_CORE_VERSION << std::endl
-                << C_RESET << std::endl
-                << "This tool checks that the encoders are configured so that the returned values" << std::endl
-                << "progress according to the conventions used in the control laws." << std::endl << std::endl;
+                << LABEL_COLOR << "(legend: "
+                << POS_COLOR << "INC" << C_RESET
+                << " "
+                << NEG_COLOR << "DEC" << LABEL_COLOR << ")" << C_RESET;
+        std::cout.flush();
 
-        const auto &position_cfg = config.position_encoder;
-        const auto &angle_cfg = config.angle_encoder;
-        const auto position_encoder = std::make_unique<pc::PositionEncoder>(
-            position_cfg.pin_a, position_cfg.pin_b, position_cfg.steps_per_turn,
-            position_cfg.belt_module_mm, position_cfg.pulley_teeth_count, position_cfg.glitch_filter_us
-        );
-        const auto angle_encoder = std::make_unique<pc::AngleEncoder>(
-            angle_cfg.pin_a, angle_cfg.pin_b, angle_cfg.steps_per_turn, angle_cfg.glitch_filter_us
-        );
-        constexpr auto POLLING_PERIOD_MS = 100;
+        last_position = position;
+        last_angle = angle;
 
-        const auto glitch_filter_setting = [](const int value) {
-            return value ? std::to_string(value) + " us" : std::string("OFF");
-        };
-
-        std::cout << C_HEADER << "Configuration :" << C_RESET << std::endl;
-        std::cout << LABEL_COLOR << "- position : " << C_RESET
-                << "A -> GPIO " << position_encoder->pin_a()
-                << " | B -> GPIO " << position_encoder->pin_b()
-                << " | glitch filter : " << glitch_filter_setting(position_cfg.glitch_filter_us)
-                << std::endl;
-        std::cout << LABEL_COLOR << "- angle    : " << C_RESET
-                << "A -> GPIO " << angle_encoder->pin_a()
-                << " | B -> GPIO " << angle_encoder->pin_b()
-                << " | glitch filter : " << glitch_filter_setting(angle_cfg.glitch_filter_us)
-                << std::endl;
-
-        std::cout << std::endl
-                << "If the wiring and configuration are OK, the following behaviours are expected :" << std::endl
-                << "- position values " << C_HEADER << "increase" << C_RESET << " when the cart moves " << C_HEADER <<
-                "rightwards" <<
-                LABEL_COLOR << " (positive X)" << C_RESET << std::endl
-                << "- angle values " << C_HEADER << "increase" << C_RESET << " when the arm is rotated " << C_HEADER <<
-                "CCW"
-                <<
-                LABEL_COLOR << " (trigonometric convention)" << C_RESET << std::endl
-                << std::endl
-                << "Reading encoders every " << POLLING_PERIOD_MS << " ms... "
-                << LABEL_COLOR << "(Ctrl-C to end)" << C_RESET << std::endl
-                << std::endl;
-
-        // raw step counts, starting from zero at startup (the origin offset is not applied)
-        auto last_position = position_encoder->raw_steps();
-        auto last_angle = angle_encoder->raw_steps();
-
-        std::cout << CURSOR_OFF << std::flush;
-
-        while (true) {
-            const auto position = position_encoder->raw_steps();
-            const auto angle = angle_encoder->raw_steps();
-
-            std::cout << '\r';
-            display_value("position", position, last_position, position_encoder->position(), "m");
-            display_value("angle", angle, last_angle, angle_encoder->angle(), "rad");
-            std::cout
-                    << LABEL_COLOR << "(legend: "
-                    << POS_COLOR << "INC" << C_RESET
-                    << " "
-                    << NEG_COLOR << "DEC" << LABEL_COLOR << ")" << C_RESET;
-            std::cout.flush();
-
-            last_position = position;
-            last_angle = angle;
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_PERIOD_MS));
-        }
-    } catch (const pigpio::ActivationToken::PleaseStop &) {
-        std::cout << HIDE_CTRL_C << std::endl << C_YELLOW << "Termination signal received, terminating..." << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_PERIOD_MS));
     }
+    std::cout << HIDE_CTRL_C << std::endl << C_YELLOW << "Termination signal received, terminating..." << std::endl;
     std::cout << CURSOR_ON << C_RESET << std::flush;
     return EXIT_SUCCESS;
 }
