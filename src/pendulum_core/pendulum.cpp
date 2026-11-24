@@ -58,7 +58,6 @@ namespace pendulum_core {
         // the process, and we can't thus go ahead with an invalid initial state.
         angle_encoder_->set_origin_here();
 
-        // clang-format on
         // The thresholds are inclusive: the callbacks fire on the step following the tolerated ones
         angle_encoder_->set_safety_callbacks(
             angle_steps - (ENCODER_TOLERANCE + 1),
@@ -67,7 +66,6 @@ namespace pendulum_core {
                 moving = true;
             }
         );
-        // clang-format on
         if (verbose) {
             std::cout << std::endl
                     << STEP << "- waiting for the pendulum to be still..." << std::endl
@@ -92,8 +90,8 @@ namespace pendulum_core {
 
     void Pendulum::calibrate_position_encoder(const int calibration_pwm, const bool verbose) {
         // Track ends as raw encoder counts: they are only meaningful until the origin is set below.
-        int min_raw_steps = 0; // NOLINT(CppInitializedValueIsAlwaysRewritten)
-        int max_raw_steps = 0; // NOLINT(CppInitializedValueIsAlwaysRewritten)
+        int min_raw_steps = 0; // NOLINT
+        int max_raw_steps = 0; // NOLINT
 
         if (verbose) {
             std::cout << STEP << "- calibrating position encoder now..." << C_RESET << std::endl;
