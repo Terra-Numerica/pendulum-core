@@ -1,6 +1,7 @@
 // clang-format off
 #include <math.h>
 
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <thread>
@@ -25,6 +26,20 @@ namespace pendulum_core {
                 throw Pendulum::CalibrationFailed("termination requested");
             }
         }
+
+        /// Runs a function when leaving the scope, whether normally or through an exception.
+        /// Used to unregister callbacks that capture locals by reference before these locals are destroyed.
+        template<typename F>
+        class AtScopeExit {
+        public:
+            explicit AtScopeExit(F function) : function_(std::move(function)) {}
+            ~AtScopeExit() { function_(); }
+            AtScopeExit(const AtScopeExit &) = delete;
+            AtScopeExit &operator=(const AtScopeExit &) = delete;
+
+        private:
+            F function_;
+        };
     }
 
     Pendulum::Pendulum(
@@ -69,6 +84,9 @@ namespace pendulum_core {
         // the process, and we can't thus go ahead with an invalid initial state.
         angle_encoder_->set_origin_here();
 
+        // Ensure we clean up the callbacks we are going to set
+        const AtScopeExit unregister_callbacks{[this] { angle_encoder_->remove_safety_callbacks(); }};
+
         // The thresholds are inclusive: the callbacks fire on the step following the tolerated ones
         angle_encoder_->set_safety_callbacks(
             angle_steps - (ENCODER_TOLERANCE + 1),
@@ -90,9 +108,6 @@ namespace pendulum_core {
             }
             throw CalibrationFailed("the pendulum is moving");
         }
-
-        // Cleanup motion detection callback
-        angle_encoder_->remove_safety_callbacks();
 
         if (verbose) {
             std::cout << C_SUCCESS << "-> angle encoder initialized." << C_RESET << std::endl << std::endl;
@@ -129,7 +144,8 @@ namespace pendulum_core {
         }
 
         // prepare some auxiliary callbacks used to reach the switches
-        bool wrong_switch = false;
+        // (`wrong_switch` is written by the callbacks, in the pigpio alert thread, and read by the calling thread)
+        std::atomic<bool> wrong_switch{false};
         auto switch_cb = [&] { motor_->set_pwm(0); };
         auto wrong_switch_cb = [&] {
             motor_->set_pwm(0);
@@ -140,6 +156,12 @@ namespace pendulum_core {
         if (verbose) {
             std::cout << "... seeking for the right end limit switch..." << std::endl;
         }
+
+        // Ensure we clean up the callbacks we are going to set
+        const AtScopeExit unregister_callbacks{[this] {
+            left_switch_->disable_interrupts();
+            right_switch_->disable_interrupts();
+        }};
         right_switch_->enable_interrupts(switch_cb);
         left_switch_->enable_interrupts(wrong_switch_cb);
         motor_->set_pwm(calibration_pwm);
