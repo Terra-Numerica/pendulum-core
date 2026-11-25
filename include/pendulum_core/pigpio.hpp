@@ -87,8 +87,9 @@ namespace pigpio {
     class Session {
     public:
         /// Forwards a call to gpioInitialise().
-        /** The constructor also registers abort() as a handler for SIGABRT (to be executed upon "catastrophic
-          * failure").
+        /** The socket and FIFO interfaces of pigpio (the ones used by pigpiod clients) are disabled beforehand,
+          * since nothing here uses them. The constructor also registers abort() as a handler for SIGABRT (to be
+          * executed upon "catastrophic failure").
           */
         Session();
 

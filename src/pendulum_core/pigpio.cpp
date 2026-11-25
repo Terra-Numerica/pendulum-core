@@ -44,6 +44,10 @@ namespace pigpio {
         }
         // "register" this object as the active session
         active_session = this;
+        // Disable the interfaces of pigpio meant for pigpiod clients, we don't use them: the socket one (TCP port
+        // 8888, which would let any machine of the network control the GPIO) and the FIFO one (/dev/pigpio, ...).
+        // Only effective before gpioInitialise().
+        PIGPIO_CHECKED_CALL(gpioCfgInterfaces(PI_DISABLE_SOCK_IF | PI_DISABLE_FIFO_IF));
         // Initialize the pigpio library
         PENDULUM_CORE_DBG("Session: initializing");
         PIGPIO_CHECKED_CALL(gpioInitialise());
