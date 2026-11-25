@@ -130,13 +130,6 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     const auto rate = std::make_unique<pigpio::Rate>(config.period_ms * 1000);
     const double PERIOD_SEC = config.period_ms / 1000.0;
 
-    // Socket connections.
-    // const auto tcp = config->get_pendulum_server();
-    const auto tcp = std::make_unique<pendulum_core::PendulumCppServer>(
-        config.sockets.state_endpoint,
-        config.sockets.command_endpoint
-    );
-
     const unsigned int MAX_MISSED_MESSAGES = 1 + static_cast<int>(1. / PERIOD_SEC);
 
     // Initialize the pigpio session that takes care of housekeeping at finalization time, among others.
@@ -174,6 +167,21 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     filters.linear_velocity->init_output(0.0);
     filters.angular_velocity->init_input(0.0);
     filters.angular_velocity->init_output(0.0);
+
+    // Open the sockets only now that everything else is done, so that the files of the IPC sockets do not remain
+    // after a failed or interrupted initialization. It must be done before reporting that we are ready.
+    std::unique_ptr<pendulum_core::PendulumCppServer> server;
+    try {
+        server = std::make_unique<pendulum_core::PendulumCppServer>(
+            config.sockets.state_endpoint,
+            config.sockets.command_endpoint
+        );
+    } catch (const std::exception &e) {
+        std::cerr << std::endl << C_BR_RED << "ERROR: cannot create the sockets: " << e.what() << std::endl
+                << "Check the endpoints in the 'sockets' section of the configuration file." << C_RESET << std::endl;
+        std::ofstream(STATUS_FILE) << STATUS_FAILED;
+        return EXIT_FAILURE;
+    }
 
     // ready to run now
 
@@ -213,7 +221,7 @@ static int run(const Filters &filters, const PendulumConfig &config) {
             const double filtered_angular_vel = filters.angular_velocity->filter(pendulum->angular_velocity());
 
             // publish the current state on the dedicated socket
-            tcp->send_state(
+            server->send_state(
                 hw_time,
                 filtered_position,
                 filtered_angle,
@@ -223,9 +231,9 @@ static int run(const Filters &filters, const PendulumConfig &config) {
 
             // read the command (i.e. PWM to be applied to the motor) from the dedicated socket
             const int max_wait_time = static_cast<int>(std::max(rate->residual() / 1000, 2u) - 2);
-            if (tcp->read_command(max_wait_time)) {
-                pwm = tcp->command();
-            } else if (tcp->missed_commands() > MAX_MISSED_MESSAGES) {
+            if (server->read_command(max_wait_time)) {
+                pwm = server->command();
+            } else if (server->missed_commands() > MAX_MISSED_MESSAGES) {
                 // we lost too many messages: override the command!
                 pwm = 0;
             }
