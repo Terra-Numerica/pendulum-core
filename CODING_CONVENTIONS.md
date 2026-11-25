@@ -46,7 +46,6 @@
   go in `src/bin/common/`.
 * **Third-party code:** dependencies tracked by git go in `third_party/`. `deps/` is git-ignored and reserved to
   dependencies built locally.
-* **Not C++ sources:** notebooks and measurement data go in `analysis/`, Python scripts in `python/`. Nothing but C++
-  code belongs in `src/`.
+* **Not C++ sources:** notebooks and measurement data go in `analysis/`. Nothing but C++ code belongs in `src/`.
 * **Moving files:** after moving or deleting a source, delete the old path on the build target as well, otherwise the
   stale copy remains there.
