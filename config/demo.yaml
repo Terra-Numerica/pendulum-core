@@ -17,10 +17,12 @@ joystick:
   # device: /dev/input/js0
 
 # communications between demo and hw_interface
+# (ZeroMQ endpoints, same as in the hw_interface configuration: "ipc:///path" or "tcp://host:port")
 sockets:
-  host: localhost
-  state_port: 10001
-  command_port: 10002
+  # Endpoint to receive the pendulum state from hw_interface
+  state_endpoint: "ipc:///tmp/pendulum_state"
+  # Endpoint to send commands to hw_interface
+  command_endpoint: "ipc:///tmp/pendulum_command"
 
 # coefficients of the LQR control law
 lqr_gains:

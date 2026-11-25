@@ -133,9 +133,8 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     // Socket connections.
     // const auto tcp = config->get_pendulum_server();
     const auto tcp = std::make_unique<pendulum_core::PendulumCppServer>(
-        config.sockets.host,
-        config.sockets.state_port,
-        config.sockets.command_port
+        config.sockets.state_endpoint,
+        config.sockets.command_endpoint
     );
 
     const unsigned int MAX_MISSED_MESSAGES = 1 + static_cast<int>(1. / PERIOD_SEC);

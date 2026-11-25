@@ -1,28 +1,53 @@
 #include <pendulum_core/pendulum_cpp_server.hpp>
+
+#include <sys/stat.h>
+
+#include <cerrno>
+#include <cstring>
 #include <sstream>
+#include <stdexcept>
+#include <string_view>
 
 namespace pendulum_core {
+    namespace {
+        /// Makes the file of a Unix socket usable by every user, for an `ipc://` endpoint (nothing to do otherwise).
+        /**
+          * `hw_interface` runs as root and the file it creates follows its umask, so the client applications, run by
+          * a standard user, could not connect: this requires the write permission on the file.
+          */
+        void make_accessible_to_clients(const std::string &endpoint) {
+            constexpr std::string_view IPC = "ipc://";
+            if (endpoint.compare(0, IPC.size(), IPC) != 0) {
+                return;
+            }
+            const std::string path = endpoint.substr(IPC.size());
+            if (::chmod(path.c_str(), 0666) != 0) {
+                throw std::runtime_error("cannot set the permissions of " + path + ": " + std::strerror(errno));
+            }
+        }
+    }
+
     PendulumCppServer::PendulumCppServer()
         : PendulumCppServer(
-            DEFAULT_HOST,
-            DEFAULT_STATE_PORT,
-            DEFAULT_COMMAND_PORT
+            DEFAULT_STATE_ENDPOINT,
+            DEFAULT_COMMAND_ENDPOINT
         ) {
     }
 
 
     PendulumCppServer::PendulumCppServer(
-        const std::string &host,
-        const int state_port,
-        const int command_port
+        const std::string &state_endpoint,
+        const std::string &command_endpoint
     ) {
         // Connect to the sockets to exchange data with the low-level interface.
         context_ = std::make_unique<zmqpp::context>();
         state_pub_ = std::make_unique<zmqpp::socket>(*context_, zmqpp::socket_type::publish);
-        state_pub_->bind("tcp://" + host + ":" + std::to_string(state_port));
+        state_pub_->bind(state_endpoint);
+        make_accessible_to_clients(state_endpoint);
         command_sub_ = std::make_unique<zmqpp::socket>(*context_, zmqpp::socket_type::subscribe);
         command_sub_->set(zmqpp::socket_option::conflate, 1);
-        command_sub_->bind("tcp://" + host + ":" + std::to_string(command_port));
+        command_sub_->bind(command_endpoint);
+        make_accessible_to_clients(command_endpoint);
         command_sub_->subscribe("");
         command_poller_ = std::make_unique<zmqpp::poller>();
         command_poller_->add(*command_sub_, zmqpp::poller::poll_in);

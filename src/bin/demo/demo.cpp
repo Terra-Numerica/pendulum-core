@@ -152,9 +152,8 @@ static double rad_to_deg(const double rad) {
 static int run(const DemoConfig &config) {
     // Connect to the low-level interface.
     pc::PendulumCppClient pendulum(
-        config.sockets.host,
-        config.sockets.state_port,
-        config.sockets.command_port,
+        config.sockets.state_endpoint,
+        config.sockets.command_endpoint,
         5
     );
 
@@ -489,6 +488,9 @@ int main(const int argc, char **argv) {
         return run(config);
     } catch (const yamlcfg::InvalidConfiguration &e) {
         std::cerr << C_ERROR << "ERROR: Invalid configuration\n" << e.what() << C_RESET << std::endl;
+        return EXIT_FAILURE;
+    } catch (const std::exception &e) {
+        std::cerr << C_ERROR << "ERROR: " << e.what() << C_RESET << std::endl;
         return EXIT_FAILURE;
     }
 }

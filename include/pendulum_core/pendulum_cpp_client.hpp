@@ -7,9 +7,8 @@ namespace pendulum_core {
     /// Bridge to the low-level interface.
     class PendulumCppClient {
     public:
-        static auto constexpr DEFAULT_HOST = "localhost";
-        static auto constexpr DEFAULT_STATE_PORT = 10001;
-        static auto constexpr DEFAULT_COMMAND_PORT = 10002;
+        static auto constexpr DEFAULT_STATE_ENDPOINT = "ipc:///tmp/pendulum_state";
+        static auto constexpr DEFAULT_COMMAND_ENDPOINT = "ipc:///tmp/pendulum_command";
 
         /// Named option to be passed to PendulumCppClient::read_state.
         /** @see PendulumCppClient::read_state */
@@ -22,12 +21,10 @@ namespace pendulum_core {
         explicit PendulumCppClient(int wait = -1);
 
         /// Constructor, initializes socket connections.
-        /** Connections are established at `tcp://[host]:[port]`. The
-          * @param host string that tells the host for the socket.
-          * @param state_port port of the socket that is used to read the current
-          *   state of the pendulum.
-          * @param command_port port of the socket that is used to send commands to
-          *   the low-level interface.
+        /** @param state_endpoint ZeroMQ endpoint (`tcp://host:port` or `ipc:///path`) the socket that is used to
+          *   read the current state of the pendulum connects to.
+          * @param command_endpoint ZeroMQ endpoint the socket that is used to send commands to the low-level
+          *   interface connects to.
           * @param wait time to wait for the interface, in seconds. If less than or
           *   equal to zero, wait indefinitely. If positive, the constructor will check
           *   if a message is available every second, until wait seconds have elapsed.
@@ -35,9 +32,8 @@ namespace pendulum_core {
           *   thrown.
           */
         PendulumCppClient(
-            const std::string &host,
-            int state_port,
-            int command_port,
+            const std::string &state_endpoint,
+            const std::string &command_endpoint,
             int wait = -1
         );
 

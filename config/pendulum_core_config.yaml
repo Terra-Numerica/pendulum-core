@@ -84,9 +84,10 @@ cutoff_frequency: 12.5
 
 # Configuration of the sockets used to exchange information.
 sockets:
-  # Host to bind the connections.
-  host: "*"
-  # Port to send the state to client applications.
-  state_port: 10001
-  # Port to receive commands from clients.
-  command_port: 10002
+  # ZeroMQ endpoints bound by hw_interface, different from each other: "ipc:///path" (Unix socket, for local
+  # clients) or "tcp://host:port" ("*" as host listens on every interface; the clients then connect to the
+  # host of the Raspberry Pi).
+  # Endpoint to send the state to client applications.
+  state_endpoint: "ipc:///tmp/pendulum_state"
+  # Endpoint to receive commands from clients.
+  command_endpoint: "ipc:///tmp/pendulum_command"

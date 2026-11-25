@@ -1,20 +1,50 @@
 #include "pendulum_core/sockets_config.hpp"
 
+#include <string>
+#include <string_view>
+
 #include "yamlcfg/config_node.hpp"
-#include "yamlcfg/constraints.hpp"
 
 using yamlcfg::ConfigNode;
-using yamlcfg::not_empty;
-using yamlcfg::InRange;
 
-constexpr InRange<int> TCP_PORT{1, 65535};
+namespace {
+    /// Maximum length of the path of a Unix socket (`sun_path` is 108 bytes long, including the final NUL).
+    constexpr std::size_t MAX_IPC_PATH_LENGTH = 107;
+
+    bool has_prefix(const std::string &text, const std::string_view prefix) {
+        return text.compare(0, prefix.size(), prefix) == 0;
+    }
+
+    /// Checks that a string is a `tcp://host:port` or `ipc:///path` ZeroMQ endpoint.
+    struct Endpoint {
+        bool operator()(const std::string &v) const {
+            constexpr std::string_view TCP = "tcp://";
+            constexpr std::string_view IPC = "ipc://";
+            if (has_prefix(v, TCP)) {
+                return v.size() > TCP.size();
+            }
+            if (has_prefix(v, IPC)) {
+                return v.size() > IPC.size() && v.size() - IPC.size() <= MAX_IPC_PATH_LENGTH;
+            }
+            return false;
+        }
+
+        [[nodiscard]] static std::string describe() {
+            return "must be a \"tcp://host:port\" or \"ipc:///path\" endpoint (path up to "
+                   + std::to_string(MAX_IPC_PATH_LENGTH) + " characters)";
+        }
+    };
+}
 
 SocketsConfig parse_sockets(const ConfigNode &n) {
+    constexpr Endpoint endpoint;
     const SocketsConfig s = {
-        .host = n.get_or<std::string>("host", "localhost", not_empty),
-        .state_port = n.get_required<int>("state_port", TCP_PORT),
-        .command_port = n.get_required<int>("command_port", TCP_PORT)
+        .state_endpoint = n.get_required<std::string>("state_endpoint", endpoint),
+        .command_endpoint = n.get_required<std::string>("command_endpoint", endpoint)
     };
-    n.ensure(s.state_port != s.command_port, "command_port", "must be different from state_port");
+    n.ensure_distinct<std::string>({
+        {"state_endpoint", s.state_endpoint},
+        {"command_endpoint", s.command_endpoint}
+    });
     return s;
 }

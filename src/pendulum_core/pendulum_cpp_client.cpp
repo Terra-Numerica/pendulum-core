@@ -7,28 +7,26 @@ namespace pendulum_core {
         const int wait
     )
         : PendulumCppClient(
-            DEFAULT_HOST,
-            DEFAULT_STATE_PORT,
-            DEFAULT_COMMAND_PORT,
+            DEFAULT_STATE_ENDPOINT,
+            DEFAULT_COMMAND_ENDPOINT,
             wait
         ) {
     }
 
 
     PendulumCppClient::PendulumCppClient(
-        const std::string &host,
-        const int state_port,
-        const int command_port,
+        const std::string &state_endpoint,
+        const std::string &command_endpoint,
         const int wait
     ) {
         // Connect to the sockets to exchange data with the low-level interface.
         context_ = std::make_unique<zmqpp::context>();
         state_sub_ = std::make_unique<zmqpp::socket>(*context_, zmqpp::socket_type::subscribe);
         state_sub_->set(zmqpp::socket_option::conflate, 1);
-        state_sub_->connect("tcp://" + host + ":" + std::to_string(state_port));
+        state_sub_->connect(state_endpoint);
         state_sub_->subscribe("");
         command_pub_ = std::make_unique<zmqpp::socket>(*context_, zmqpp::socket_type::publish);
-        command_pub_->connect("tcp://" + host + ":" + std::to_string(command_port));
+        command_pub_->connect(command_endpoint);
 
         // Wait for the low-level interface to be up and running.
         if (wait <= 0) {
@@ -49,7 +47,9 @@ namespace pendulum_core {
                 // Did we exit due to a received message? If not, throw!
                 if (elapsed >= wait) {
                     throw std::runtime_error("PendulumCppClient: failed to establish a "
-                        "connection with the low-level interface within the allotted time.");
+                        "connection with the low-level interface within the allotted time.\n"
+                        "Check that hw_interface is running and that the endpoints in the 'sockets' section of "
+                        "the configuration file are the same as the ones it uses.");
                 }
             }
         }
