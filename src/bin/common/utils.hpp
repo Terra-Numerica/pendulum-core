@@ -49,6 +49,18 @@ inline double shift_in_circle(const double x) {
     return v;
 }
 
+/// Weight of a primary control law blended with a secondary one outside of its range.
+/** Returns 1 when `x <= inner`, 0 when `x >= inner + width` and decreases linearly in between.
+ * A null width gives an immediate switch at `inner`.
+ */
+inline double blend_factor(const double x, const double inner, const double width) {
+    if (x <= inner)
+        return 1.0;
+    if (x >= inner + width)
+        return 0.0;
+    return 1.0 - (x - inner) / width;
+}
+
 /// Return a list of evenly spaced values.
 /** Returns the list of all values in the form `start + k * step` that are
  * smaller than (or equal to) `stop`.

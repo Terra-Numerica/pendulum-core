@@ -8,6 +8,7 @@ namespace {
     using yamlcfg::ConfigNode;
     using yamlcfg::InRange;
     using yamlcfg::not_empty;
+    using yamlcfg::non_negative;
     using yamlcfg::not_zero;
     using yamlcfg::positive;
 
@@ -53,6 +54,7 @@ namespace {
     Misc parse_misc(const ConfigNode &n) {
         Misc m;
         m.lqr_e_theta_max = n.get_or<double>("lqr_e_theta_max", 0.25, positive);
+        m.lqr_blend_margin_angle = n.get_or<double>("lqr_blend_margin_angle", 0.2, non_negative);
         m.lqr_to_swing_up_hysteresis = n.get_or<double>("lqr_to_swing_up_hysteresis", 0.2, positive);
         m.period_ms = n.get_or<int>("period_ms", 20, positive);
         return m;

@@ -249,16 +249,16 @@ static int run(const DemoConfig &config) {
     };
 
     const auto lqr_e_theta_max = config.misc.lqr_e_theta_max;
+    const auto lqr_blend_margin_angle = config.misc.lqr_blend_margin_angle;
     const auto lqr_to_swing_up_hysteresis = config.misc.lqr_to_swing_up_hysteresis;
-    const auto swing_up_to_lqr_ramp_secs = config.misc.swing_up_to_lqr_ramp_secs;
 
     std::cout << C_HEADER << "Misc:" << C_RESET << std::endl
             << C_LABEL << "  - LQR angle error max     : " << misc_fmt << lqr_e_theta_max
             << " rd  (" << rad_to_deg(lqr_e_theta_max) << "°)" << std::endl
-            << C_LABEL << "  - swingup->LQR hysteresis : " << misc_fmt << lqr_to_swing_up_hysteresis
+            << C_LABEL << "  - LQR blend margin angle  : " << misc_fmt << lqr_blend_margin_angle
+            << " rd  (" << rad_to_deg(lqr_blend_margin_angle) << "°)" << std::endl
+            << C_LABEL << "  - LQR->swingup hysteresis : " << misc_fmt << lqr_to_swing_up_hysteresis
             << " rd  (" << rad_to_deg(lqr_to_swing_up_hysteresis) << "°)" << std::endl
-            << C_LABEL << "  - swingup->LQR ramp time  : " << misc_fmt << swing_up_to_lqr_ramp_secs << " s" <<
-            std::endl
             << std::endl;
 
     std::cout << C_SUCCESS << "Demo started " << C_RESET << "(use Ctrl-C ";
@@ -277,18 +277,14 @@ static int run(const DemoConfig &config) {
 
     double last_e_theta = 2 * M_PI; // out of range value to force the first update
 
-    const auto lqr_to_swingup_threshold = lqr_e_theta_max + lqr_to_swing_up_hysteresis;
-    // swing-up / lqr PWMs mix factor for blending the transition
-    double alpha = 0;
+    // LQR -> swing-up transition: the LQR is kept while the pendulum is not too far from the target,
+    // or as long as it is coming back toward it, up to a hard limit
+    const auto lqr_release_angle = lqr_e_theta_max + lqr_to_swing_up_hysteresis;
+    const auto lqr_release_angle_max = lqr_release_angle + lqr_to_swing_up_hysteresis;
 
-    bool last_time_is_set = false;
-    std::chrono::time_point<std::chrono::steady_clock> last_time;
-    // initialize the dt to the theoretical value of the control period
-    std::chrono::duration<double> dt_secs(config.misc.period_ms / 1000.);
-
-    // tells if we are in LQR range while running in swing-up mode
-    // (used to add an hysteresis to the LQR/swing-up transition)
-    bool stabilizing = false;
+    // tells if the LQR is in charge while running in swing-up mode
+    // (latched on entering the LQR range, released according to the above thresholds)
+    bool lqr_engaged = false;
 
     std::cout << CURSOR_OFF << std::flush;
 
@@ -297,11 +293,6 @@ static int run(const DemoConfig &config) {
         constexpr double target_angle = M_PI;
 
         auto now = std::chrono::steady_clock::now();
-
-        if (last_time_is_set) {
-            // compute the real dt if we are not on the first iteration
-            dt_secs = now - last_time;
-        }
 
         // Retrieve the current state of the pendulum.
         pendulum.read_state(pendulum_core::PendulumCppClient::BLOCKING);
@@ -378,25 +369,22 @@ static int run(const DemoConfig &config) {
                     );
 
                     // the switch between LQR and swing-up control laws is made less brutal by applying :
-                    // - a progressive mix of both laws when entering the LQR range
-                    // - an hysteresis when exiting the LQR range
+                    // - a progressive mix of both laws in a transition zone located OUTSIDE the LQR range
+                    //   (the LQR is the only law applied inside the LQR range)
+                    // - an hysteresis when exiting the LQR range, to keep the LQR as long as it can recover
+                    const double abs_e_theta = std::abs(e_theta);
                     if (in_lqr_range) {
-                        stabilizing = true;
-                    } else if (std::abs(e_theta) > lqr_to_swingup_threshold) {
-                        stabilizing = false;
-                        // reset the swing-up to LQR ramp
-                        alpha = 0;
+                        lqr_engaged = true;
+                    } else if (lqr_engaged) {
+                        const bool moving_away = e_theta * pendulum.angular_velocity() > 0;
+                        if ((abs_e_theta > lqr_release_angle && moving_away)
+                            || abs_e_theta > lqr_release_angle_max) {
+                            lqr_engaged = false;
+                        }
                     }
-                    if (stabilizing) {
-                        // don't switch instantaneously, by let's transition smoothly by blending both control laws
-                        alpha = std::min(
-                            alpha + std::chrono::duration(dt_secs).count() / swing_up_to_lqr_ramp_secs,
-                            1.0
-                        );
-                    } else {
-                        // if not stabilizing anymore, apply the swing-up PWM only
-                        alpha = 0.0;
-                    }
+                    const double alpha = lqr_engaged
+                                             ? 1.0
+                                             : blend_factor(abs_e_theta, lqr_e_theta_max, lqr_blend_margin_angle);
                     pwm = static_cast<int>(alpha * pwm_lqr + (1.0 - alpha) * pwm_swing_up);
                 } else {
                     // when in LQR mode, just apply the LQR PWM when in proper range
@@ -450,10 +438,6 @@ static int run(const DemoConfig &config) {
         }
 
         was_in_lqr_range = in_lqr_range;
-
-        // prepare dt_secs computation on next iteration
-        last_time = now;
-        last_time_is_set = true;
     } // end of the main loop
 
     pendulum.send_command(0);

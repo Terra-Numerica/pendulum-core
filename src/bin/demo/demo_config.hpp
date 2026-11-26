@@ -57,16 +57,16 @@ constexpr auto fields(const SwingUpGains *) {
 
 struct Misc {
     double lqr_e_theta_max{};
+    double lqr_blend_margin_angle{};
     double lqr_to_swing_up_hysteresis{};
-    double swing_up_to_lqr_ramp_secs{};
     int period_ms{};
 };
 
 constexpr auto fields(const Misc *) {
     return std::make_tuple(
         YAMLCFG_FIELD(Misc, lqr_e_theta_max),
+        YAMLCFG_FIELD(Misc, lqr_blend_margin_angle),
         YAMLCFG_FIELD(Misc, lqr_to_swing_up_hysteresis),
-        YAMLCFG_FIELD(Misc, swing_up_to_lqr_ramp_secs),
         YAMLCFG_FIELD(Misc, period_ms)
 
     );

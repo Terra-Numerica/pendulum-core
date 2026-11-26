@@ -39,9 +39,13 @@ swing_up:
 misc:
   # max angle error of the LQR range (> 0, default: 0.25)
   lqr_e_theta_max: 0.25   # rd
-  # LQR to swing-up transition hysteresis (>= 0, added to lqr_e_theta_max to define the transition threshold)
-  lqr_to_swingup_hysteresis: 0.2        # rd
-  # duration of the blending transition when entering the LQR range while in swing-up mode
-  swingup_to_lqr_ramp_secs: 0.100
+  # width of the swing-up / LQR blending zone (>= 0, default: 0.2; 0 = immediate switch). The zone lies OUTSIDE the LQR range
+  # (from lqr_e_theta_max to lqr_e_theta_max + this value): the LQR alone is applied inside the LQR range,
+  # the swing-up alone beyond the blending zone
+  lqr_blend_margin_angle: 0.2           # rd
+  # LQR to swing-up hysteresis (> 0, default: 0.2). Once engaged, the LQR is kept until the angle error
+  # exceeds lqr_e_theta_max + this value while the pendulum is moving away from the target
+  # (hard limit: lqr_e_theta_max + 2 x this value)
+  lqr_to_swing_up_hysteresis: 0.2       # rd
   # Control period in milliseconds (integer). Optional parameter, defaults to 20. Must match pendulum config value.
   period_ms: 20
