@@ -57,6 +57,9 @@ namespace {
         m.lqr_blend_margin_angle = n.get_or<double>("lqr_blend_margin_angle", 0.2, non_negative);
         m.lqr_to_swing_up_hysteresis = n.get_or<double>("lqr_to_swing_up_hysteresis", 0.2, positive);
         m.period_ms = n.get_or<int>("period_ms", 20, positive);
+        m.trace_enabled = n.get_or<bool>("trace_enabled", false);
+        m.trace_duration_secs = n.get_or<double>("trace_duration_secs", 60.0, positive);
+        m.trace_file = n.get_or<std::string>("trace_file", "/tmp/pendulum_demo_trace.csv", not_empty);
         return m;
     }
 

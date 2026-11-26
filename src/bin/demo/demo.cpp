@@ -1,7 +1,11 @@
 // clang-format off
+#include <chrono>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <yaml-cpp/yaml.h>
+#include "../common/loop_headroom.hpp"
+#include "../common/trace_recorder.hpp"
 #include "../common/utils.hpp"
 #include <pendulum_core/ansi_term.h>
 #include <pendulum_core/joystick.hpp>
@@ -259,6 +263,14 @@ static int run(const DemoConfig &config) {
             << " rd  (" << rad_to_deg(lqr_blend_margin_angle) << "°)" << std::endl
             << C_LABEL << "  - LQR->swingup hysteresis : " << misc_fmt << lqr_to_swing_up_hysteresis
             << " rd  (" << rad_to_deg(lqr_to_swing_up_hysteresis) << "°)" << std::endl
+            << C_LABEL << "  - control loop trace      : " << C_RESET;
+    if (config.misc.trace_enabled) {
+        std::cout << config.misc.trace_duration_secs << " s kept in memory, written on exit to "
+                << config.misc.trace_file << std::endl;
+    } else {
+        std::cout << "disabled" << std::endl;
+    }
+    std::cout
             << std::endl;
 
     std::cout << C_SUCCESS << "Demo started " << C_RESET << "(use Ctrl-C ";
@@ -286,6 +298,17 @@ static int run(const DemoConfig &config) {
     // (latched on entering the LQR range, released according to the above thresholds)
     bool lqr_engaged = false;
 
+    const double period_secs = config.misc.period_ms / 1000.;
+    LoopHeadroom headroom(period_secs);
+    TraceRecorder trace(
+        config.misc.trace_enabled
+            ? static_cast<std::size_t>(std::ceil(config.misc.trace_duration_secs / period_secs))
+            : 0
+    );
+    const auto loop_start = std::chrono::steady_clock::now();
+    // PWM mix factor of the current iteration (traced)
+    double alpha = 0;
+
     std::cout << CURSOR_OFF << std::flush;
 
     // Main loop!
@@ -296,6 +319,8 @@ static int run(const DemoConfig &config) {
 
         // Retrieve the current state of the pendulum.
         pendulum.read_state(pendulum_core::PendulumCppClient::BLOCKING);
+        // the state is available: from now on, the time spent is taken from the control period
+        const auto work_start = std::chrono::steady_clock::now();
 
         // Since the low level sends state messages periodically, as configured by period_ms in YAML file
         // and read_state has been called in blocking mode, we are here at regular intervals.
@@ -382,7 +407,7 @@ static int run(const DemoConfig &config) {
                             lqr_engaged = false;
                         }
                     }
-                    const double alpha = lqr_engaged
+                    alpha = lqr_engaged
                                              ? 1.0
                                              : blend_factor(abs_e_theta, lqr_e_theta_max, lqr_blend_margin_angle);
                     pwm = static_cast<int>(alpha * pwm_lqr + (1.0 - alpha) * pwm_swing_up);
@@ -438,10 +463,42 @@ static int run(const DemoConfig &config) {
         }
 
         was_in_lqr_range = in_lqr_range;
+
+        const auto work_end = std::chrono::steady_clock::now();
+        const double headroom_secs = headroom.update(std::chrono::duration<double>(work_end - work_start).count());
+        trace.record({
+            .t_secs = std::chrono::duration<double>(work_end - loop_start).count(),
+            .e_theta = e_theta,
+            .angular_velocity = pendulum.angular_velocity(),
+            .e_pos = e_pos,
+            .linear_velocity = pendulum.linear_velocity(),
+            .alpha = alpha,
+            .lqr_engaged = lqr_engaged,
+            .pwm = pwm,
+            .headroom_ms = headroom_secs * 1000.
+        });
+        alpha = 0;
     } // end of the main loop
 
     pendulum.send_command(0);
-    std::cout << CURSOR_ON << C_RESET << std::flush;
+    std::cout << CURSOR_ON << C_RESET << std::endl << std::endl;
+
+    if (headroom.count() > 0) {
+        std::cout << C_HEADER << "Control loop headroom (period: " << config.misc.period_ms << " ms):" << C_RESET
+                << std::endl << std::fixed << std::setprecision(2)
+                << C_LABEL << "  - min  : " << C_RESET << headroom.min() * 1000. << " ms" << std::endl
+                << C_LABEL << "  - mean : " << C_RESET << headroom.mean() * 1000. << " ms" << std::endl
+                << C_LABEL << "  - overruns : " << C_RESET << headroom.overruns() << " / " << headroom.count()
+                << std::endl;
+    }
+    if (trace.enabled()) {
+        if (trace.dump(config.misc.trace_file)) {
+            std::cout << C_SUCCESS << "Trace written to " << C_RESET << config.misc.trace_file
+                    << " (" << trace.size() << " samples)" << std::endl;
+        } else {
+            std::cerr << C_ERROR << "Cannot write trace to " << config.misc.trace_file << C_RESET << std::endl;
+        }
+    }
 
     return EXIT_SUCCESS;
 }

@@ -60,6 +60,9 @@ struct Misc {
     double lqr_blend_margin_angle{};
     double lqr_to_swing_up_hysteresis{};
     int period_ms{};
+    bool trace_enabled{};
+    double trace_duration_secs{};
+    std::string trace_file;
 };
 
 constexpr auto fields(const Misc *) {
@@ -67,7 +70,10 @@ constexpr auto fields(const Misc *) {
         YAMLCFG_FIELD(Misc, lqr_e_theta_max),
         YAMLCFG_FIELD(Misc, lqr_blend_margin_angle),
         YAMLCFG_FIELD(Misc, lqr_to_swing_up_hysteresis),
-        YAMLCFG_FIELD(Misc, period_ms)
+        YAMLCFG_FIELD(Misc, period_ms),
+        YAMLCFG_FIELD(Misc, trace_enabled),
+        YAMLCFG_FIELD(Misc, trace_duration_secs),
+        YAMLCFG_FIELD(Misc, trace_file)
 
     );
 }
