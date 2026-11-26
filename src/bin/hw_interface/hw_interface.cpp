@@ -1,5 +1,8 @@
 // clang-format off
+#include <algorithm>
 #include <chrono>
+#include <iomanip>
+#include <iostream>
 #include <thread>
 #include <unistd.h>
 #include <fstream>
@@ -13,6 +16,7 @@
 #include <pendulum_core/termination.hpp>
 #include <digital_filters/filters_implementations/butterworth.hpp>
 
+#include "../common/loop_headroom.hpp"
 #include "../common/utils.hpp"
 #include "pendulum_core/pendulum_cpp_server.hpp"
 // clang-format on
@@ -207,11 +211,17 @@ static int run(const Filters &filters, const PendulumConfig &config) {
     const auto braking_distance = config.safety_thresholds.margin / 2;
 #endif
 
+    // Headroom of the loop: part of the period left once the hardware work is done. The time spent
+    // waiting for the command from the controller is not included, since it is not work of this process.
+    LoopHeadroom headroom(PERIOD_SEC);
+    double max_command_wait_secs = 0;
+
     try {
         int pwm = 0;
         while (!pendulum_core::termination::requested()) {
             // Sleep enough to adjust the loop rate and get the pendulum state
             const double hw_time = 1e-6 * rate->sleep();
+            const auto work_start = std::chrono::steady_clock::now();
             pendulum->update(PERIOD_SEC);
 
             // perform state filtering
@@ -231,7 +241,13 @@ static int run(const Filters &filters, const PendulumConfig &config) {
 
             // read the command (i.e. PWM to be applied to the motor) from the dedicated socket
             const int max_wait_time = static_cast<int>(std::max(rate->residual() / 1000, 2u) - 2);
-            if (server->read_command(max_wait_time)) {
+            const auto wait_start = std::chrono::steady_clock::now();
+            const bool command_received = server->read_command(max_wait_time);
+            const auto wait_end = std::chrono::steady_clock::now();
+            if (command_received) {
+                max_command_wait_secs = std::max(
+                    max_command_wait_secs, std::chrono::duration<double>(wait_end - wait_start).count()
+                );
                 pwm = server->command();
             } else if (server->missed_commands() > MAX_MISSED_MESSAGES) {
                 // we lost too many messages: override the command!
@@ -262,10 +278,26 @@ static int run(const Filters &filters, const PendulumConfig &config) {
 
             // ReSharper disable once CppExpressionWithoutSideEffects
             pendulum->set_command(pwm);
+
+            const auto work_end = std::chrono::steady_clock::now();
+            headroom.update(
+                std::chrono::duration<double>((wait_start - work_start) + (work_end - wait_end)).count()
+            );
         }
     } catch (const pendulum_core::Pendulum::EmergencyStop &e) {
         std::cerr << std::endl << C_BR_RED << "ERROR: " << e.what() << C_RESET << std::endl;
         exit_status = EXIT_FAILURE;
+    }
+
+    if (headroom.count() > 0) {
+        std::cout << std::endl << std::fixed << std::setprecision(2)
+                << C_HEADER << "Control loop headroom (period: " << config.period_ms << " ms):" << C_RESET << std::endl
+                << LABEL << "  - min  : " << C_RESET << headroom.min() * 1000. << " ms" << std::endl
+                << LABEL << "  - mean : " << C_RESET << headroom.mean() * 1000. << " ms" << std::endl
+                << LABEL << "  - overruns : " << C_RESET << headroom.overruns() << " / " << headroom.count()
+                << std::endl
+                << LABEL << "  - max command wait : " << C_RESET << max_command_wait_secs * 1000. << " ms"
+                << std::endl;
     }
 
     if (pendulum_core::termination::requested()) {
