@@ -408,8 +408,8 @@ static int run(const DemoConfig &config) {
                         }
                     }
                     alpha = lqr_engaged
-                                             ? 1.0
-                                             : blend_factor(abs_e_theta, lqr_e_theta_max, lqr_blend_margin_angle);
+                                ? 1.0
+                                : blend_factor(abs_e_theta, lqr_e_theta_max, lqr_blend_margin_angle);
                     pwm = static_cast<int>(alpha * pwm_lqr + (1.0 - alpha) * pwm_swing_up);
                 } else {
                     // when in LQR mode, just apply the LQR PWM when in proper range

@@ -15,7 +15,7 @@ Checks: >
   readability-const-return-type,
   misc-const-correctness,
   modernize-avoid-c-arrays,
-  readability-identifier-naming
+  readability-identifier-naming,
 
 CheckOptions:
   readability-identifier-naming.ClassCase: CamelCase
