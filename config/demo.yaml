@@ -48,11 +48,11 @@ misc:
   # (hard limit: lqr_e_theta_max + 2 x this value)
   lqr_to_swing_up_hysteresis: 0.2       # rd
   # Control period in milliseconds (integer). Optional parameter, defaults to 20. Must match pendulum config value.
-  period_ms: 20
+  #period_ms: 20
   # Control loop trace (default: false). The last samples are kept in memory and written to a CSV file
   # when the demo exits, so that there is no disk access (nor SD card wear) while running.
-  trace_enabled: true
+  #trace_enabled: false
   # duration of the trace kept in memory (> 0, default: 60 s)
-  trace_duration_secs: 60
+  #trace_duration_secs: 60
   # where the trace is written on exit (default: /tmp/pendulum_demo_trace.csv, which is in memory on most systems)
-  trace_file: /tmp/pendulum_demo_trace.csv
+  #trace_file: /tmp/pendulum_demo_trace.csv

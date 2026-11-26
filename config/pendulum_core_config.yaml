@@ -44,6 +44,7 @@ angle_encoder:
   # IMPORTANT: as per datasheet, not taking into account the x4 decoding method
   steps_per_turn: 600
   # micro-second window for pigpio glitch filter (default: 0 => no filter)
+  # use it only if ever you notice glitches in displayed value when at rest
   #glitch_filter_us: 20
 
 # Configuration of the motor.
@@ -76,7 +77,7 @@ pwm_offsets:
 calibration_pwm: 60
 
 # Control period in milliseconds (integer). Optional parameter, defaults to 20.
-period_ms: 20
+#period_ms: 20
 
 # Cutoff frequency, in Hz, used in filtering. It should be less than half the
 # sampling frequency. You can disable filtering by giving a negative value.
